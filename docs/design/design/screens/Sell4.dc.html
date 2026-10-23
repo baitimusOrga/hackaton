@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Inserat – Schritt 4 Preis</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/zweit/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg-000:#fbfaf7;--bg-100:#edebe5;--bg-900:#1e1d1a;--ink:#1e1d1a;--ink-muted:#66625a;--ink-inverse:#fbfaf7;--line:#1e1d1a;--line-soft:#dcd9d1;--blue:#1f4fd6;--on-blue:#ffffff;--blue-text:#1a42b5;--green-text:#185e53;--focus:#1e1d1a;--danger:#a3101e;--overlay:#1e1d1ab3;--font-sans:"Inter",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--space-16:64px;--radius-0:0;--radius-1:2px;--border-1:1px;--border-2:2px}
+body{margin:0;background:#605f5c}
+a{color:#1e1d1a}a:hover{color:#1a42b5}
+.zw-dlg{width:100%;max-width:600px;background:#fbfaf7;border:1px solid #dcd9d1;border-radius:2px;box-sizing:border-box;padding:32px 40px 40px;display:flex;flex-direction:column;gap:32px}
+.zw-dlg__top{display:flex;align-items:center;gap:16px;font-size:12px;line-height:16px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:#66625a}
+.zw-dlg__top a{margin-left:auto;text-transform:none;letter-spacing:0;font-size:14px;font-weight:600;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.zw-x{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:0;background:none;cursor:pointer;color:#1e1d1a;margin-right:-12px}
+.zw-x svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5}
+.zw-q{margin:0;font-size:32px;line-height:36px;font-weight:700;letter-spacing:-.005em}
+.zw-sub{margin:0;font-size:16px;line-height:26px;color:#66625a}
+.zw-foot{display:flex;align-items:center;gap:16px}
+.zw-back{min-height:44px;display:inline-flex;align-items:center;font-size:15px;font-weight:600;text-decoration:none}
+.zw-opt{display:flex;align-items:center;gap:16px;min-height:56px;padding:8px 0;border-bottom:1px solid #dcd9d1;cursor:pointer}
+.zw-opt:last-child{border-bottom:0}
+.zw-opt input{width:20px;height:20px;margin:0;accent-color:#1f4fd6;flex:none}
+.zw-opt__t{font-size:16px;line-height:24px;font-weight:600}
+.zw-opt__d{font-size:14px;line-height:20px;color:#66625a}
+.zw-opt__p{margin-left:auto;font-size:20px;line-height:24px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
+</style>
+</helmet>
+<div class="zw" style="min-height: 100%; background: #605f5c; color: #1e1d1a; font-family: Inter, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; padding: 48px 16px; box-sizing: border-box;">
+  <div class="zw-dlg" role="dialog" aria-labelledby="q4">
+    <div class="zw-dlg__top">
+      <span>Verkaufen · 4 von 5</span>
+      <a href="SellFull.dc.html" class="zw-btn zw-btn--sm" style="text-transform: none; letter-spacing: 0;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16"/></svg><span>Alles auf einer Seite</span></a>
+      <a href="Main.dc.html" class="zw-x" aria-label="Schliessen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <h1 id="q4" class="zw-q">Zu welchem Preis?</h1>
+      <p class="zw-sub">Ähnliche iMacs gingen auf Zweit zuletzt für <strong style="color: #1e1d1a; font-variant-numeric: tabular-nums;">CHF 380.– bis 520.–</strong> weg. 4 Verkäufe, letzte 90 Tage. <a href="#" style="font-weight: 600;">Vergleiche ansehen</a></p>
+    </div>
+    <fieldset style="border: 0; padding: 0; margin: 0; display: flex; flex-direction: column;">
+      <label class="zw-opt"><input type="radio" name="p"><div><div class="zw-opt__t">Schnell</div><div class="zw-opt__d">Unter dem Schnitt, mehr Anfragen.</div></div><span class="zw-opt__p">CHF 390.–</span></label>
+      <label class="zw-opt"><input type="radio" name="p" checked><div><div class="zw-opt__t">Ausgewogen</div><div class="zw-opt__d">In der Mitte der Vergleiche.</div></div><span class="zw-opt__p">CHF 450.–</span></label>
+      <label class="zw-opt"><input type="radio" name="p"><div><div class="zw-opt__t">Hoch</div><div class="zw-opt__d">Oberer Rand, dauert eher länger.</div></div><span class="zw-opt__p">CHF 520.–</span></label>
+      <label class="zw-opt"><input type="radio" name="p"><div><div class="zw-opt__t">Eigener Preis</div></div><div class="zw-affix" style="margin-left: auto; width: 160px;"><span class="zw-affix__unit">CHF</span><input class="zw-input zw-input--price" type="text" inputmode="decimal" placeholder="0.–" aria-label="Eigener Preis"></div></label>
+    </fieldset>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span class="zw-label">Wie verkaufen?</span>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="zw-chip" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>Festpreis</span></button>
+        <button type="button" class="zw-chip" aria-pressed="false"><span>Preisvorschlag</span></button>
+        <button type="button" class="zw-chip" aria-pressed="false"><span>Auktion</span></button>
+        <button type="button" class="zw-chip" aria-pressed="false"><span>Verschenken</span></button>
+      </div>
+    </div>
+    <div class="zw-foot">
+      <a href="Sell3.dc.html" class="zw-back">Zurück</a>
+      <a href="Sell5.dc.html" class="zw-btn zw-btn--primary" style="margin-left: auto;"><span>Weiter</span></a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

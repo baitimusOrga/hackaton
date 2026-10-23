@@ -1,12 +1,7 @@
-import { registerLocaleData } from '@angular/common';
-import localeEnCh from '@angular/common/locales/en-CH';
-import { LOCALE_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { PriceEstimate } from '../api/models';
 import { PricePanel } from './price-panel';
-
-registerLocaleData(localeEnCh);
 
 const ESTIMATE: PriceEstimate = {
   lowChf: 90,
@@ -44,51 +39,55 @@ const ESTIMATE: PriceEstimate = {
   ],
 };
 
-// the currency pattern uses a non-breaking space
-const plain = (el: Element) => (el.textContent ?? '').replace(/\u00a0/g, ' ');
-
 function setup(estimate: PriceEstimate | null, condition: string | null = null) {
-  TestBed.configureTestingModule({
-    providers: [provideRouter([]), { provide: LOCALE_ID, useValue: 'en-CH' }],
-  });
+  TestBed.configureTestingModule({ providers: [provideRouter([])] });
   const fixture = TestBed.createComponent(PricePanel);
   fixture.componentRef.setInput('estimate', estimate);
   fixture.componentRef.setInput('condition', condition);
   fixture.detectChanges();
-  return { fixture, element: fixture.nativeElement as HTMLElement };
+  const element = fixture.nativeElement as HTMLElement;
+  const strategies = () =>
+    Array.from(element.querySelectorAll<HTMLInputElement>('input[type="radio"]')).slice(0, -1);
+  return { fixture, element, strategies };
 }
 
 describe('PricePanel', () => {
-  it('shows range, evidence and Swiss currency', () => {
+  it('shows range, evidence count and age, confidence and Swiss prices', () => {
     const { element } = setup(ESTIMATE);
-    const text = plain(element);
-    expect(text).toContain('High confidence');
-    expect(text).toContain('CHF 90.00');
-    expect(text).toContain('CHF 110.00');
-    expect(text).toContain('Same model');
-    expect(text).toContain('Sold');
-    expect(text).toContain('Asking');
-    expect(text).toContain('51 days ago');
-    expect(text).toContain('1 day ago');
+    const text = element.textContent!;
+    expect(text).toContain('CHF 90.– bis 110.–');
+    expect(text).toContain('1 Verkauf und 1 Angebot, letzte 51 Tage.');
+    expect(text).toContain('Sicherheit hoch');
+    expect(text).toContain('Gleiches Modell');
+    expect(text).toContain('Verkauft');
+    expect(text).toContain('CHF 126.50');
+    expect(text).toContain('vor 51 Tagen');
     expect(element.querySelector('a[href="/listings/1101"]')).not.toBeNull();
   });
 
   it('choosing a strategy sets the price', () => {
-    const { fixture, element } = setup(ESTIMATE);
-    const balanced = element.querySelectorAll<HTMLButtonElement>('button')[1];
-    balanced.click();
+    const { fixture, strategies } = setup(ESTIMATE);
+    strategies()[1].click();
     fixture.detectChanges();
     expect(fixture.componentInstance.price()).toBe(100);
-    expect(balanced.getAttribute('aria-pressed')).toBe('true');
+    expect(strategies()[1].checked).toBe(true);
+  });
+
+  it('takes an own price', () => {
+    const { fixture, element } = setup(ESTIMATE);
+    const own = element.querySelector<HTMLInputElement>('input[name="price"]')!;
+    own.value = '95.5';
+    own.dispatchEvent(new Event('input'));
+    expect(fixture.componentInstance.price()).toBe(95.5);
   });
 
   it('marks a provisional estimate', () => {
-    const { element } = setup({ ...ESTIMATE, confidence: 'LOW', provisional: true });
-    expect(element.textContent).toContain('Provisional estimate');
-    expect(element.querySelectorAll('button').length).toBe(3);
+    const { element, strategies } = setup({ ...ESTIMATE, confidence: 'LOW', provisional: true });
+    expect(element.textContent).toContain('Vorläufig');
+    expect(strategies().length).toBe(3);
   });
 
-  it('shows no estimate without buttons', () => {
+  it('shows no estimate, only the own price', () => {
     const { element } = setup({
       lowChf: null,
       midChf: null,
@@ -98,15 +97,16 @@ describe('PricePanel', () => {
       explanation: 'No estimate: we could not identify brand and model.',
       evidence: [],
     });
-    expect(element.textContent).toContain('No estimate');
+    expect(element.textContent).toContain('Keine Schätzung');
     expect(element.textContent).toContain('brand and model');
-    expect(element.querySelectorAll('button').length).toBe(0);
+    expect(element.querySelectorAll('input[type="radio"]').length).toBe(0);
+    expect(element.querySelector<HTMLInputElement>('input[name="price"]')!.required).toBe(true);
   });
 
   it('rescales when the condition changes', () => {
-    const { fixture, element } = setup({ ...ESTIMATE, midChf: 100 });
+    const { fixture, strategies } = setup({ ...ESTIMATE, midChf: 100 });
     fixture.componentRef.setInput('condition', 'USED');
     fixture.detectChanges();
-    expect(plain(element.querySelectorAll('button')[1])).toContain('CHF 85.00');
+    expect(strategies()[1].closest('label')!.textContent).toContain('CHF 85.–');
   });
 });

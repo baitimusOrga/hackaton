@@ -1,175 +1,129 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { SearchService } from '../api/services';
-import { Requirement, SearchMatch } from '../api/models';
+import { Requirement, SearchMatch, SearchRequirements } from '../api/models';
+import { CONDITION_LABELS } from '../conditions';
+import { Button } from '../ui/button';
+import { chf } from '../ui/chf';
+import { Icon } from '../ui/icon';
+import { SummaryCard } from '../ui/summary-card';
 
 type Row = 'mustHave' | 'niceToHave';
 type Results = Record<'confirmed' | 'possible' | 'alternatives', SearchMatch[]> & {
   compared: number;
 };
 
-const CONDITIONS: Record<string, string> = {
-  NEW: 'New',
-  LIKE_NEW: 'Like new',
-  GOOD: 'Good',
-  USED: 'Used',
-  DEFECTIVE: 'Defective',
-};
-
+/** Search: free text → requirements (chips + filter form) → matches grouped Bestätigt / Möglich / Alternativen. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-find',
-  imports: [FormsModule, RouterLink],
-  template: `
-    <h1 class="text-2xl font-semibold">Find an item</h1>
-    <p class="text-slate-600">Describe what you are looking for, the assistant does the rest.</p>
-
-    <form (ngSubmit)="find()" class="mt-4 grid max-w-2xl gap-3">
-      <label for="find-text" class="font-semibold">What do you want to buy?</label>
-      <textarea
-        id="find-text"
-        name="text"
-        [(ngModel)]="text"
-        (keydown.control.enter)="find()"
-        (keydown.meta.enter)="find()"
-        required
-        maxlength="500"
-        rows="3"
-        placeholder="working iMac 27 5K from 2017, max 600 CHF near Zürich"
-        class="rounded-md border border-slate-400 bg-white p-3"
-      ></textarea>
-      <p class="text-sm text-slate-600">Tip: ⌘ / Ctrl + Enter</p>
-      <button
-        type="submit"
-        [disabled]="loading() || !text().trim()"
-        class="cursor-pointer justify-self-start rounded-md bg-teal-800 px-4 py-2 text-white disabled:opacity-50"
-      >
-        {{ loading() ? 'Finding…' : 'Find' }}
-      </button>
-    </form>
-
-    <p role="status" aria-live="polite" class="mt-3 text-slate-700">{{ progress() }}</p>
-
-    @if (searched()) {
-      <section aria-labelledby="req-heading" class="mt-6 grid max-w-2xl gap-4">
-        <h2 id="req-heading" class="text-xl font-semibold">Your requirements</h2>
-        @for (row of rows; track row.key) {
-          <div>
-            <h3 class="font-semibold">{{ row.label }}</h3>
-            <ul class="mt-1 flex flex-wrap gap-2" [attr.data-testid]="row.key">
-              @for (r of list(row.key); track r.attribute + r.value) {
-                <li class="flex items-center gap-1 rounded-full bg-slate-100 py-1 pr-1 pl-3">
-                  <span>{{ r.attribute }}: {{ prefix(r) }}{{ r.value }}</span>
-                  <button
-                    type="button"
-                    (click)="move(r, row.key)"
-                    class="cursor-pointer rounded-full px-2 text-sm underline"
-                    [attr.aria-label]="'Move ' + r.attribute + ' to ' + row.other"
-                  >
-                    {{ row.key === 'mustHave' ? '→ Nice to have' : '→ Must have' }}
-                  </button>
-                  <button
-                    type="button"
-                    (click)="remove(r, row.key)"
-                    class="cursor-pointer rounded-full px-2"
-                    [attr.aria-label]="'Remove ' + r.attribute"
-                  >
-                    ×
-                  </button>
-                </li>
-              } @empty {
-                <li class="text-slate-600">None.</li>
-              }
-            </ul>
-          </div>
-        }
-        @if (category()) {
-          <p>Category: {{ category() }}</p>
-        }
-        <div class="grid gap-3 sm:grid-cols-2">
-          <label class="grid gap-1 font-semibold"
-            >Max budget (CHF)
-            <input
-              type="number"
-              min="0"
-              name="budget"
-              [(ngModel)]="budget"
-              class="rounded-md border border-slate-400 bg-white p-2 font-normal"
-          /></label>
-          <label class="grid gap-1 font-semibold"
-            >Postcode
-            <input
-              name="postcode"
-              [(ngModel)]="postcode"
-              maxlength="4"
-              class="rounded-md border border-slate-400 bg-white p-2 font-normal"
-          /></label>
-          <label class="grid gap-1 font-semibold sm:col-span-2"
-            >Keywords (comma-separated)
-            <input
-              name="keywords"
-              [(ngModel)]="keywords"
-              class="rounded-md border border-slate-400 bg-white p-2 font-normal"
-          /></label>
-        </div>
-        <label class="flex items-center gap-2">
-          <input type="checkbox" name="acceptUnknown" [(ngModel)]="acceptUnknown" />
-          Show items with missing details
-        </label>
-        <button
-          type="button"
-          (click)="showMatches()"
-          [disabled]="matching()"
-          class="cursor-pointer justify-self-start rounded-md bg-teal-800 px-4 py-2 text-white disabled:opacity-50"
-        >
-          {{ matching() ? 'Searching…' : results() ? 'Update matches' : 'Show matches' }}
-        </button>
-      </section>
+  imports: [FormsModule, Button, Icon, SummaryCard],
+  templateUrl: './find.html',
+  styles: `
+    .find__query {
+      display: flex;
+      gap: var(--space-2);
+      align-items: flex-start;
     }
-
-    @if (results(); as res) {
-      <section aria-label="Matches" class="mt-8 grid gap-6">
-        @if (!res.confirmed.length && !res.possible.length && !res.alternatives.length) {
-          <p>Nothing matches yet.</p>
-        } @else {
-          <p class="text-slate-700">
-            Compared {{ res.compared }} listings · {{ res.confirmed.length }} confirmed ·
-            {{ res.possible.length }} possible · {{ res.alternatives.length }} alternative
-          </p>
-          @for (group of groups; track group.key) {
-            <div>
-              <h2 class="text-xl font-semibold">{{ group.title }}</h2>
-              @if (group.subtitle) {
-                <p class="text-slate-600">{{ group.subtitle }}</p>
-              }
-              <ul class="mt-2 grid gap-3">
-                @for (m of res[group.key]; track m.listing?.id) {
-                  <li class="rounded-md border border-slate-200 bg-white p-4">
-                    <a
-                      [routerLink]="['/listings', m.listing?.id]"
-                      class="font-semibold underline"
-                      >{{ m.listing?.title }}</a
-                    >
-                    <p>
-                      CHF {{ m.listing?.priceChf }} · {{ condition(m) }} · {{ m.listing?.locality }}
-                    </p>
-                    <p class="text-slate-700">{{ m.reason }}</p>
-                    @if (m.missingDetails?.length) {
-                      <p>Ask the seller: {{ m.missingDetails?.join(', ') }}</p>
-                    }
-                    @if (m.differences?.length) {
-                      <p>Differences: {{ m.differences?.join(' · ') }}</p>
-                    }
-                  </li>
-                } @empty {
-                  <li class="text-slate-600">{{ group.empty }}</li>
-                }
-              </ul>
-            </div>
-          }
-        }
-      </section>
+    .find__query textarea {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding-top: var(--space-2);
+      padding-bottom: var(--space-2);
+      resize: vertical;
+    }
+    .find__strip {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      padding-top: var(--space-4);
+    }
+    .find__strip .zw-chip {
+      max-width: none;
+    }
+    .find__strip > :last-child {
+      margin-left: auto;
+    }
+    .find__cols {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: var(--space-16);
+      align-items: start;
+      padding-top: var(--space-8);
+    }
+    @media (max-width: 900px) {
+      .find__cols {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-8);
+      }
+    }
+    .find__filters {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .find__f {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    .find__pair {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-2);
+    }
+    .find__reqs .zw-row {
+      justify-content: space-between;
+      min-height: 44px;
+      font-size: 14px;
+      line-height: 20px;
+    }
+    .find__results {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-12);
+    }
+    .find__bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+    }
+    .find__bar label {
+      margin-left: auto;
+      font-size: 14px;
+      color: var(--ink-muted);
+    }
+    .find__bar select {
+      width: 180px;
+    }
+    .find__grp {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+    .find__grp h2 {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-3);
+    }
+    .find__grp h2 span {
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 400;
+      color: var(--ink-muted);
+    }
+    .find__item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+    .find__why--ok {
+      color: var(--green-text);
+      font-weight: 500;
     }
   `,
 })
@@ -177,19 +131,24 @@ export class Find {
   private readonly search = inject(SearchService);
 
   protected readonly rows = [
-    { key: 'mustHave', label: 'Must have', other: 'nice to have' },
-    { key: 'niceToHave', label: 'Nice to have', other: 'must have' },
+    { key: 'mustHave', label: 'Muss', other: 'Wäre schön' },
+    { key: 'niceToHave', label: 'Wäre schön', other: 'Muss' },
   ] as const;
   protected readonly groups = [
-    { key: 'confirmed', title: 'Confirmed match', subtitle: '', empty: 'No confirmed match yet.' },
-    { key: 'possible', title: 'Possible match', subtitle: '', empty: 'No possible match.' },
+    { key: 'confirmed', title: 'Bestätigt', note: 'alles belegt', empty: 'Noch nichts bestätigt.' },
+    { key: 'possible', title: 'Möglich', note: 'eine Angabe fehlt', empty: 'Nichts Mögliches.' },
     {
       key: 'alternatives',
-      title: 'Alternative',
-      subtitle: 'Differs in one point, named below',
-      empty: 'No alternatives.',
+      title: 'Alternativen',
+      note: 'ausserhalb deiner Filter',
+      empty: 'Keine Alternativen.',
     },
   ] as const;
+  protected readonly radii = [5, 10, 25, 50, 100];
+  // TODO: the backend has no filters for these yet (condition, sale mode, "Nur" flags); wire them up once SearchRequirements has them.
+  protected readonly conditionOptions = Object.values(CONDITION_LABELS);
+  protected readonly modeOptions = ['Festpreis', 'Preisvorschlag', 'Auktion'];
+  protected readonly onlyOptions = ['Getestet, funktioniert', 'Grüne Wahl', 'Geprüfte Verkäufer'];
 
   protected readonly text = signal('');
   protected readonly loading = signal(false);
@@ -199,26 +158,35 @@ export class Find {
   protected readonly category = signal<string | null>(null);
   protected readonly budget = signal<number | null>(null);
   protected readonly postcode = signal('');
+  protected readonly radius = signal<number | null>(null);
   protected readonly keywords = signal('');
   protected readonly acceptUnknown = signal(true);
   protected readonly matching = signal(false);
   protected readonly results = signal<Results | null>(null);
   protected readonly progress = signal('');
+  private initial: SearchRequirements | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
+
+  constructor() {
+    // The header and the landing page search by navigating to /find?q=…
+    inject(ActivatedRoute)
+      .queryParamMap.pipe(takeUntilDestroyed())
+      .subscribe((params) => {
+        const q = params.get('q')?.trim();
+        if (!q) return;
+        this.text.set(q);
+        this.find();
+      });
+  }
 
   find(): void {
     if (this.loading() || !this.text().trim()) return;
     this.loading.set(true);
-    this.status('Reading your wish…', 'Turning it into requirements…');
+    this.status('Lese deinen Wunsch…', 'Mache Anforderungen daraus…');
     this.search.create({ body: { text: this.text() } }).subscribe({
       next: (req) => {
-        this.mustHave.set(req.mustHave);
-        this.niceToHave.set(req.niceToHave);
-        this.category.set(req.category ?? null);
-        this.budget.set(req.maxBudgetChf ?? null);
-        this.postcode.set(req.postcode ?? '');
-        this.keywords.set(req.keywords.join(', '));
-        this.acceptUnknown.set(req.acceptUnknown ?? true);
+        this.initial = req;
+        this.apply(req);
         this.results.set(null);
         this.searched.set(true);
         this.loading.set(false);
@@ -231,6 +199,22 @@ export class Find {
     });
   }
 
+  /** "Filter zurücksetzen": back to what the assistant read from the sentence. */
+  protected reset(): void {
+    if (this.initial) this.apply(this.initial);
+  }
+
+  private apply(req: SearchRequirements): void {
+    this.mustHave.set(req.mustHave);
+    this.niceToHave.set(req.niceToHave);
+    this.category.set(req.category ?? null);
+    this.budget.set(req.maxBudgetChf ?? null);
+    this.postcode.set(req.postcode ?? '');
+    this.radius.set(req.maxDistanceKm ?? null);
+    this.keywords.set(req.keywords.join(', '));
+    this.acceptUnknown.set(req.acceptUnknown ?? true);
+  }
+
   move(r: Requirement, from: Row): void {
     const to: Row = from === 'mustHave' ? 'niceToHave' : 'mustHave';
     this[from].update((list) => list.filter((x) => x !== r));
@@ -241,20 +225,26 @@ export class Find {
     this[from].update((list) => list.filter((x) => x !== r));
   }
 
+  protected clearRegion(): void {
+    this.postcode.set('');
+    this.radius.set(null);
+  }
+
   showMatches(): void {
     if (this.matching()) return;
     this.matching.set(true);
-    this.status('Searching our listings…', 'Comparing listings with your requirements…');
+    this.status('Durchsuche die Inserate…', 'Vergleiche die Inserate mit deinen Anforderungen…');
     const body = {
       mustHave: this.mustHave(),
       niceToHave: this.niceToHave(),
-      category: this.category(),
+      category: this.category()?.trim() || null,
       keywords: this.keywords()
         .split(',')
         .map((k) => k.trim().toLowerCase())
         .filter((k) => k),
       maxBudgetChf: this.budget() ?? undefined,
       postcode: this.postcode().trim() || undefined,
+      maxDistanceKm: this.radius() ?? undefined,
       acceptUnknown: this.acceptUnknown(),
     };
     this.search.matches({ body }).subscribe({
@@ -286,11 +276,29 @@ export class Find {
     return this[row]();
   }
 
-  protected prefix(r: Requirement): string {
-    return r.comparison === 'AT_LEAST' ? '≥ ' : r.comparison === 'AT_MOST' ? '≤ ' : '';
+  protected label(r: Requirement): string {
+    const prefix = r.comparison === 'AT_LEAST' ? '≥ ' : r.comparison === 'AT_MOST' ? '≤ ' : '';
+    return `${r.attribute}: ${prefix}${r.value}`;
   }
 
-  protected condition(m: SearchMatch): string {
-    return CONDITIONS[m.listing?.condition ?? ''] ?? '';
+  protected budgetLabel(): string {
+    return `Bis ${chf(this.budget() ?? 0)}`;
+  }
+
+  protected regionLabel(): string {
+    const pc = this.postcode().trim();
+    return this.radius() ? `${this.radius()} km um ${pc}` : pc;
+  }
+
+  protected total(res: Results): number {
+    return res.confirmed.length + res.possible.length + res.alternatives.length;
+  }
+
+  /** The card's extra line: why it is in this group. */
+  protected why(m: SearchMatch, group: keyof Omit<Results, 'compared'>): string {
+    if (group === 'possible' && m.missingDetails?.length)
+      return `Nicht angegeben: ${m.missingDetails.join(', ')}`;
+    if (group === 'alternatives' && m.differences?.length) return m.differences.join(', ');
+    return m.reason ?? '';
   }
 }

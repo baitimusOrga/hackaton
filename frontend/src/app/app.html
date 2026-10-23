@@ -1,39 +1,15 @@
-<header
-  class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4"
->
-  <a routerLink="/" class="text-xl font-semibold">hackaton</a>
-  <nav aria-label="Main navigation" class="flex flex-wrap items-center gap-4">
-    <a
-      routerLink="/"
-      routerLinkActive="font-semibold underline"
-      [routerLinkActiveOptions]="{ exact: true }"
-      >Discover</a
-    >
-    <a routerLink="/find" routerLinkActive="font-semibold underline">Find</a>
-    <a routerLink="/sell" routerLinkActive="font-semibold underline">Sell</a>
-    <a routerLink="/business" routerLinkActive="font-semibold underline">Business</a>
-    @if (auth.user(); as user) {
-      <span>{{ user.name }}</span>
-      <button
-        type="button"
-        (click)="logout()"
-        [disabled]="signingOut()"
-        class="cursor-pointer rounded-md bg-teal-800 px-4 py-2 text-white"
-      >
-        Log out
-      </button>
-    } @else {
-      <a routerLink="/login">Log in</a>
-      <a routerLink="/register">Create account</a>
-    }
-  </nav>
-</header>
-<main>
+<app-header />
+<main class="zw-main">
   @if (errors.message(); as message) {
-    <div class="error-banner" role="alert">
-      <span>{{ message }}</span>
-      <button type="button" (click)="errors.dismiss()">Close</button>
+    <div class="zw-container">
+      <div class="zw-error" role="alert">
+        <span>{{ message }}</span>
+        <button type="button" class="zw-btn zw-btn--sm" (click)="errors.dismiss()">
+          Schliessen
+        </button>
+      </div>
     </div>
   }
   <router-outlet />
 </main>
+<app-footer />

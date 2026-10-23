@@ -83,12 +83,12 @@ describe('BusinessProject', () => {
     const badges = Array.from(element.querySelectorAll('[data-testid="badge"]')).map((b) =>
       b.textContent!.trim(),
     );
-    expect(badges).toEqual(['Provisional', 'Confirmed']);
+    expect(badges).toEqual(['Provisorisch', 'Bestätigt']);
     const routes = element.querySelectorAll('[data-testid="route"]');
     expect(routes).toHaveLength(3);
-    expect(routes[1].textContent).toContain('Recommended');
-    expect(routes[2].textContent).toContain('Fixed offer');
-    expect(element.textContent).toContain('30 days left');
+    expect(routes[1].textContent).toContain('Empfohlen');
+    expect(routes[2].textContent).toContain('Festes Angebot');
+    expect(element.textContent).toContain('noch 30 Tage');
   });
 
   it('publishes the selected items', async () => {
@@ -99,7 +99,7 @@ describe('BusinessProject', () => {
     boxes[1].click();
     await fixture.whenStable();
     const publish = Array.from(element.querySelectorAll('button')).find((b) =>
-      b.textContent!.includes('Publish 1 items'),
+      b.textContent!.replace(/\s+/g, ' ').includes('1 Position veröffentlichen'),
     )!;
     publish.click();
     expect(publishItems).toHaveBeenCalledWith({ id: 3, body: { itemIds: [2] } });
@@ -113,7 +113,7 @@ describe('BusinessProject', () => {
     price.dispatchEvent(new Event('change'));
     expect(updateItem.mock.calls[0][0].body.unitPriceChf).toBe(80);
     expect(element.querySelector('[data-testid="price"]')!.textContent).toContain(
-      'Estimate CHF 100',
+      'Schätzung CHF 100.–',
     );
   });
 });

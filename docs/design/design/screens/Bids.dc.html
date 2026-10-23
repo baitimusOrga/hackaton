@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Gebote – iMac 27" Auktion</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/zweit/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg-000:#fbfaf7;--bg-100:#edebe5;--bg-900:#1e1d1a;--ink:#1e1d1a;--ink-muted:#66625a;--ink-inverse:#fbfaf7;--line:#1e1d1a;--line-soft:#dcd9d1;--blue:#1f4fd6;--on-blue:#ffffff;--blue-text:#1a42b5;--green-text:#185e53;--focus:#1e1d1a;--danger:#a3101e;--overlay:#1e1d1ab3;--font-sans:"Inter",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--space-16:64px;--radius-0:0;--radius-1:2px;--border-1:1px;--border-2:2px}
+body{margin:0;background:#605f5c}
+a{color:#1e1d1a}a:hover{color:#1a42b5}
+.zw-dlg{width:100%;max-width:600px;background:#fbfaf7;border:1px solid #dcd9d1;border-radius:2px;box-sizing:border-box;padding:32px 40px 40px;display:flex;flex-direction:column;gap:24px}
+.zw-x{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;color:#1e1d1a;margin-right:-12px;margin-left:auto}
+.zw-x svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5}
+.zw-bid{display:grid;grid-template-columns:110px 1fr auto;gap:4px 16px;align-items:baseline;padding:10px 0;border-bottom:1px solid #dcd9d1;font-size:14px;line-height:20px;color:#66625a}
+.zw-bid:last-child{border-bottom:0}
+.zw-bid .a{font-size:16px;line-height:24px;font-weight:700;font-variant-numeric:tabular-nums;color:#1e1d1a}
+.zw-bid .w{color:#1e1d1a}
+.zw-bid--top .a{color:#1a42b5}
+.zw-bid--me .w{font-weight:600}
+</style>
+</helmet>
+<div class="zw" style="min-height: 100%; background: #605f5c; color: #1e1d1a; font-family: Inter, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; padding: 48px 16px; box-sizing: border-box;">
+  <div class="zw-dlg" role="dialog" aria-labelledby="bh">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <h1 id="bh" style="margin: 0; font-size: 24px; line-height: 28px; font-weight: 700;">7 Gebote</h1>
+      <span class="zw-timer" role="timer" aria-live="off"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="zw-timer__label">Endet in</span><span class="zw-timer__value">02:14:09</span></span>
+      <a href="DetailAuction.dc.html" class="zw-x" aria-label="Schliessen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></a>
+    </div>
+    <p style="margin: 0; font-size: 14px; line-height: 20px; color: #66625a;">iMac 27" Retina 5K 2017 · Startpreis CHF 1.– · Schritte CHF 10.– · 3 Bieter</p>
+
+    <div style="display: flex; flex-direction: column;">
+      <div class="zw-bid zw-bid--top"><span class="a">CHF 310.–</span><span class="w">m···a</span><span>heute 19:42 · automatisch</span></div>
+      <div class="zw-bid zw-bid--me"><span class="a">CHF 300.–</span><span class="w">Du <span style="color: #a3101e; font-weight: 500;">· überboten</span></span><span>heute 19:42 · dein Maximum</span></div>
+      <div class="zw-bid"><span class="a">CHF 290.–</span><span class="w">m···a</span><span>heute 19:41</span></div>
+      <div class="zw-bid zw-bid--me"><span class="a">CHF 250.–</span><span class="w">Du</span><span>gestern 22:10 · automatisch</span></div>
+      <div class="zw-bid"><span class="a">CHF 240.–</span><span class="w">k···7</span><span>gestern 21:05</span></div>
+      <div class="zw-bid zw-bid--me"><span class="a">CHF 130.–</span><span class="w">Du</span><span>gestern 20:58</span></div>
+      <div class="zw-bid"><span class="a">CHF 120.–</span><span class="w">k···7</span><span>22.10., 18:30</span></div>
+    </div>
+
+    <p style="margin: 0; font-size: 14px; line-height: 20px; color: #66625a;">Bieter sind anonym. «Automatisch» heisst: Wir haben für diese Person bis zu ihrem geheimen Maximum nachgeboten. Maxima sieht niemand, auch der Verkäufer nicht.</p>
+
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <a href="#" style="font-size: 14px; font-weight: 600;">Auffälliges melden</a>
+      <a href="DetailAuction.dc.html" class="zw-btn zw-btn--bid" style="margin-left: auto;"><span>Jetzt bieten</span></a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
