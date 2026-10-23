@@ -4,6 +4,7 @@
 import { SearchMatch } from '../models/search-match';
 export interface SearchResults {
   alternatives?: Array<SearchMatch>;
+  compared?: number;
   confirmed?: Array<SearchMatch>;
   possible?: Array<SearchMatch>;
 }
