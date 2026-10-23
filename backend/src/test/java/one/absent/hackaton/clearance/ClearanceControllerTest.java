@@ -72,6 +72,16 @@ class ClearanceControllerTest {
                 .andReturn().getResponse().getContentAsString();
     }
 
+    private void setPrice(long id, long itemId, String price) throws Exception {
+        String update = """
+                {"name":"Dell monitors","category":"Monitors","quantity":12,"quantityConfirmed":true,
+                 "condition":"GOOD","notes":"","unitPriceChf":%s}
+                """.formatted(price);
+        mvc.perform(put(BASE + "/" + id + "/items/" + itemId).with(owner())
+                        .contentType(MediaType.APPLICATION_JSON).content(update))
+                .andExpect(status().isOk());
+    }
+
     private long firstItemId(String detail) {
         return json.readTree(detail).path("items").get(0).path("id").asLong();
     }
@@ -130,6 +140,24 @@ class ClearanceControllerTest {
                         .with(owner()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Photos must be JPEG, PNG, GIF or WebP images."));
+        mvc.perform(multipart(BASE + "/" + id + "/items/extract")
+                        .file(new MockMultipartFile("photos", "a.jpg", null, new byte[] {1}))
+                        .with(owner()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Photos must be JPEG, PNG, GIF or WebP images."));
+    }
+
+    @Test void unknownCategoryOnUpdateIsBadRequest() throws Exception {
+        long id = createProject(30);
+        long itemId = firstItemId(extract(id));
+        String update = """
+                {"name":"Dell monitors","category":"Weapons","quantity":10,"quantityConfirmed":false,
+                 "condition":"USED","notes":""}
+                """;
+        mvc.perform(put(BASE + "/" + id + "/items/" + itemId).with(owner())
+                        .contentType(MediaType.APPLICATION_JSON).content(update))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Choose one of the listed categories."));
     }
 
     @Test void updateItemAndConfirmQuantities() throws Exception {
@@ -170,15 +198,26 @@ class ClearanceControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content(publish))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("Please confirm the quantity of Dell P2419H 24\" monitors first."));
+        mvc.perform(post(BASE + "/" + id + "/items/confirm").with(owner())).andExpect(status().isOk());
+        mvc.perform(post(BASE + "/" + id + "/publish").with(owner())
+                        .contentType(MediaType.APPLICATION_JSON).content(publish))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Please set the price per piece of Dell P2419H 24\" monitors "
+                        + "first; the estimate is only a suggestion."));
     }
 
     @Test void publishCreatesListingsWithCompanyAsSeller() throws Exception {
         long id = createProject(30);
         String detail = extract(id);
         long itemId = firstItemId(detail);
-        mvc.perform(post(BASE + "/" + id + "/items/confirm").with(owner())).andExpect(status().isOk());
         mvc.perform(put(BASE + "/" + id + "/route").with(owner())
                 .contentType(MediaType.APPLICATION_JSON).content("{\"route\":\"SELF_SERVICE\"}"));
+        setPrice(id, itemId, "77.50");
+        mvc.perform(post(BASE + "/" + id + "/items/confirm").with(owner()))
+                .andExpect(jsonPath("$.items[0].unitPriceChf").value(77.5))
+                .andExpect(jsonPath("$.items[0].priceConfirmed").value(true))
+                .andExpect(jsonPath("$.items[0].estimatedTotalChf").value(930))
+                .andExpect(jsonPath("$.items[1].priceConfirmed").value(false));
         String publish = "{\"itemIds\":[" + itemId + "]}";
         String response = mvc.perform(post(BASE + "/" + id + "/publish").with(owner())
                         .contentType(MediaType.APPLICATION_JSON).content(publish))
@@ -193,6 +232,7 @@ class ClearanceControllerTest {
         mvc.perform(get("/api/listings/" + listingId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sellerName").value("Muster Treuhand AG"))
+                .andExpect(jsonPath("$.priceChf").value(77.5))
                 .andExpect(jsonPath("$.postcode").value("8004"));
         mvc.perform(get("/api/listings"))
                 .andExpect(jsonPath("$[?(@.id == %d)]".formatted(listingId)).exists());

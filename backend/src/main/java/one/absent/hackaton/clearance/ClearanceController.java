@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.clearance.ClearanceDtos.*;
+import one.absent.hackaton.listing.Categories;
 import one.absent.hackaton.listing.Listing;
 import one.absent.hackaton.listing.ListingRepository;
 import org.springframework.http.HttpStatus;
@@ -88,7 +89,7 @@ public class ClearanceController {
             throw status(HttpStatus.BAD_REQUEST, "Please add at most 5 photos.");
         }
         for (MultipartFile file : files) {
-            if (!IMAGE_TYPES.contains(file.getContentType())) {
+            if (file.getContentType() == null || !IMAGE_TYPES.contains(file.getContentType())) {
                 throw status(HttpStatus.BAD_REQUEST, "Photos must be JPEG, PNG, GIF or WebP images.");
             }
             if (file.isEmpty() || file.getSize() > MAX_BYTES) {
@@ -107,13 +108,18 @@ public class ClearanceController {
         ClearanceProject project = project(id, user);
         ClearanceItem item = item(project, itemId);
         requireUnlisted(item);
+        String category = request.category().strip();
+        if (!Categories.ALL.contains(category)) {
+            throw status(HttpStatus.BAD_REQUEST, "Choose one of the listed categories.");
+        }
         item.setName(request.name().strip());
-        item.setCategory(request.category().strip());
+        item.setCategory(category);
         item.setQuantity(request.quantity());
         item.setQuantityConfirmed(request.quantityConfirmed());
         item.setCondition(request.condition());
         item.setNotes(ClearanceService.blankToNull(request.notes()));
-        item.setEstimatedUnitChf(service.estimateUnit(item));
+        item.setEstimatedUnitChf(service.estimateUnit(item, user.getSubject()));
+        item.setUnitPriceChf(request.unitPriceChf());
         return service.detail(project);
     }
 
@@ -159,6 +165,10 @@ public class ClearanceController {
             if (!item.isQuantityConfirmed()) {
                 throw status(HttpStatus.CONFLICT, "Please confirm the quantity of " + item.getName() + " first.");
             }
+            if (item.getUnitPriceChf() == null) {
+                throw status(HttpStatus.CONFLICT, "Please set the price per piece of " + item.getName()
+                        + " first; the estimate is only a suggestion.");
+            }
         }
         for (ClearanceItem item : selected) {
             item.setListingId(listings.save(listing(project, item, user.getSubject())).getId());
@@ -174,7 +184,7 @@ public class ClearanceController {
                 + " pieces, price per piece. From the office clearance of " + project.getCompanyName() + ".", 4000));
         listing.setCategory(item.getCategory());
         listing.setCondition(item.getCondition());
-        listing.setPriceChf(item.getEstimatedUnitChf());
+        listing.setPriceChf(item.getUnitPriceChf());
         listing.setPostcode(project.getPostcode());
         listing.setLocality(project.getLocality());
         listing.setCreatedAt(Instant.now());

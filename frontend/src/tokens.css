@@ -1,0 +1,103 @@
+/* Zweit design tokens, generated from docs/design/design-system/tokens.json. */
+:root {
+  --bg-000: #fbfaf7;
+  --bg-100: #edebe5;
+  --bg-900: #1e1d1a;
+  --ink: #1e1d1a;
+  --ink-muted: #66625a;
+  --ink-inverse: #fbfaf7;
+  --line: #1e1d1a;
+  --line-soft: #dcd9d1;
+  --blue: #1f4fd6;
+  --on-blue: #ffffff;
+  --blue-text: #1a42b5;
+  --green-text: #185e53;
+  --focus: #1e1d1a;
+  --danger: #a3101e;
+  --overlay: #1e1d1ab3;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-0: 0;
+  --radius-1: 2px;
+  --border-1: 1px;
+  --border-2: 2px;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg-000: #161513;
+  --bg-100: #232120;
+  --bg-900: #f3f1ec;
+  --ink: #f3f1ec;
+  --ink-muted: #aaa49b;
+  --ink-inverse: #161513;
+  --line: #f3f1ec;
+  --line-soft: #3b3834;
+  --blue: #6a95ff;
+  --on-blue: #0b1838;
+  --blue-text: #9db9ff;
+  --green-text: #86cbbd;
+  --focus: #6a95ff;
+  --danger: #ff8a93;
+  --overlay: #000000cc;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-000);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 26px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Type scale from tokens.json: h1 page titles, h2 section titles, h3 group and dialog titles. */
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+h2 {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 700;
+}
+h3 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+a {
+  color: var(--ink);
+}
+a:hover {
+  color: var(--blue-text);
+}
+
+:focus-visible {
+  outline: var(--border-2) solid var(--focus);
+  outline-offset: 2px;
+}

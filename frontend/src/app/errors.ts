@@ -38,7 +38,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
 export function messageOf(err: HttpErrorResponse): string {
   if (err.status === 0) {
-    return 'The server is not reachable.';
+    // TODO: translate backend Problem Details too once i18n (DE/FR/IT/EN) exists.
+    return 'Der Server ist gerade nicht erreichbar.';
   }
   const problem = (err.error ?? {}) as Problem;
   return problem.detail ?? problem.title ?? err.message;

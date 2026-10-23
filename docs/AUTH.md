@@ -20,6 +20,10 @@ pnpm dev
 | `BETTER_AUTH_URL` | `http://localhost:4200`, the public frontend origin |
 | `DATABASE_URL` | `postgres://hackaton:hackaton@localhost:5432/hackaton` |
 | `PORT` | `3000` |
+| `AUTH_TRUSTED_PROXIES` | Optional. Comma-separated IPs/CIDRs of the proxies in front of the service (Traefik) |
+| `AUTH_IP_HEADER` | Optional. Header carrying the client IP, e.g. `cf-connecting-ip` behind Cloudflare |
+
+Rate limiting is keyed on the client IP. Better Auth cannot resolve the IP from a multi-hop `X-Forwarded-For` unless it knows the proxies, and then all requests share one `no-trusted-ip` bucket, i.e. one global limiter. In staging/prod, log the headers that reach the service (for example `curl -H 'X-Forwarded-For: 1.2.3.4' https://<host>/api/auth/ok` and print `req.headers` once) to see what Traefik and Cloudflare send. Then set `AUTH_TRUSTED_PROXIES` to the proxy ranges (the chain is stripped from the right) and/or `AUTH_IP_HEADER` to the header Cloudflare sets. Only trust a header that clients cannot forge, i.e. one the edge always overwrites.
 
 The service creates schema `auth` and applies Better Auth's own migrations before listening. An advisory lock serializes concurrent startup migrations. Flyway continues to manage only the backend's public schema.
 

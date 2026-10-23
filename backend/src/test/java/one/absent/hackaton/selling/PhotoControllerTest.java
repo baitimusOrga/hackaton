@@ -6,6 +6,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import one.absent.hackaton.listing.ListingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +23,11 @@ import tools.jackson.databind.json.JsonMapper;
 @ActiveProfiles("test")
 @Transactional
 class PhotoControllerTest {
-    static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', 1, 2, 3};
+    static final byte[] PNG = DraftControllerTest.image("png");
     @Autowired WebApplicationContext context;
     @Autowired PhotoRepository photos;
     @Autowired JsonMapper json;
+    @Autowired ListingRepository listings;
     MockMvc mvc;
 
     @BeforeEach void setup() {
@@ -36,7 +38,7 @@ class PhotoControllerTest {
         return new MockMultipartFile("photos", "item", type, PNG);
     }
 
-    @Test void uploadStoresEachPhotoOnceForTheSellerAndServesIt() throws Exception {
+    @Test void uploadStoresEachPhotoOnceAndServesItOnlyOncePublished() throws Exception {
         long before = photos.count();
         String body = mvc.perform(multipart("/api/photos").file(photo("image/png")).file(photo("image/png"))
                         .with(jwt().jwt(j -> j.subject("seller"))))
@@ -44,12 +46,17 @@ class PhotoControllerTest {
                 .andReturn().getResponse().getContentAsString();
         assertThat(photos.count()).isEqualTo(before + 2);
         long id = json.readTree(body).get(0).asLong();
-        assertThat(photos.findById(id).orElseThrow().getSellerId()).isEqualTo("seller");
+        Photo photo = photos.findById(id).orElseThrow();
+        assertThat(photo.getSellerId()).isEqualTo("seller");
 
+        // a draft photo is not public, not even for its seller
+        mvc.perform(get("/api/photos/" + id).with(jwt().jwt(j -> j.subject("seller"))))
+                .andExpect(status().isNotFound());
+        photo.setListingId(listings.findAll().getFirst().getId());
         mvc.perform(get("/api/photos/" + id))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("image/png"))
-                .andExpect(content().bytes(PNG))
+                .andExpect(content().bytes(photo.getData()))
                 .andExpect(header().string("Cache-Control", "max-age=86400, public"));
     }
 
@@ -58,6 +65,21 @@ class PhotoControllerTest {
                         .with(jwt().jwt(j -> j.subject("seller"))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Photos must be JPEG, PNG, GIF or WebP images."));
+    }
+
+    @Test void missingContentTypeIsRejected() throws Exception {
+        mvc.perform(multipart("/api/photos").file(new MockMultipartFile("photos", "item", null, PNG))
+                        .with(jwt().jwt(j -> j.subject("seller"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Photos must be JPEG, PNG, GIF or WebP images."));
+    }
+
+    @Test void corruptImageIsRejected() throws Exception {
+        mvc.perform(multipart("/api/photos")
+                        .file(new MockMultipartFile("photos", "item", "image/png", new byte[] {(byte) 0x89, 'P', 'N', 'G'}))
+                        .with(jwt().jwt(j -> j.subject("seller"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Unsupported or corrupt image"));
     }
 
     @Test void uploadRequiresAuthentication() throws Exception {

@@ -21,10 +21,19 @@ on:
         options: [none, staging, prod]
         default: none
 
+permissions:
+  contents: read
+
+# Pins: the reusable workflows are pinned to a commit SHA. To bump: resolve the new tag with
+#   gh api repos/baitimusOrga/platform/git/matching-refs/tags/v1 --jq '.[].object.sha'
+# review the diff in baitimusOrga/platform, then replace the SHA in all four `uses:` lines.
+# `secrets: inherit` stays: env-sync reads the whole secrets context (toJSON(secrets)) and
+# neither workflow declares on.workflow_call.secrets, so an explicit mapping is not possible.
+
 jobs:
   auth:
     if: github.event_name != 'workflow_dispatch' || inputs.promote != ''
-    uses: baitimusOrga/platform/.github/workflows/docker-app.yml@v1
+    uses: baitimusOrga/platform/.github/workflows/docker-app.yml@65c1373a14f8f498e9848c0df72498a704ffed93 # v1
     with:
       image: hackaton-auth
       context: auth
@@ -34,7 +43,7 @@ jobs:
 
   backend:
     if: github.event_name != 'workflow_dispatch' || inputs.promote != ''
-    uses: baitimusOrga/platform/.github/workflows/docker-app.yml@v1
+    uses: baitimusOrga/platform/.github/workflows/docker-app.yml@65c1373a14f8f498e9848c0df72498a704ffed93 # v1
     with:
       image: hackaton-backend
       context: backend
@@ -44,7 +53,7 @@ jobs:
 
   frontend:
     if: github.event_name != 'workflow_dispatch' || inputs.promote != ''
-    uses: baitimusOrga/platform/.github/workflows/docker-app.yml@v1
+    uses: baitimusOrga/platform/.github/workflows/docker-app.yml@65c1373a14f8f498e9848c0df72498a704ffed93 # v1
     with:
       image: hackaton-frontend
       context: frontend
@@ -54,7 +63,7 @@ jobs:
 
   dotenv:
     if: github.event_name != 'workflow_dispatch' || inputs.sync != 'none'
-    uses: baitimusOrga/platform/.github/workflows/env-sync.yml@v1
+    uses: baitimusOrga/platform/.github/workflows/env-sync.yml@65c1373a14f8f498e9848c0df72498a704ffed93 # v1
     with:
       app: hackaton
       environment: ${{ github.event_name == 'workflow_dispatch' && inputs.sync || (github.ref_type == 'tag' && 'prod' || 'staging') }}

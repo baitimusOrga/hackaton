@@ -63,8 +63,16 @@ public class PriceEstimator {
         }
     }
 
-    // shortcut: filters every listing in memory, move to a query once there are thousands
     public PriceEstimate estimate(String category, String title, List<DraftFact> facts, Condition condition) {
+        return estimate(category, title, facts, condition, null);
+    }
+
+    /**
+     * {@code sellerId}'s own listings are never evidence for their price. Without it, all listings count.
+     * shortcut: filters every listing in memory, move to a query once there are thousands
+     */
+    public PriceEstimate estimate(String category, String title, List<DraftFact> facts, Condition condition,
+                                  String sellerId) {
         List<DraftFact> known = facts == null ? List.of() : facts;
         Optional<DraftFact> brandFact = fact(known, "Brand"), modelFact = fact(known, "Model");
         String brand = brandFact.map(DraftFact::value).orElse(null);
@@ -78,8 +86,14 @@ public class PriceEstimator {
         Set<String> modelTokens = model == null ? Set.of() : tokens(model);
         Set<String> draftWithModel = union(draftTokens, modelTokens);
 
-        List<Match> matches = listings.findAll().stream()
+        List<Listing> inCategory = listings.findAll().stream()
                 .filter(l -> l.getCategory().equalsIgnoreCase(category))
+                .filter(l -> sellerId == null || !sellerId.equals(l.getSellerId()))
+                .toList();
+        BigDecimal median = inCategory.size() < 3 ? null
+                : percentile(inCategory.stream().map(Listing::getPriceChf).sorted().toList(), 0.5);
+        List<Match> matches = inCategory.stream()
+                .filter(l -> l.getStatus() == ListingStatus.SOLD || plausible(l.getPriceChf(), median))
                 .map(l -> match(l, brand, model, modelTokens, draftTokens, draftWithModel))
                 .flatMap(Optional::stream)
                 .toList();
@@ -111,7 +125,10 @@ public class PriceEstimator {
         if (wide) {
             confidence = PriceConfidence.values()[Math.max(0, confidence.ordinal() - 1)];
         }
-        if (suggested && confidence == PriceConfidence.HIGH) {
+        // a seller with a few accounts must not make an estimate look certain; seed data (no seller) is one source
+        long sources = used.stream().map(m -> Objects.requireNonNullElse(m.listing().getSellerId(), "")).distinct()
+                .count();
+        if ((suggested || sources <= 2) && confidence == PriceConfidence.HIGH) {
             confidence = PriceConfidence.MEDIUM;
         }
 
@@ -126,6 +143,13 @@ public class PriceEstimator {
                 .map(m -> evidence(m, target)).toList();
         return new PriceEstimate(low, mid, high, confidence, confidence == PriceConfidence.LOW, evidence,
                 explanation, target, used.size(), soldCount);
+    }
+
+    /** Asking prices outside 0.2×–5× of the category median are typos or price poisoning, not evidence. */
+    static boolean plausible(BigDecimal price, BigDecimal median) {
+        return median == null || median.signum() == 0
+                || (price.compareTo(median.multiply(new BigDecimal("0.2"))) >= 0
+                && price.compareTo(median.multiply(BigDecimal.valueOf(5))) <= 0);
     }
 
     private static Optional<Match> match(Listing l, String brand, String model, Set<String> modelTokens,

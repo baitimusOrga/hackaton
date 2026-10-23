@@ -10,7 +10,17 @@ export interface ItemView {
   listingId?: (number | null);
   name?: string;
   notes?: (string | null);
+
+  /**
+   * Whether the company set the unit price itself
+   */
+  priceConfirmed?: boolean;
   quantity?: number;
   quantityConfirmed?: boolean;
   status?: 'DRAFT' | 'LISTED' | 'SOLD';
+
+  /**
+   * Price per piece used at publishing: the company's price, else the estimate
+   */
+  unitPriceChf?: number;
 }

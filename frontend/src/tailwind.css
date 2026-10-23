@@ -1,1 +1,20 @@
 @import 'tailwindcss';
+
+/* Utilities for the Zweit tokens in tokens.css, e.g. `bg-sunken text-muted`. */
+@theme inline {
+  --color-paper: var(--bg-000);
+  --color-sunken: var(--bg-100);
+  --color-inverse: var(--bg-900);
+  --color-ink: var(--ink);
+  --color-muted: var(--ink-muted);
+  --color-ink-inverse: var(--ink-inverse);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-blue: var(--blue);
+  --color-on-blue: var(--on-blue);
+  --color-blue-text: var(--blue-text);
+  --color-green-text: var(--green-text);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-sans);
+  --radius-ctl: 2px;
+}

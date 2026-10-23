@@ -52,7 +52,7 @@ public class PhotoController {
             throw badRequest("Please add between 1 and 5 photos.");
         }
         for (MultipartFile file : files) {
-            if (!IMAGE_TYPES.contains(file.getContentType())) {
+            if (file.getContentType() == null || !IMAGE_TYPES.contains(file.getContentType())) {
                 throw badRequest("Photos must be JPEG, PNG, GIF or WebP images.");
             }
             if (file.isEmpty() || file.getSize() > MAX_BYTES) {
@@ -60,13 +60,15 @@ public class PhotoController {
             }
         }
         return files.stream()
-                .map(f -> photos.save(photo(bytes(f), f.getContentType(), seller.getSubject())).getId())
+                .map(f -> photos.save(photo(PhotoImages.stripMetadata(bytes(f), f.getContentType()), f.getContentType(),
+                        seller.getSubject())).getId())
                 .toList();
     }
 
     @GetMapping("/api/photos/{id}")
     public ResponseEntity<byte[]> getPhoto(@PathVariable long id) {
-        Photo photo = photos.findById(id)
+        // only published photos are public; drafts are previewed from local blob URLs in the sell page
+        Photo photo = photos.findById(id).filter(p -> p.getListingId() != null)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Photo not found."));
         byte[] data = photo.getStorageKey() == null ? photo.getData() : storage.get(photo.getStorageKey()).bytes();
         return ResponseEntity.ok()

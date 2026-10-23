@@ -5,40 +5,42 @@ import { of } from 'rxjs';
 import { ListingsService } from '../api/services';
 import { Home } from './home';
 
-describe('Home (Discover)', () => {
-  async function setup(url: string, items: unknown[]) {
+describe('Home', () => {
+  async function setup(items: unknown[]) {
     const list = vi.fn().mockReturnValue(of(items));
     TestBed.configureTestingModule({
       providers: [
-        provideRouter([{ path: '', component: Home }]),
+        provideRouter([
+          { path: '', component: Home },
+          { path: 'find', children: [] },
+        ]),
         { provide: ListingsService, useValue: { list } },
       ],
     });
     const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl(url, Home);
-    return { list, harness, element: harness.routeNativeElement as HTMLElement };
+    await harness.navigateByUrl('/', Home);
+    return { harness, element: harness.routeNativeElement as HTMLElement };
   }
 
-  it('shows a card per listing linking to its detail page', async () => {
-    const { list, element } = await setup('/?category=Monitors', [
+  it('shows new listings as cards linking to their detail page', async () => {
+    const { element } = await setup([
       { id: 2, title: 'Dell monitor', priceChf: 120, condition: 'LIKE_NEW', locality: 'Bern' },
     ]);
-    expect(list).toHaveBeenCalledWith({ category: 'Monitors' });
-    const card = element.querySelector('li a')!;
+    const card = element.querySelector('[aria-labelledby="h-near"] a.zw-card')!;
     expect(card.getAttribute('href')).toBe('/listings/2');
     expect(card.textContent).toContain('Dell monitor');
-    expect(card.textContent).toContain('Like New');
-    expect(element.querySelector<HTMLSelectElement>('select')!.value).toBe('Monitors');
+    expect(card.textContent).toContain('CHF 120.–');
+    expect(card.textContent).toContain('Wie neu · Bern');
   });
 
-  it('reloads with the new filter and keeps the others in the URL', async () => {
-    const { list, harness, element } = await setup('/?q=imac', []);
-    expect(element.textContent).toContain('No listings match your filters.');
-    const maxPrice = element.querySelector<HTMLInputElement>('input[name="maxPrice"]')!;
-    maxPrice.value = '500';
-    maxPrice.dispatchEvent(new Event('change'));
+  it('sends the hero search to the search page', async () => {
+    const { harness, element } = await setup([]);
+    expect(element.textContent).toContain('Noch keine Inserate in deiner Nähe.');
+    const input = element.querySelector<HTMLInputElement>('#hero-q')!;
+    input.value = 'iMac 2017';
+    input.dispatchEvent(new Event('input'));
+    element.querySelector('form')!.dispatchEvent(new Event('submit'));
     await harness.fixture.whenStable();
-    expect(list).toHaveBeenLastCalledWith({ q: 'imac', maxPrice: 500 });
-    expect(TestBed.inject(Router).url).toBe('/?q=imac&maxPrice=500');
+    expect(TestBed.inject(Router).url).toBe('/find?q=iMac%202017');
   });
 });

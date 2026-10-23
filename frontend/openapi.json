@@ -739,6 +739,14 @@
           "estimatedUnitChf" : {
             "type" : "number"
           },
+          "unitPriceChf" : {
+            "type" : "number",
+            "description" : "Price per piece used at publishing: the company's price, else the estimate"
+          },
+          "priceConfirmed" : {
+            "type" : "boolean",
+            "description" : "Whether the company set the unit price itself"
+          },
           "estimatedTotalChf" : {
             "type" : "number"
           },
@@ -886,6 +894,11 @@
             "type" : "string",
             "maxLength" : 1000,
             "minLength" : 0
+          },
+          "unitPriceChf" : {
+            "type" : [ "number", "null" ],
+            "description" : "Price per piece the company sets; null keeps the estimate unconfirmed",
+            "exclusiveMinimum" : 0
           }
         },
         "required" : [ "category", "condition", "name" ]
@@ -906,11 +919,13 @@
         "properties" : {
           "attribute" : {
             "type" : "string",
-            "minLength" : 1
+            "maxLength" : 80,
+            "minLength" : 0
           },
           "value" : {
             "type" : "string",
-            "minLength" : 1
+            "maxLength" : 200,
+            "minLength" : 0
           },
           "comparison" : {
             "type" : [ "string", "null" ],
@@ -926,32 +941,47 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/Requirement"
-            }
+            },
+            "maxItems" : 20,
+            "minItems" : 0
           },
           "niceToHave" : {
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/Requirement"
-            }
+            },
+            "maxItems" : 20,
+            "minItems" : 0
           },
           "category" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "maxLength" : 80,
+            "minLength" : 0
           },
           "keywords" : {
             "type" : "array",
             "items" : {
-              "type" : "string"
-            }
+              "type" : "string",
+              "maxLength" : 80,
+              "minLength" : 0
+            },
+            "maxItems" : 10,
+            "minItems" : 0
           },
           "maxBudgetChf" : {
-            "type" : "number"
+            "type" : "number",
+            "maximum" : 1000000,
+            "minimum" : 0
           },
           "postcode" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "[0-9]{0,4}"
           },
           "maxDistanceKm" : {
             "type" : "integer",
-            "format" : "int32"
+            "format" : "int32",
+            "maximum" : 500,
+            "minimum" : 0
           },
           "acceptUnknown" : {
             "type" : "boolean"

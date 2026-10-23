@@ -44,7 +44,7 @@ export function openGaps(
         cards.push({
           fact: name,
           kind: 'PHOTO',
-          prompt: ai?.prompt ?? 'Please photograph the whole item so its condition is visible',
+          prompt: ai?.prompt ?? 'Fotografiere den ganzen Artikel, damit man den Zustand sieht',
           options: [],
         });
       continue;

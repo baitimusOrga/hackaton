@@ -2,111 +2,135 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Auth, AuthRequestError, safeReturnUrl } from '../auth/auth';
+import { Button } from '../ui/button';
 
+// Native inputs with the zw-field classes instead of <app-input>: the form needs name, autocomplete,
+// required and length validation through ngModel, which app-input does not expose.
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-login',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, Button],
+  styles: `
+    section {
+      max-width: 440px;
+      margin: 0 auto;
+      padding: var(--space-12) 0 var(--space-16);
+    }
+    h1 {
+      margin-bottom: var(--space-6);
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+    .switch {
+      margin-top: var(--space-6);
+    }
+  `,
   template: `
-    <section
-      class="mx-auto my-8 max-w-lg rounded-xl border border-slate-200 bg-white p-7"
-      aria-labelledby="auth-heading"
-    >
-      <h1 id="auth-heading" class="mb-4 text-2xl font-semibold">
-        {{ registering ? 'Create account' : 'Log in' }}
-      </h1>
+    <section aria-labelledby="auth-heading">
+      <h1 id="auth-heading">{{ registering ? 'Registrieren' : 'Anmelden' }}</h1>
       @if (error()) {
-        <p role="alert" class="mb-4 rounded-md bg-red-50 p-3 text-red-800">{{ error() }}</p>
+        <p role="alert" class="zw-error">{{ error() }}</p>
       }
-      <form #form="ngForm" (ngSubmit)="submit(form)" class="grid gap-2">
+      <form #form="ngForm" (ngSubmit)="submit(form)">
         @if (registering) {
-          <label for="name" class="font-semibold">Display name</label>
+          <div class="zw-field">
+            <label for="name" class="zw-label">Anzeigename</label>
+            <input
+              id="name"
+              name="name"
+              class="zw-input"
+              [(ngModel)]="name"
+              #nameField="ngModel"
+              required
+              maxlength="80"
+              autocomplete="nickname"
+              [attr.aria-invalid]="nameField.invalid && (nameField.touched || form.submitted)"
+              aria-describedby="name-error"
+            />
+            <p id="name-error" class="zw-help zw-help--error">
+              @if (nameField.invalid && (nameField.touched || form.submitted)) {
+                Gib einen Anzeigenamen ein.
+              }
+            </p>
+          </div>
+        }
+        <div class="zw-field">
+          <label for="email" class="zw-label">E-Mail</label>
           <input
-            id="name"
-            name="name"
-            [(ngModel)]="name"
-            #nameField="ngModel"
+            id="email"
+            type="email"
+            name="email"
+            class="zw-input"
+            [(ngModel)]="email"
+            #emailField="ngModel"
             required
-            maxlength="80"
-            autocomplete="nickname"
-            class="rounded-md border border-slate-400 p-3"
-            aria-describedby="name-error"
+            email
+            maxlength="254"
+            autocomplete="username"
+            [attr.aria-invalid]="emailField.invalid && (emailField.touched || form.submitted)"
+            aria-describedby="email-error"
           />
-          <span id="name-error" class="text-sm text-red-800">
-            @if (nameField.invalid && (nameField.touched || form.submitted)) {
-              Enter a display name.
+          <p id="email-error" class="zw-help zw-help--error">
+            @if (emailField.invalid && (emailField.touched || form.submitted)) {
+              Gib eine gültige E-Mail-Adresse ein.
             }
-          </span>
-        }
-        <label for="email" class="font-semibold">Email</label>
-        <input
-          id="email"
-          type="email"
-          name="email"
-          [(ngModel)]="email"
-          #emailField="ngModel"
-          required
-          email
-          maxlength="254"
-          autocomplete="username"
-          class="rounded-md border border-slate-400 p-3"
-          aria-describedby="email-error"
-        />
-        <span id="email-error" class="text-sm text-red-800">
-          @if (emailField.invalid && (emailField.touched || form.submitted)) {
-            Enter a valid email address.
-          }
-        </span>
-        <label for="password" class="font-semibold">Password</label>
-        <input
-          id="password"
-          type="password"
-          name="password"
-          [(ngModel)]="password"
-          #passwordField="ngModel"
-          required
-          [minlength]="registering ? 12 : 1"
-          maxlength="128"
-          [autocomplete]="registering ? 'new-password' : 'current-password'"
-          class="rounded-md border border-slate-400 p-3"
-          aria-describedby="password-hint password-error"
-        />
-        @if (registering) {
-          <p id="password-hint" class="muted text-sm">Use 12–128 characters.</p>
-        }
-        <span id="password-error" class="text-sm text-red-800">
-          @if (passwordField.invalid && (passwordField.touched || form.submitted)) {
-            {{ registering ? 'Use at least 12 characters.' : 'Enter your password.' }}
-          }
-        </span>
-        @if (registering) {
-          <label for="confirmation" class="font-semibold">Confirm password</label>
+          </p>
+        </div>
+        <div class="zw-field">
+          <label for="password" class="zw-label">Passwort</label>
           <input
-            id="confirmation"
-            name="confirmation"
+            id="password"
             type="password"
-            [(ngModel)]="confirmation"
+            name="password"
+            class="zw-input"
+            [(ngModel)]="password"
+            #passwordField="ngModel"
             required
+            [minlength]="registering ? 12 : 1"
             maxlength="128"
-            autocomplete="new-password"
-            class="rounded-md border border-slate-400 p-3"
+            [autocomplete]="registering ? 'new-password' : 'current-password'"
+            [attr.aria-invalid]="passwordField.invalid && (passwordField.touched || form.submitted)"
+            aria-describedby="password-hint password-error"
           />
+          @if (registering) {
+            <p id="password-hint" class="zw-help">12 bis 128 Zeichen.</p>
+          }
+          <p id="password-error" class="zw-help zw-help--error">
+            @if (passwordField.invalid && (passwordField.touched || form.submitted)) {
+              {{ registering ? 'Mindestens 12 Zeichen.' : 'Gib dein Passwort ein.' }}
+            }
+          </p>
+        </div>
+        @if (registering) {
+          <div class="zw-field">
+            <label for="confirmation" class="zw-label">Passwort wiederholen</label>
+            <input
+              id="confirmation"
+              name="confirmation"
+              type="password"
+              class="zw-input"
+              [(ngModel)]="confirmation"
+              required
+              maxlength="128"
+              autocomplete="new-password"
+            />
+          </div>
         }
-        <button
-          type="submit"
-          [disabled]="busy()"
-          class="mt-4 cursor-pointer rounded-md bg-teal-800 p-3 text-white disabled:opacity-50"
-        >
-          {{ busy() ? 'Please wait…' : registering ? 'Create account' : 'Log in' }}
+        <button appButton variant="primary" [block]="true" type="submit" [disabled]="busy()">
+          {{ busy() ? 'Einen Moment…' : registering ? 'Konto erstellen' : 'Anmelden' }}
         </button>
       </form>
-      <p class="mt-6">
+      <p class="switch">
+        {{ registering ? 'Schon ein Konto?' : 'Neu bei Zweit?' }}
         <a
+          class="zw-link"
           [routerLink]="registering ? '/login' : '/register'"
           [queryParams]="{ returnUrl }"
-          class="underline"
         >
-          {{ registering ? 'Already registered? Log in' : 'Create an account' }}
+          {{ registering ? 'Anmelden' : 'Registrieren' }}
         </a>
       </p>
     </section>
@@ -130,11 +154,11 @@ export class Login {
     this.error.set('');
     if (form.invalid) {
       form.control.markAllAsTouched();
-      this.error.set('Please check the fields below.');
+      this.error.set('Bitte prüf die markierten Felder.');
       return;
     }
     if (this.registering && this.password !== this.confirmation) {
-      this.error.set('The passwords do not match.');
+      this.error.set('Die Passwörter stimmen nicht überein.');
       return;
     }
     this.busy.set(true);
@@ -146,7 +170,7 @@ export class Login {
       this.error.set(
         error instanceof AuthRequestError
           ? error.message
-          : 'Cannot reach the authentication service. Please try again.',
+          : 'Die Anmeldung ist gerade nicht erreichbar. Versuch es nochmals.',
       );
     } finally {
       this.password = '';

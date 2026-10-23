@@ -10,10 +10,17 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Consumer;
 
+import javax.imageio.ImageIO;
+
 import one.absent.hackaton.ai.AiClient;
+import one.absent.hackaton.listing.ListingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -32,14 +39,26 @@ import org.springframework.web.context.WebApplicationContext;
 @ActiveProfiles("test")
 @Transactional
 class DraftControllerTest {
-    static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', 1, 2, 3};
+    static final byte[] PNG = image("png");
     @Autowired WebApplicationContext context;
     @Autowired PhotoRepository photos;
+    @Autowired ListingRepository listings;
+    @Autowired PhotoCleanup cleanup;
     @MockitoBean AiClient ai;
     MockMvc mvc;
 
     @BeforeEach void setup() {
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+    }
+
+    static byte[] image(String format) {
+        try {
+            var out = new ByteArrayOutputStream();
+            ImageIO.write(new BufferedImage(4, 2, BufferedImage.TYPE_INT_RGB), format, out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     long photoOf(String seller) {
@@ -137,6 +156,27 @@ class DraftControllerTest {
         ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
         verify(ai).ask(anyString(), anyString(), text.capture(), anyList(), anyString(), eq(DraftController.DraftText.class));
         assertThat(text.getValue()).contains("Model: U2719D (SELLER)", "Dell monitor");
+    }
+
+    @Test void cleanupDeletesOnlyOldUnpublishedPhotos() {
+        Instant old = Instant.now().minus(Duration.ofHours(25));
+        Photo orphan = savePhoto(old, null);
+        Photo published = savePhoto(old, listings.findAll().getFirst().getId());
+        Photo recent = savePhoto(Instant.now(), null);
+        cleanup.deleteOrphans();
+        assertThat(photos.findById(orphan.getId())).isEmpty();
+        assertThat(photos.findById(published.getId())).isPresent();
+        assertThat(photos.findById(recent.getId())).isPresent();
+    }
+
+    private Photo savePhoto(Instant createdAt, Long listingId) {
+        var photo = new Photo();
+        photo.setContentType("image/png");
+        photo.setData(PNG);
+        photo.setSellerId("seller");
+        photo.setCreatedAt(createdAt);
+        photo.setListingId(listingId);
+        return photos.save(photo);
     }
 
     @Test void shortTitleCutsAtAWordBoundary() {
