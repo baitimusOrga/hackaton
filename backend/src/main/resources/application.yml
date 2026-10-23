@@ -12,11 +12,6 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate          # the schema belongs to Flyway (src/main/resources/db/migration)
-  servlet:
-    multipart:
-      max-file-size: 5MB
-      max-request-size: 6MB
-
   web:
     error:
       include-message: always           # the frontend shows ResponseStatusException reasons
@@ -49,11 +44,3 @@ app:
     # >= 32 bytes. Dev default only; staging/prod get JWT_SECRET from the .env (env-sync).
     secret: ${JWT_SECRET:dev-only-secret-change-me-dev-only-secret}
     ttl: 7d
-  uploads:
-    dir: ${UPLOAD_DIR:./uploads}
-  seed:
-    demo: ${APP_SEED_DEMO:true}
-    demo-password: ${APP_SEED_DEMO_PASSWORD:demo12345}
-  llm:
-    api-key: ${ANTHROPIC_API_KEY:}
-    model: ${LLM_MODEL:claude-opus-5-5}

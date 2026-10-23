@@ -52,11 +52,6 @@ button:disabled {
   cursor: default;
 }
 
-button.secondary {
-  background: var(--border);
-  color: var(--text);
-}
-
 button.link {
   background: none;
   color: var(--accent);
@@ -83,11 +78,4 @@ textarea {
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface);
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
 }

@@ -7,10 +7,10 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.m2 mvn -B -q package -DskipTests && cp target/hackaton-*.jar /app.jar
 
 FROM eclipse-temurin:21-jre-alpine
-RUN addgroup -S app && adduser -S -G app app && mkdir -p /data/uploads && chown app:app /data/uploads
+RUN addgroup -S app && adduser -S -G app app
 COPY --from=build /app.jar /app/app.jar
 USER app
-ENV UPLOAD_DIR=/data/uploads JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75"
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75"
 EXPOSE 8080
 HEALTHCHECK --interval=15s --start-period=60s CMD wget -qO- http://127.0.0.1:8080/actuator/health/readiness || exit 1
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

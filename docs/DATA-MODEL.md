@@ -10,36 +10,19 @@ Rules:
 
 ## Tables
 
-```mermaid
-erDiagram
-    app_user ||--o{ listing : owns
-    app_user {
-        bigint id PK
-        varchar email "unique, stored lower-case"
-        varchar password_hash "bcrypt"
-        varchar display_name
-        timestamptz created_at
-    }
-    listing {
-        bigint id PK
-        bigint owner_id FK
-        varchar title "max 120"
-        varchar description "max 4000"
-        integer price_cents "null = free"
-        varchar image_key "file name in UPLOAD_DIR, null = no image"
-        timestamptz created_at
-    }
-```
-
-| Table | Entity | Notes |
+| Table | Entity | Columns |
 |---|---|---|
-| `app_user` | `user/User.java` | `user` is a reserved word in Postgres, hence the prefix. Passwords: bcrypt, never returned by the API |
-| `listing` | `listing/Listing.java` | Images are files, not database rows: `image_key` is `<uuid>.<jpg\|png\|webp>` in `UPLOAD_DIR` (a Docker volume on the hosts), served by `GET /api/listings/{id}/image` |
+| `app_user` | `user/User.java` | `id` (identity), `email` (unique, stored lower-case), `password_hash` (bcrypt, never returned by the API), `display_name`, `created_at` |
 
-## Seed data
+`user` is a reserved word in Postgres, hence `app_user`.
 
-`web/DemoData.java` fills an **empty** database (no users yet) with `demo@example.com` and four listings when `APP_SEED_DEMO=true`: locally (password `demo12345`) and on staging (password = secret `STAGING_APP_SEED_DEMO_PASSWORD`). Prod runs with `APP_SEED_DEMO=false`.
+## Migrations so far
+
+| Version | What |
+|---|---|
+| V1 | `app_user`, plus an example table `listing` |
+| V2 | drops `listing` again |
 
 ## Backups
 
-On the app hosts the database container carries the label `backup.dump: postgres`: a `pg_dumpall` every night at 01:30 into `/srv/apps/hackaton/dumps/` (7 kept), then the whole VM goes to PBS. Uploaded images are in the `uploads` volume, which is part of the VM backup.
+On the app hosts the database container carries the label `backup.dump: postgres`: a `pg_dumpall` every night at 01:30 into `/srv/apps/hackaton/dumps/` (7 kept), then the whole VM goes to PBS.
