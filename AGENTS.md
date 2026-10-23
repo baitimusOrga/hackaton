@@ -24,14 +24,14 @@ Run the checks for the side you touched before saying something works:
 
 ```bash
 cd backend && ./mvnw verify            # compile + tests on H2, no Docker; also rewrites frontend/openapi.json
-cd frontend && npm run api && npm run format:check && npx ng lint && npx ng test --watch=false && npx ng build
+cd frontend && pnpm run api && pnpm run format:check && pnpm exec ng lint && pnpm exec ng test --watch=false && pnpm exec ng build
 ```
 
-Changed an endpoint or a DTO? Then `./mvnw verify` + `npm run api` and commit `frontend/openapi.json`
-and `frontend/src/app/api/` with it; CI fails when either is stale. `npm run format` fixes formatting.
+Changed an endpoint or a DTO? Then `./mvnw verify` + `pnpm run api` and commit `frontend/openapi.json`
+and `frontend/src/app/api/` with it; CI fails when either is stale. `pnpm run format` fixes formatting.
 
 Run locally: `cd backend && ./mvnw spring-boot:run` (starts Postgres via Docker) and
-`cd frontend && npm start` (http://localhost:4200, `/api` proxied to :8080).
+`cd frontend && pnpm start` (http://localhost:4200, `/api` proxied to :8080).
 
 ## Rules that are easy to break
 

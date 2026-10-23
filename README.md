@@ -37,12 +37,12 @@ Needs JDK 25, Node 24.15+ (or 22.22.3+) and Docker.
 
 ```bash
 cd backend && ./mvnw spring-boot:run       # API on :8080, starts Postgres from docker-compose.yml
-cd frontend && npm ci && npm start         # http://localhost:4200, /api is proxied to :8080
+cd frontend && pnpm install && pnpm start         # http://localhost:4200, /api is proxied to :8080
 ```
 
 ### IntelliJ
 
-`.run/` holds shared run configurations: `backend` (Maven `spring-boot:run`), `frontend` (`npm start`), `dev` (both at once) and `backend tests` (`mvn verify`). They contain no machine-specific paths, so each developer sets these once in their own IDE (`.idea/` isn't committed):
+`.run/` holds shared run configurations: `backend` (Maven `spring-boot:run`), `frontend` (`pnpm start`), `dev` (both at once) and `backend tests` (`mvn verify`). They contain no machine-specific paths, so each developer sets these once in their own IDE (`.idea/` isn't committed):
 
 - **Project SDK**: *File → Project Structure → Project → SDK* = a JDK 25. Without it `backend` fails with "Project JDK is not specified".
 - **Node interpreter**: *Settings → Languages & Frameworks → Node.js* = Node 24.15+ (or 22.22.3+). `frontend` uses the project's interpreter.
@@ -60,8 +60,8 @@ Reset the local database: `docker compose down -v`.
 
 - Tailwind CSS 4, Lombok (entities only), Spring DevTools.
 - Errors are Problem Details (`application/problem+json`), shown by a global banner in the frontend.
-- API client generated from OpenAPI: after an API change run `./mvnw verify` (backend) and `npm run api` (frontend), commit both.
-- CI also checks Prettier (`npm run format`) and that spec and client are current.
+- API client generated from OpenAPI: after an API change run `./mvnw verify` (backend) and `pnpm run api` (frontend), commit both.
+- CI also checks Prettier (`pnpm run format`) and that spec and client are current.
 - Root `pom.xml` so IntelliJ imports the backend as a Maven project.
 - Agents: [`AGENTS.md`](AGENTS.md). Once per clone: `git config core.hooksPath .githooks` (blocks pushes to `main`).
 

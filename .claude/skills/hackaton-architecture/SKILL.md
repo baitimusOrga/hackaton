@@ -24,7 +24,7 @@ backend/src/main/resources/db/migration/V<n>__<what>.sql
 
 frontend/
   openapi.json             the API contract, written by the backend's OpenApiSpecTest (committed)
-  src/app/api/             generated client (npm run api) — never edit by hand
+  src/app/api/             generated client (pnpm run api) — never edit by hand
   src/app/errors.ts        error interceptor + ErrorBanner
   src/app/pages/<page>.ts  one routed standalone component per page (lazy in app.routes.ts)
   src/app/components/      shared presentational components, once a second page needs one
@@ -52,7 +52,7 @@ feature packages keep their merges apart.
    `ApiExceptionHandler` turns it, validation errors and anything unexpected into Problem Details.
 6. **Test** in `backend/src/test/java/...` with MockMvc like `ApiTest` (`@SpringBootTest`,
    `@ActiveProfiles("test")`). `./mvnw verify` needs no Docker and rewrites `frontend/openapi.json`.
-7. **Client**: `cd frontend && npm run api` regenerates `src/app/api/`. Commit both with the change.
+7. **Client**: `cd frontend && pnpm run api` regenerates `src/app/api/`. Commit both with the change.
 8. **Page** in `pages/<page>.ts`, registered lazily in `app.routes.ts`. Inject the generated
    service; reads with `toSignal(service.list())` or `rxResource`, writes with `subscribe`. State
    in signals (`signal`, `computed`), new control flow (`@if`, `@for`), standalone components only.

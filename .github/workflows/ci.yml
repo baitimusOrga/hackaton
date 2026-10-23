@@ -27,7 +27,7 @@ jobs:
       - name: mvn verify (compile + tests on H2)
         run: ./mvnw -B -ntp verify
       - name: OpenAPI spec committed
-        run: test -z "$(git status --porcelain -- ../frontend/openapi.json)" || { echo "::error::frontend/openapi.json is stale. Run ./mvnw verify in backend/ and npm run api in frontend/, then commit both."; exit 1; }
+        run: test -z "$(git status --porcelain -- ../frontend/openapi.json)" || { echo "::error::frontend/openapi.json is stale. Run ./mvnw verify in backend/ and pnpm run api in frontend/, then commit both."; exit 1; }
 
   frontend:
     runs-on: [self-hosted, homelab]
@@ -36,15 +36,18 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci --no-audit --no-fund
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
       - name: API client matches openapi.json
-        run: npm run api && test -z "$(git status --porcelain -- src/app/api)" || { echo "::error::src/app/api is stale. Run npm run api and commit it."; exit 1; }
-      - run: npm run format:check
-      - run: npx ng lint
-      - run: npx ng test --watch=false
-      - run: npx ng build
+        run: pnpm run api && test -z "$(git status --porcelain -- src/app/api)" || { echo "::error::src/app/api is stale. Run pnpm run api and commit it."; exit 1; }
+      - run: pnpm run format:check
+      - run: pnpm exec ng lint
+      - run: pnpm exec ng test --watch=false
+      - run: pnpm exec ng build
