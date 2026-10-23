@@ -16,7 +16,7 @@ Both run on one hostname each: `/api/*` and `/actuator/*` go to the backend, eve
 |---|---|
 | `backend/` | Java 21, Spring Boot 4.1, Maven. Postgres via Spring Data JPA, Flyway migrations |
 | `frontend/` | Angular 22, served by nginx. Reads `/config.json` at start, so one image runs in every environment |
-| `docker-compose.yml` | Postgres for local development |
+| `docker-compose.yml` | Postgres for local development, started by the backend on `spring-boot:run` |
 | `.github/workflows/ci.yml` | every pull request: `mvn verify`, `ng lint`, `ng test`, `ng build` |
 | `.github/workflows/deploy.yml` | builds the images and writes the hosts' `.env` |
 | `docs/DATA-MODEL.md` | tables and migration rules |
@@ -36,10 +36,22 @@ There is no login: every endpoint is public. New controllers go under `/api/...`
 Needs JDK 21, Node 24.15+ (or 22.22.3+) and Docker.
 
 ```bash
-docker compose up -d                       # Postgres on localhost:5432
-cd backend && ./mvnw spring-boot:run       # API on :8080
+cd backend && ./mvnw spring-boot:run       # API on :8080, starts Postgres from docker-compose.yml
 cd frontend && npm ci && npm start         # http://localhost:4200, /api is proxied to :8080
 ```
+
+### IntelliJ
+
+`.run/` holds shared run configurations: `backend` (Maven `spring-boot:run`), `frontend` (`npm start`) and `dev` (both at once). They contain no machine-specific paths, so each developer sets these once in their own IDE (`.idea/` isn't committed):
+
+- **Project SDK**: *File → Project Structure → Project → SDK* = a JDK 21. Without it `backend` fails with "Project JDK is not specified".
+- **Node interpreter**: *Settings → Languages & Frameworks → Node.js* = Node 24.15+ (or 22.22.3+). `frontend` uses the project's interpreter.
+- **Docker** must be running: the backend starts Postgres from `docker-compose.yml` on boot.
+- Optional: right-click `backend/pom.xml` → *Add as Maven Project* for Java code completion.
+
+On a cold start the frontend is ready before the backend, so the first `/api` calls log `http proxy error ... ECONNREFUSED`. Reload the page once the backend logs `Started HackatonApplication`.
+
+For a personal variant (other port, env vars), copy a configuration and leave *Store as project file* unchecked, so it doesn't end up in `.run/`.
 
 Tests: `cd backend && ./mvnw verify` (H2, no Docker needed) and `cd frontend && npx ng lint && npx ng test`.
 
