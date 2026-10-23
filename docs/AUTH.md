@@ -47,3 +47,9 @@ Passwords are 12–128 characters. Email verification, password reset and social
 The injectable Better Auth client uses the page's own origin. Login/registration return to a validated internal `returnUrl` (default `/`), and `/sell` checks the server session before entry. The API interceptor fetches `/api/auth/token`, shares concurrent requests and caches the JWT in memory until 30 seconds before expiry. It never attaches tokens to auth endpoints or external URLs.
 
 A backend 401 clears local auth state and redirects to login without the global error banner. Logout clears the in-memory JWT and revokes the Better Auth session. As with other stateless JWT setups, a previously issued token remains cryptographically valid until its five-minute expiry; it is not persisted in browser storage.
+
+## Spring resource server
+
+`AUTH_JWKS_URI` defaults to `http://localhost:3000/api/auth/jwks`; `AUTH_ISSUER` defaults to `http://localhost:4200`. Set the issuer to the exact public auth origin in staging and in custom local setups. The audience is `hackaton-api`, and the accepted signing algorithm is pinned to RS256. Signature, issuer, audience, subject and token times are checked.
+
+API authentication is stateless. Reads stay public; listing/draft creation requires a verified bearer token. Missing/invalid tokens return 401 Problem Details with “Please log in.” Controllers receive a `CurrentUser` record resolved from the verified JWT. No auth service is needed to run normal backend tests; JWKS is fetched lazily when a real bearer token is received.
