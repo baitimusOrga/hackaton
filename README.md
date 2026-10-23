@@ -2,6 +2,8 @@
 
 Monorepo with two images: a **Spring Boot** API (`backend/`) and an **Angular** app (`frontend/`).
 
+<!-- Cyrus smoke test marker: HAC-6 -->
+
 | | Staging | Prod |
 |---|---|---|
 | URL | https://hackaton-staging.absent.one | https://hackaton.absent.one |
