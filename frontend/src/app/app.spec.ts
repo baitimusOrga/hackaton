@@ -2,17 +2,13 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Home } from './pages/home';
-import { APP_CONFIG } from './config';
+import { provideApiConfiguration } from './api/api-configuration';
 
 describe('Home', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Home],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: APP_CONFIG, useValue: { apiUrl: '/api', env: 'staging', release: 'v0.0.0' } },
-      ],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideApiConfiguration('')],
     }).compileComponents();
   });
 

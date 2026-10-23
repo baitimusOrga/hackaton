@@ -1,10 +1,12 @@
 package one.absent.hackaton.web;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Public: which environment and release is running. */
+@Tag(name = "Info")
 @RestController
 public class InfoController {
 

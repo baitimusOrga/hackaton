@@ -6,14 +6,13 @@ import { InjectionToken } from '@angular/core';
  * so the same image runs in every environment. Locally it comes from public/config.json.
  */
 export interface AppConfig {
-  apiUrl: string;
   env: string;
   release: string;
 }
 
 export const APP_CONFIG = new InjectionToken<AppConfig>('APP_CONFIG');
 
-const DEFAULTS: AppConfig = { apiUrl: '/api', env: 'dev', release: 'dev' };
+const DEFAULTS: AppConfig = { env: 'dev', release: 'dev' };
 
 export async function loadConfig(): Promise<AppConfig> {
   try {
