@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PriceEstimate } from '../api/models';
 
@@ -45,6 +45,7 @@ const EMPTY = {
 };
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-price-panel',
   imports: [CurrencyPipe, RouterLink],
   template: `
