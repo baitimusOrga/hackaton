@@ -37,6 +37,8 @@ public class Listing {
     private Instant createdAt;
     private String sellerId;
     private String sellerName;
+    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20)
+    private ListingStatus status = ListingStatus.AVAILABLE;
     @ElementCollection
     @CollectionTable(name = "listing_attribute", joinColumns = @JoinColumn(name = "listing_id"))
     @MapKeyColumn(name = "name", length = 80)
