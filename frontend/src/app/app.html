@@ -1,0 +1,19 @@
+@if (config.env !== 'prod') {
+  <div class="env-banner">{{ config.env }} · {{ config.release }}</div>
+}
+<header>
+  <a routerLink="/" class="brand">hackaton</a>
+  <nav>
+    @if (auth.user(); as user) {
+      <a routerLink="/listings/new" class="button">New listing</a>
+      <span class="muted">{{ user.displayName }}</span>
+      <button type="button" class="link" (click)="logout()">Log out</button>
+    } @else {
+      <a routerLink="/login">Log in</a>
+      <a routerLink="/register" class="button">Register</a>
+    }
+  </nav>
+</header>
+<main>
+  <router-outlet />
+</main>

@@ -1,0 +1,20 @@
+# Local development only: the database. Run the backend and frontend from your IDE / terminal
+# (see README.md). Staging and prod compose files live in baitimusOrga/deployments.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hackaton
+      POSTGRES_PASSWORD: hackaton
+      POSTGRES_DB: hackaton
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hackaton"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:

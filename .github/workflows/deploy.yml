@@ -1,0 +1,51 @@
+# Build and release through the homelab app platform (baitimusOrga/platform).
+#   push to main  -> images :sha-<commit> + :staging, STAGING_* secrets/variables -> staging .env
+#   tag v*        -> the same images become :prod + :<tag> (no rebuild), PROD_* -> prod .env
+#   manual run    -> promote an existing tag to :prod (rollback) and/or re-sync one environment's .env
+# Hosts pick everything up within a minute (deploy-sync). Compose files: baitimusOrga/deployments.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      promote:
+        description: existing tag to put on :prod (rollback), e.g. v0.1.0. Empty = no image change
+        required: false
+        default: ""
+      sync:
+        description: write the .env of this environment from the repo secrets/variables
+        type: choice
+        options: [none, staging, prod]
+        default: none
+
+jobs:
+  backend:
+    if: github.event_name != 'workflow_dispatch' || inputs.promote != ''
+    uses: baitimusOrga/platform/.github/workflows/docker-app.yml@v1
+    with:
+      image: hackaton-backend
+      context: backend
+      dockerfile: backend/Dockerfile
+      promote: ${{ inputs.promote || '' }}
+    secrets: inherit
+
+  frontend:
+    if: github.event_name != 'workflow_dispatch' || inputs.promote != ''
+    uses: baitimusOrga/platform/.github/workflows/docker-app.yml@v1
+    with:
+      image: hackaton-frontend
+      context: frontend
+      dockerfile: frontend/Dockerfile
+      promote: ${{ inputs.promote || '' }}
+    secrets: inherit
+
+  dotenv:
+    if: github.event_name != 'workflow_dispatch' || inputs.sync != 'none'
+    uses: baitimusOrga/platform/.github/workflows/env-sync.yml@v1
+    with:
+      app: hackaton
+      environment: ${{ github.event_name == 'workflow_dispatch' && inputs.sync || (github.ref_type == 'tag' && 'prod' || 'staging') }}
+    secrets: inherit
