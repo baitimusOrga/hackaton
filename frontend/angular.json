@@ -30,7 +30,16 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/tailwind.css", "src/tokens.css", "src/components.css"]
+            "styles": [
+              "@fontsource/inter/400.css",
+              "@fontsource/inter/500.css",
+              "@fontsource/inter/600.css",
+              "@fontsource/inter/700.css",
+              "@fontsource/inter/800.css",
+              "src/tailwind.css",
+              "src/tokens.css",
+              "src/components.css"
+            ]
           },
           "configurations": {
             "production": {
@@ -46,7 +55,12 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "fonts": true,
+                "styles": { "minify": true, "inlineCritical": false }
+              }
             },
             "development": {
               "optimization": false,
