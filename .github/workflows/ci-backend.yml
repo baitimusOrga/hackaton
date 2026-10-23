@@ -1,4 +1,4 @@
-# Backend checks for pull requests that touch the backend, on the homelab runners. Merge only when
+# Backend checks for pull requests that touch the backend, on GitHub-hosted runners. Merge only when
 # green (convention: the org is on GitHub Free, which has no branch protection for private repos).
 # A PR that touches neither backend nor frontend (docs, agent files) runs no checks.
 name: ci-backend
@@ -11,23 +11,26 @@ on:
       - .github/workflows/ci-backend.yml
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-backend-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   backend:
-    runs-on: [self-hosted, homelab]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v7
-      # No cache: the runners keep ~/.m2 in a volume (baitimusOrga/platform runners/compose.yml).
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
         with:
           distribution: temurin
           java-version: "25"
+          cache: maven
       - name: mvn verify (compile + tests on H2)
         run: ./mvnw -B -ntp verify
       - name: OpenAPI spec committed

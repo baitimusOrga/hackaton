@@ -6,7 +6,7 @@ import { ListingPage } from './listing';
 
 describe('ListingPage', () => {
   for (const [sellerName, label] of [
-    ['Test Seller', 'Test Seller'],
+    ['Test Seller', 'Test Seller (eigene Angabe)'],
     [null, 'Demo-Inserat'],
   ]) {
     it('shows ' + label + ' and similar listings', async () => {

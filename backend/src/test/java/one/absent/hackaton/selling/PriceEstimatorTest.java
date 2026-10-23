@@ -45,8 +45,16 @@ class PriceEstimatorTest {
     }
 
     private static Listing dell(long id, int price, Condition condition, ListingStatus status) {
-        return listing(id, "Monitors", "Dell U2719D monitor " + id, price, condition, status, 10 + (int) id, "Dell",
-                "U2719D");
+        var listing = listing(id, "Monitors", "Dell U2719D monitor " + id, price, condition, status, 10 + (int) id,
+                "Dell", "U2719D");
+        listing.setSellerId("seller-" + id);
+        return listing;
+    }
+
+    private static Listing dell(long id, int price, ListingStatus status, String sellerId) {
+        var listing = dell(id, price, Condition.GOOD, status);
+        listing.setSellerId(sellerId);
+        return listing;
     }
 
     private static PriceEstimator estimator(List<Listing> all) {
@@ -155,6 +163,31 @@ class PriceEstimatorTest {
         var estimate = dellEstimate(List.of(dell(1, 100, Condition.GOOD, ListingStatus.SOLD)), null);
         assertThat(estimate.condition()).isEqualTo(Condition.GOOD);
         assertThat(estimate.explanation()).contains("condition Good (assumed)");
+    }
+
+    @Test void ownListingsAreNotEvidence() {
+        var all = List.of(dell(1, 150, ListingStatus.AVAILABLE, "me"), dell(2, 9000, ListingStatus.AVAILABLE, "me"));
+        var estimate = estimator(all).estimate("Monitors", "Dell U2719D 27 inch", DELL, Condition.GOOD, "me");
+        assertThat(estimate.midChf()).isNull();
+        assertThat(estimate.evidence()).isEmpty();
+    }
+
+    @Test void twoSellersNeverGiveHighConfidence() {
+        var all = IntStream.rangeClosed(1, 6)
+                .mapToObj(i -> dell(i, 150, ListingStatus.AVAILABLE, i % 2 == 0 ? "a" : null)).toList();
+        var estimate = dellEstimate(all, Condition.GOOD);
+        assertThat(estimate.comparableCount()).isEqualTo(6);
+        assertThat(estimate.confidence()).isEqualTo(PriceConfidence.MEDIUM);
+    }
+
+    @Test void askingPricesFarFromTheCategoryMedianAreDropped() {
+        var all = List.of(dell(1, 150, Condition.GOOD, ListingStatus.AVAILABLE),
+                dell(2, 160, Condition.GOOD, ListingStatus.AVAILABLE), dell(3, 140, Condition.GOOD, ListingStatus.AVAILABLE),
+                dell(4, 5000, Condition.GOOD, ListingStatus.AVAILABLE), dell(5, 1, Condition.GOOD, ListingStatus.AVAILABLE),
+                dell(6, 9, Condition.GOOD, ListingStatus.SOLD));
+        var estimate = dellEstimate(all, Condition.GOOD);
+        // 5000 and 1 are outside 0.2×–5× of the median 145; a completed sale is kept whatever its price
+        assertThat(estimate.evidence()).extracting(e -> e.listingId()).containsExactlyInAnyOrder(1L, 2L, 3L, 6L);
     }
 
     @Test void oldSignatureStillWorks() {

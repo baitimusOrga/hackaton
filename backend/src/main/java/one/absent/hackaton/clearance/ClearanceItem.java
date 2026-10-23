@@ -35,5 +35,8 @@ public class ClearanceItem {
     private String model;
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal estimatedUnitChf;
+    /** The price per piece the company set; null until it has looked at the estimate. */
+    @Column(precision = 12, scale = 2)
+    private BigDecimal unitPriceChf;
     private Long listingId;
 }

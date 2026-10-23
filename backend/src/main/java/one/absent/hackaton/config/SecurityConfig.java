@@ -34,11 +34,12 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .requestCache(cache -> cache.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/api/listings", "/api/listing-drafts").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/listing-drafts/**").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/photos/**").permitAll()
-                .requestMatchers("/api/clearance/**").authenticated()
-                .anyRequest().permitAll())
+                // deny by default: everything not listed here needs a JWT
+                .requestMatchers(HttpMethod.GET, "/api/info", "/api/listings", "/api/listings/*", "/api/photos/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/searches", "/api/searches/matches").permitAll()
+                .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                .requestMatchers("/api/openapi.json", "/api/docs", "/api/docs/**", "/swagger-ui/**", "/webjars/**").permitAll()
+                .anyRequest().authenticated())
             .exceptionHandling(errors -> errors.authenticationEntryPoint((req, res, ex) -> unauthorized(res)))
             .oauth2ResourceServer(server -> server.jwt(jwt -> {})
                 .authenticationEntryPoint((req, res, ex) -> unauthorized(res)))

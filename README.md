@@ -16,15 +16,23 @@ _To fill in at the hackathon._
 
 ### Demo accounts
 
-For the demo and testing on staging and prod (`/login`). Demo data only — no real personal data, and
-change the password before the repository is shared beyond the team and jury.
+For the demo and testing on staging and prod (`/login`). Demo data only — no real personal data.
+The shared password is in the team password manager, not in this repository. It must be rotated
+on prod (and staging) before the repository is shared beyond the team and jury.
 
 | Email | Display name | Password |
 |---|---|---|
-| janis@hackathon.ch | Janis | `SeedGenerator123!` |
-| ryan@hackathon.ch | Ryan | `SeedGenerator123!` |
-| levin@hackathon.ch | Levin | `SeedGenerator123!` |
-| cyrus@hackathon.ch | Cyrus | `SeedGenerator123!` |
+| janis@hackathon.ch | Janis | see team password manager |
+| ryan@hackathon.ch | Ryan | see team password manager |
+| levin@hackathon.ch | Levin | see team password manager |
+| cyrus@hackathon.ch | Cyrus | see team password manager |
+
+### Before making the repository public
+
+- [ ] Rotate the demo account passwords on staging and prod (the old one is in git history).
+- [ ] PR CI runs on GitHub-hosted runners (`ci-*.yml`); do not move it back to the Docker-socket
+      homelab runners, or require approval for workflows from outside collaborators.
+- [ ] Keep the platform workflows in `deploy.yml` pinned to a commit SHA, and review the diff when bumping.
 
 ### Progress during the hackathon
 

@@ -7,6 +7,8 @@ import java.util.HashSet;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import one.absent.hackaton.geo.GeoClient;
+import one.absent.hackaton.listing.Attributes;
+import one.absent.hackaton.listing.Categories;
 import jakarta.validation.Valid;
 import one.absent.hackaton.listing.Listing;
 import one.absent.hackaton.listing.ListingDetail;
@@ -37,6 +39,13 @@ public class SellingController {
     @Transactional
     public ResponseEntity<ListingDetail> publish(@Valid @RequestBody CreateListingRequest request,
             @AuthenticationPrincipal Jwt seller) {
+        if (!Categories.ALL.contains(request.category())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown category: " + request.category());
+        }
+        if (!Attributes.ALL.containsAll(request.attributes().keySet())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown detail name. Allowed: "
+                    + String.join(", ", Attributes.ALL));
+        }
         var photos = photoRepository.findAllById(request.photoIds());
         if (photos.size() != new HashSet<>(request.photoIds()).size() || photos.stream().anyMatch(
                 p -> p.getListingId() != null || !p.getSellerId().equals(seller.getSubject()))) {

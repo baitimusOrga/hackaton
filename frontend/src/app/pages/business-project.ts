@@ -246,7 +246,10 @@ export class BusinessProject implements OnInit {
 
   protected edit(item: Item, patch: Partial<Item>): void {
     const next = { ...item, ...patch };
-    if (!(next.quantity >= 1)) return this.run(this.api.getProject({ id: this.project()!.id }));
+    const priced = 'unitPriceChf' in patch || item.priceConfirmed;
+    if (!(next.quantity >= 1) || (priced && !(next.unitPriceChf > 0))) {
+      return this.run(this.api.getProject({ id: this.project()!.id }));
+    }
     this.run(
       this.api.updateItem({
         id: this.project()!.id,
@@ -258,6 +261,8 @@ export class BusinessProject implements OnInit {
           quantityConfirmed: next.quantityConfirmed,
           condition: next.condition,
           notes: next.notes ?? undefined,
+          // only a price the company set or accepted counts; the estimate alone stays unconfirmed
+          unitPriceChf: priced ? next.unitPriceChf : null,
         },
       }),
     );

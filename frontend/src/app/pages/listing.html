@@ -45,7 +45,7 @@
         <span class="avatar" aria-hidden="true">{{ (item.sellerName || 'Z').charAt(0) }}</span>
         <div class="group tight">
           <span class="seller-name" data-testid="seller">
-            {{ item.sellerName || 'Demo-Inserat' }}
+            {{ item.sellerName ? item.sellerName + ' (eigene Angabe)' : 'Demo-Inserat' }}
           </span>
           <!-- TODO: backend has no seller stats; show "23 Verkäufe · 4.9 von 5 · Telefon und Adresse geprüft" and link to the seller profile once it does. -->
         </div>

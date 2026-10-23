@@ -5,7 +5,7 @@ import { ClearanceService } from '../api/services';
 import { ProjectDetail } from '../api/models';
 import { BusinessProject } from './business-project';
 
-const item = (id: number, confirmed: boolean) => ({
+const item = (id: number, confirmed: boolean, priceConfirmed = confirmed) => ({
   id,
   name: `Item ${id}`,
   category: 'Monitors',
@@ -14,6 +14,8 @@ const item = (id: number, confirmed: boolean) => ({
   condition: 'GOOD' as const,
   notes: null,
   estimatedUnitChf: 100,
+  unitPriceChf: 100,
+  priceConfirmed,
   estimatedTotalChf: 200,
   status: 'DRAFT' as const,
   listingId: null,
@@ -59,11 +61,14 @@ const PROJECT: ProjectDetail = {
   recommendationReason: 'Highest expected net outcome without your team time.',
 };
 
-async function render(publishItems = vi.fn()) {
+async function render(publishItems = vi.fn(), updateItem = vi.fn()) {
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
-      { provide: ClearanceService, useValue: { getProject: () => of(PROJECT), publishItems } },
+      {
+        provide: ClearanceService,
+        useValue: { getProject: () => of(PROJECT), publishItems, updateItem },
+      },
     ],
   });
   const fixture = TestBed.createComponent(BusinessProject);
@@ -98,5 +103,17 @@ describe('BusinessProject', () => {
     )!;
     publish.click();
     expect(publishItems).toHaveBeenCalledWith({ id: 3, body: { itemIds: [2] } });
+  });
+
+  it('sends the price the company typed', async () => {
+    const updateItem = vi.fn().mockReturnValue(of(PROJECT));
+    const { element } = await render(vi.fn(), updateItem);
+    const price = element.querySelector<HTMLInputElement>('[data-testid="price"] input')!;
+    price.value = '80';
+    price.dispatchEvent(new Event('change'));
+    expect(updateItem.mock.calls[0][0].body.unitPriceChf).toBe(80);
+    expect(element.querySelector('[data-testid="price"]')!.textContent).toContain(
+      'Schätzung CHF 100.–',
+    );
   });
 });
