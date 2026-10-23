@@ -1,7 +1,7 @@
 <!-- TODO: not designed yet, replace with the Firmen-Projekt design -->
 @if (project(); as p) {
   <header class="bp-head">
-    <a routerLink="/business" class="bp-back">Alle Projekte</a>
+    <a routerLink="/business" class="zw-link">Alle Projekte</a>
     <span class="zw-caption">Räumungsprojekt</span>
     <h1>{{ p.companyName }}</h1>
     <p class="zw-muted">
@@ -11,19 +11,19 @@
     <dl class="bp-totals" data-testid="totals">
       <div>
         <dt class="zw-caption">Positionen</dt>
-        <dd>{{ p.totals.itemLines }}</dd>
+        <dd class="zw-price">{{ p.totals.itemLines }}</dd>
       </div>
       <div>
         <dt class="zw-caption">Stück</dt>
-        <dd>{{ p.totals.units }}</dd>
+        <dd class="zw-price">{{ p.totals.units }}</dd>
       </div>
       <div>
         <dt class="zw-caption">Geschätzter Wiederverkauf</dt>
-        <dd>{{ p.totals.estimatedResaleChf | chf }}</dd>
+        <dd class="zw-price">{{ p.totals.estimatedResaleChf | chf }}</dd>
       </div>
       <div>
         <dt class="zw-caption">Entwurf / inseriert / verkauft</dt>
-        <dd>{{ p.totals.draft }} / {{ p.totals.listed }} / {{ p.totals.sold }}</dd>
+        <dd class="zw-price">{{ p.totals.draft }} / {{ p.totals.listed }} / {{ p.totals.sold }}</dd>
       </div>
     </dl>
   </header>
@@ -37,7 +37,7 @@
       <label class="zw-label" for="bp-text">Inventarliste</label>
       <textarea
         id="bp-text"
-        class="zw-input bp-text"
+        class="zw-input"
         rows="7"
         maxlength="10000"
         [value]="text()"
@@ -253,7 +253,7 @@
             <!-- TODO: recommendationReason, timeframe and yourWork come in English from the backend -->
             <p class="zw-help">{{ p.recommendationReason }}</p>
           }
-          <p class="bp-net">{{ option.netChf | chf }}</p>
+          <p class="zw-price-lg">{{ option.netChf | chf }}</p>
           <p class="zw-muted">{{ option.certain ? 'Festes Angebot' : 'Schätzung' }}</p>
           @if (option.serviceFeeChf) {
             <p class="zw-help">inkl. Servicegebühr {{ option.serviceFeeChf | chf }}</p>
@@ -289,10 +289,10 @@
   @if (p.route === 'SELF_SERVICE') {
     <section class="zw-section zw-section--last bp-rule" aria-labelledby="h-publish">
       <h2 id="h-publish">4. Veröffentlichen</h2>
-      <ul class="bp-list">
+      <ul class="zw-list">
         @for (item of drafts(p); track item.id) {
           <li class="zw-row">
-            <label class="bp-check">
+            <label class="zw-check">
               <input
                 type="checkbox"
                 [disabled]="!item.quantityConfirmed || !item.priceConfirmed"

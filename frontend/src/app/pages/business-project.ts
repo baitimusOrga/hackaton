@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ClearanceService } from '../api/services';
 import { ItemView, ProjectDetail, RouteOption, Totals } from '../api/models';
 import { CATEGORIES } from '../categories';
+import { Condition, CONDITION_LABELS } from '../conditions';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
@@ -12,7 +13,6 @@ import { ChfPipe } from '../ui/chf';
 type Item = Required<ItemView>;
 type Option = Required<RouteOption>;
 type Route = Option['route'];
-type Condition = Item['condition'];
 type Project = Omit<Required<ProjectDetail>, 'items' | 'routes' | 'totals'> & {
   items: Item[];
   routes: Option[];
@@ -31,14 +31,7 @@ const ROUTE_NAMES: Record<Route, string> = {
   MANAGED: 'Wir verkaufen',
   DIRECT_PURCHASE: 'Wir kaufen',
 };
-const CONDITION_NAMES: Record<Condition, string> = {
-  NEW: 'Neu',
-  LIKE_NEW: 'Wie neu',
-  GOOD: 'Gut',
-  USED: 'Gebraucht',
-  DEFECTIVE: 'Defekt',
-};
-const CONDITIONS = Object.keys(CONDITION_NAMES) as Condition[];
+const CONDITIONS = Object.keys(CONDITION_LABELS) as Condition[];
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,34 +45,8 @@ const CONDITIONS = Object.keys(CONDITION_NAMES) as Condition[];
       gap: var(--space-2);
       padding-bottom: var(--space-8);
     }
-    .bp-back {
+    .bp-head .zw-link {
       align-self: flex-start;
-      display: inline-flex;
-      align-items: center;
-      min-height: 44px;
-      font-weight: 600;
-    }
-    h1 {
-      margin: 0;
-      font-size: 32px;
-      line-height: 36px;
-      font-weight: 700;
-      letter-spacing: -0.005em;
-    }
-    h2 {
-      margin: 0;
-      font-size: 24px;
-      line-height: 28px;
-      font-weight: 700;
-    }
-    h3 {
-      margin: 0;
-      font-size: 18px;
-      line-height: 24px;
-      font-weight: 700;
-    }
-    p {
-      margin: 0;
     }
     .bp-ink {
       color: var(--ink);
@@ -92,19 +59,9 @@ const CONDITIONS = Object.keys(CONDITION_NAMES) as Condition[];
     }
     .bp-totals dd {
       margin: 0;
-      font-size: 20px;
-      line-height: 24px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
     }
     .bp-rule {
       border-top: var(--border-1) solid var(--line-soft);
-    }
-    .bp-text {
-      padding: var(--space-3);
-      font-size: 14px;
-      line-height: 20px;
-      resize: vertical;
     }
     .bp-actions {
       display: flex;
@@ -174,29 +131,6 @@ const CONDITIONS = Object.keys(CONDITION_NAMES) as Condition[];
     .bp-route--chosen {
       border-top: var(--border-2) solid var(--ink);
     }
-    .bp-net {
-      font-size: 32px;
-      line-height: 36px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-    .bp-list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .bp-check {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--space-1) var(--space-3);
-      min-height: 44px;
-      cursor: pointer;
-    }
-    .bp-check input {
-      width: 20px;
-      height: 20px;
-    }
   `,
 })
 export class BusinessProject implements OnInit {
@@ -205,7 +139,7 @@ export class BusinessProject implements OnInit {
   protected readonly names = ROUTE_NAMES;
   protected readonly categories = CATEGORIES;
   protected readonly conditions = CONDITIONS;
-  protected readonly conditionNames = CONDITION_NAMES;
+  protected readonly conditionNames = CONDITION_LABELS;
   protected readonly sample = SAMPLE_INVENTORY;
   protected readonly project = signal<Project | null>(null);
   protected readonly text = signal('');

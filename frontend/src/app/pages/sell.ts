@@ -5,12 +5,12 @@ import { SellingService } from '../api/services';
 import { CreateListingRequest, ListingDraft } from '../api/models';
 import { PricePanel } from '../components/price-panel';
 import { CATEGORIES } from '../categories';
+import { Condition, CONDITION_LABELS } from '../conditions';
 import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
 import { Icon } from '../ui/icon';
 
 type Source = 'LABEL' | 'SELLER' | 'SUGGESTION' | 'WEB';
-type Condition = CreateListingRequest['condition'];
 type Field = 'title' | 'category' | 'condition' | 'description';
 interface Fact {
   name: string;
@@ -28,13 +28,18 @@ const MARKERS: Record<Source, string> = {
   WEB: 'Aus dem Web, bitte prüfen',
 };
 // TODO: the design's "Sehr gut" has no backend condition; CreateListingRequest knows only these five.
-const CONDITIONS: { value: Condition; label: string; hint: string }[] = [
-  { value: 'NEW', label: 'Neu', hint: 'Unbenutzt, originalverpackt.' },
-  { value: 'LIKE_NEW', label: 'Wie neu', hint: 'Keine Gebrauchsspuren.' },
-  { value: 'GOOD', label: 'Gut', hint: 'Funktioniert einwandfrei, sichtbare Spuren.' },
-  { value: 'USED', label: 'Gebraucht', hint: 'Deutliche Spuren, funktioniert.' },
-  { value: 'DEFECTIVE', label: 'Defekt', hint: 'Für Bastler oder Ersatzteile.' },
-];
+const HINTS: Record<Condition, string> = {
+  NEW: 'Unbenutzt, originalverpackt.',
+  LIKE_NEW: 'Keine Gebrauchsspuren.',
+  GOOD: 'Funktioniert einwandfrei, sichtbare Spuren.',
+  USED: 'Deutliche Spuren, funktioniert.',
+  DEFECTIVE: 'Für Bastler oder Ersatzteile.',
+};
+const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
+  value,
+  label: CONDITION_LABELS[value],
+  hint: HINTS[value],
+}));
 
 /** Sell wizard (Sell1–Sell5) and the one-page form (SellFull); both views share the same signals. */
 @Component({
@@ -80,12 +85,6 @@ const CONDITIONS: { value: Condition; label: string; hint: string }[] = [
       margin-right: -12px;
       color: var(--ink);
     }
-    .q {
-      margin: 0;
-      font-size: 32px;
-      line-height: 36px;
-      font-weight: 700;
-    }
     .q--sm {
       font-size: 24px;
       line-height: 28px;
@@ -95,16 +94,7 @@ const CONDITIONS: { value: Condition; label: string; hint: string }[] = [
       flex-direction: column;
       gap: var(--space-2);
     }
-    .sub {
-      margin: 0;
-      color: var(--ink-muted);
-    }
-    .small {
-      font-size: 14px;
-      line-height: 20px;
-    }
     .strong {
-      margin: 0;
       font-size: 18px;
       line-height: 24px;
       font-weight: 600;
@@ -117,18 +107,6 @@ const CONDITIONS: { value: Condition; label: string; hint: string }[] = [
     }
     .foot > :first-child + * {
       margin-left: auto;
-    }
-    .link {
-      display: inline-flex;
-      align-items: center;
-      min-height: 44px;
-      padding: 0;
-      border: 0;
-      background: none;
-      font: 600 15px/20px var(--font-sans);
-      color: var(--ink);
-      cursor: pointer;
-      text-decoration: none;
     }
     .link--muted {
       color: var(--ink-muted);
@@ -154,9 +132,6 @@ const CONDITIONS: { value: Condition; label: string; hint: string }[] = [
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: var(--space-2);
-      list-style: none;
-      margin: 0;
-      padding: 0;
     }
     @media (min-width: 480px) {
       .shots {
@@ -198,34 +173,6 @@ const CONDITIONS: { value: Condition; label: string; hint: string }[] = [
       gap: 20px;
       align-items: center;
     }
-    .opts {
-      border: 0;
-      padding: 0;
-      margin: 0;
-    }
-    .opt {
-      display: flex;
-      align-items: center;
-      gap: var(--space-4);
-      min-height: 56px;
-      padding: var(--space-2) 0;
-      border-bottom: var(--border-1) solid var(--line-soft);
-      cursor: pointer;
-    }
-    .opt:last-child {
-      border-bottom: 0;
-    }
-    .opt input {
-      width: 20px;
-      height: 20px;
-      margin: 0;
-      accent-color: var(--blue);
-      flex: none;
-    }
-    .opt__t {
-      display: block;
-      font-weight: 600;
-    }
     .fact {
       display: grid;
       grid-template-columns: minmax(0, 8rem) minmax(0, 1fr);
@@ -243,13 +190,6 @@ const CONDITIONS: { value: Condition; label: string; hint: string }[] = [
       gap: var(--space-4);
       flex-wrap: wrap;
       font-size: 14px;
-    }
-    .check {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-2);
-      min-height: 44px;
-      cursor: pointer;
     }
     .two {
       display: grid;
@@ -285,29 +225,12 @@ const CONDITIONS: { value: Condition; label: string; hint: string }[] = [
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .price {
-      font-size: 20px;
-      line-height: 24px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
     .sec {
       display: flex;
       flex-direction: column;
       gap: var(--space-4);
       padding: var(--space-8) 0;
       border-bottom: var(--border-1) solid var(--line-soft);
-    }
-    .sec h2 {
-      margin: 0;
-      font-size: 24px;
-      line-height: 28px;
-      font-weight: 700;
-    }
-    textarea.zw-input {
-      min-height: 120px;
-      padding: 10px var(--space-3);
-      resize: vertical;
     }
   `,
 })

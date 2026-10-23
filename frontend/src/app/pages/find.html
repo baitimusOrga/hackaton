@@ -63,7 +63,7 @@
         <span class="zw-label">Anforderungen</span>
         @for (row of rows; track row.key) {
           <span class="zw-help">{{ row.label }}</span>
-          <ul class="find__reqs" [attr.data-testid]="row.key">
+          <ul class="zw-list find__reqs" [attr.data-testid]="row.key">
             @for (r of list(row.key); track r.attribute + r.value) {
               <li class="zw-row">
                 <span>{{ label(r) }}</span>
@@ -89,7 +89,7 @@
         <input id="find-cat" name="category" class="zw-input" [(ngModel)]="category" />
       </div>
       <!-- TODO: brand filter; the backend has no brand field in SearchRequirements. -->
-      <fieldset class="find__f" disabled>
+      <fieldset class="zw-fieldset find__f" disabled>
         <label class="zw-label" for="find-brand">Marke</label>
         <select id="find-brand" class="zw-input">
           <option>Alle Marken</option>
@@ -100,7 +100,7 @@
         <input id="find-keywords" name="keywords" class="zw-input" [(ngModel)]="keywords" />
         <span class="zw-help">Mehrere mit Komma trennen</span>
       </div>
-      <fieldset class="find__f">
+      <fieldset class="zw-fieldset find__f">
         <legend class="zw-label">Preis</legend>
         <div class="find__pair">
           <!-- TODO: minimum price; the backend only knows a maximum budget. -->
@@ -122,9 +122,9 @@
           />
         </div>
         <!-- TODO: total price incl. shipping; listings have no shipping cost yet. -->
-        <label class="find__ck"><input type="checkbox" disabled />Gesamtpreis inkl. Versand</label>
+        <label class="zw-check"><input type="checkbox" disabled />Gesamtpreis inkl. Versand</label>
       </fieldset>
-      <fieldset class="find__f">
+      <fieldset class="zw-fieldset find__f">
         <legend class="zw-label">Region</legend>
         <div class="find__pair">
           <input
@@ -143,28 +143,28 @@
           </select>
         </div>
         <!-- TODO: pickup / shipping filter; listings have no delivery options yet. -->
-        <label class="find__ck"><input type="checkbox" disabled />Abholung</label>
-        <label class="find__ck"><input type="checkbox" disabled />Versand</label>
+        <label class="zw-check"><input type="checkbox" disabled />Abholung</label>
+        <label class="zw-check"><input type="checkbox" disabled />Versand</label>
       </fieldset>
       <!-- TODO: condition, sale mode and "Nur" filters are not in SearchRequirements yet. -->
-      <fieldset class="find__f" disabled>
+      <fieldset class="zw-fieldset find__f" disabled>
         <legend class="zw-label">Zustand</legend>
         @for (c of conditionOptions; track c) {
-          <label class="find__ck"><input type="checkbox" />{{ c }}</label>
+          <label class="zw-check"><input type="checkbox" />{{ c }}</label>
         }
       </fieldset>
-      <fieldset class="find__f" disabled>
+      <fieldset class="zw-fieldset find__f" disabled>
         <legend class="zw-label">Verkaufsart</legend>
         @for (m of modeOptions; track m) {
-          <label class="find__ck"><input type="checkbox" />{{ m }}</label>
+          <label class="zw-check"><input type="checkbox" />{{ m }}</label>
         }
       </fieldset>
-      <fieldset class="find__f">
+      <fieldset class="zw-fieldset find__f">
         <legend class="zw-label">Nur</legend>
         @for (o of onlyOptions; track o) {
-          <label class="find__ck"><input type="checkbox" disabled />{{ o }}</label>
+          <label class="zw-check"><input type="checkbox" disabled />{{ o }}</label>
         }
-        <label class="find__ck">
+        <label class="zw-check">
           <input type="checkbox" name="acceptUnknown" [(ngModel)]="acceptUnknown" />
           Auch Inserate mit fehlenden Angaben
         </label>
@@ -203,14 +203,11 @@
                   @for (m of res[group.key]; track m.listing?.id) {
                     <div class="find__item">
                       <!-- TODO: sale mode, current bid ("Gebot, nicht Endpreis") and total cost incl. shipping are not in ListingSummary yet; all cards show as Festpreis. -->
-                      <app-listing-card
-                        [link]="['/listings', m.listing?.id]"
-                        [title]="m.listing?.title ?? ''"
-                        [price]="m.listing?.priceChf ?? 0"
-                        [image]="m.listing?.imageUrl ?? ''"
-                        [meta]="meta(m)"
-                      />
-                      <p class="find__why" [class.find__why--ok]="group.key === 'confirmed'">
+                      <app-summary-card [listing]="m.listing ?? {}" />
+                      <p
+                        class="zw-small zw-muted"
+                        [class.find__why--ok]="group.key === 'confirmed'"
+                      >
                         {{ why(m, group.key) }}
                       </p>
                     </div>

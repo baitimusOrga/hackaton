@@ -4,29 +4,22 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { SearchService } from '../api/services';
 import { Requirement, SearchMatch, SearchRequirements } from '../api/models';
+import { CONDITION_LABELS } from '../conditions';
 import { Button } from '../ui/button';
 import { chf } from '../ui/chf';
 import { Icon } from '../ui/icon';
-import { ListingCard } from '../ui/listing-card';
+import { SummaryCard } from '../ui/summary-card';
 
 type Row = 'mustHave' | 'niceToHave';
 type Results = Record<'confirmed' | 'possible' | 'alternatives', SearchMatch[]> & {
   compared: number;
 };
 
-const CONDITIONS: Record<string, string> = {
-  NEW: 'Neu',
-  LIKE_NEW: 'Wie neu',
-  GOOD: 'Gut',
-  USED: 'Gebraucht',
-  DEFECTIVE: 'Defekt',
-};
-
 /** Search: free text → requirements (chips + filter form) → matches grouped Bestätigt / Möglich / Alternativen. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-find',
-  imports: [FormsModule, Button, Icon, ListingCard],
+  imports: [FormsModule, Button, Icon, SummaryCard],
   templateUrl: './find.html',
   styles: `
     .find__query {
@@ -72,12 +65,6 @@ const CONDITIONS: Record<string, string> = {
       flex-direction: column;
       gap: 28px;
     }
-    fieldset {
-      margin: 0;
-      padding: 0;
-      border: 0;
-      min-width: 0;
-    }
     .find__f {
       display: flex;
       flex-direction: column;
@@ -87,23 +74,6 @@ const CONDITIONS: Record<string, string> = {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: var(--space-2);
-    }
-    .find__ck {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-height: 44px;
-    }
-    .find__ck input {
-      width: 20px;
-      height: 20px;
-      margin: 0;
-      accent-color: var(--blue);
-    }
-    .find__reqs {
-      list-style: none;
-      margin: 0;
-      padding: 0;
     }
     .find__reqs .zw-row {
       justify-content: space-between;
@@ -136,10 +106,6 @@ const CONDITIONS: Record<string, string> = {
       gap: var(--space-4);
     }
     .find__grp h2 {
-      margin: 0;
-      font-size: 24px;
-      line-height: 28px;
-      font-weight: 700;
       display: flex;
       align-items: baseline;
       gap: var(--space-3);
@@ -155,19 +121,9 @@ const CONDITIONS: Record<string, string> = {
       flex-direction: column;
       gap: var(--space-1);
     }
-    .find__why {
-      margin: 0;
-      font-size: 14px;
-      line-height: 20px;
-      color: var(--ink-muted);
-    }
     .find__why--ok {
       color: var(--green-text);
       font-weight: 500;
-    }
-    .find__small {
-      font-size: 14px;
-      line-height: 20px;
     }
   `,
 })
@@ -190,7 +146,7 @@ export class Find {
   ] as const;
   protected readonly radii = [5, 10, 25, 50, 100];
   // TODO: the backend has no filters for these yet (condition, sale mode, "Nur" flags); wire them up once SearchRequirements has them.
-  protected readonly conditionOptions = ['Neu', 'Wie neu', 'Gut', 'Gebraucht', 'Defekt'];
+  protected readonly conditionOptions = Object.values(CONDITION_LABELS);
   protected readonly modeOptions = ['Festpreis', 'Preisvorschlag', 'Auktion'];
   protected readonly onlyOptions = ['Getestet, funktioniert', 'Grüne Wahl', 'Geprüfte Verkäufer'];
 
@@ -336,12 +292,6 @@ export class Find {
 
   protected total(res: Results): number {
     return res.confirmed.length + res.possible.length + res.alternatives.length;
-  }
-
-  protected meta(m: SearchMatch): string {
-    const l = m.listing;
-    const place = [l?.postcode, l?.locality].filter(Boolean).join(' ');
-    return [CONDITIONS[l?.condition ?? ''], place].filter(Boolean).join(' · ');
   }
 
   /** The card's extra line: why it is in this group. */

@@ -9,7 +9,7 @@
 
 <section class="zw-section" aria-labelledby="h-projects">
   <h2 id="h-projects">Deine Projekte</h2>
-  <ul class="bz-list">
+  <ul class="zw-list bz-list">
     @for (project of projects(); track project.id) {
       <li class="zw-row">
         <a class="bz-name" [routerLink]="['/business', project.id]">{{ project.companyName }}</a>

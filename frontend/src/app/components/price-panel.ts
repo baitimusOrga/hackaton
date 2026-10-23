@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, model, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PriceEstimate } from '../api/models';
+import { conditionLabel } from '../conditions';
 import { chf, ChfPipe } from '../ui/chf';
 
 type EvidenceItem = NonNullable<PriceEstimate['evidence']>[number];
@@ -12,13 +13,6 @@ const FACTORS: Record<string, number> = {
   GOOD: 1,
   USED: 0.85,
   DEFECTIVE: 0.4,
-};
-const CONDITIONS: Record<string, string> = {
-  NEW: 'Neu',
-  LIKE_NEW: 'Wie neu',
-  GOOD: 'Gut',
-  USED: 'Gebraucht',
-  DEFECTIVE: 'Defekt',
 };
 const SIMILARITY: Record<string, string> = {
   SAME_MODEL: 'Gleiches Modell',
@@ -47,61 +41,15 @@ const since = (days: number) =>
       flex-direction: column;
       gap: var(--space-6);
     }
-    .opts {
-      border: 0;
-      padding: 0;
-      margin: 0;
-    }
-    .opt {
-      display: flex;
-      align-items: center;
-      gap: var(--space-4);
-      min-height: 56px;
-      padding: var(--space-2) 0;
-      border-bottom: var(--border-1) solid var(--line-soft);
-      cursor: pointer;
-    }
-    .opt:last-child {
-      border-bottom: 0;
-    }
-    .opt > input {
-      width: 20px;
-      height: 20px;
-      margin: 0;
-      accent-color: var(--blue);
-      flex: none;
-    }
-    .opt__t {
-      font-weight: 600;
-    }
-    .opt__d {
-      display: block;
-    }
-    .list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .opt__d,
-    .sub {
-      margin: 0;
-      font-size: 14px;
-      line-height: 20px;
-      color: var(--ink-muted);
-    }
     .opt__p {
       margin-left: auto;
-      font-size: 20px;
-      line-height: 24px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
     .own {
       margin-left: auto;
       width: 160px;
     }
-    .sub strong {
+    .zw-muted strong {
       color: var(--ink);
       font-variant-numeric: tabular-nums;
     }
@@ -117,18 +65,14 @@ const since = (days: number) =>
       gap: var(--space-2);
       flex-wrap: wrap;
     }
-    .zw-chip:disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
   `,
   template: `
     @if (view(); as v) {
       @if (v.noEstimate) {
-        <p class="sub"><strong>Keine Schätzung.</strong> {{ v.explanation }}</p>
+        <p class="zw-muted zw-small"><strong>Keine Schätzung.</strong> {{ v.explanation }}</p>
       } @else {
         <div>
-          <p class="sub">
+          <p class="zw-muted zw-small">
             Ähnliche Artikel auf Zweit: <strong>{{ v.rangeText }}</strong
             >. {{ v.evidenceText }}
             @if (v.provisional) {
@@ -140,21 +84,21 @@ const since = (days: number) =>
           @if (v.items.length) {
             <details>
               <summary>Vergleiche ansehen</summary>
-              <ul class="list">
+              <ul class="zw-list">
                 @for (item of v.items; track item.listingId) {
                   <li class="zw-row">
                     <span>
                       <a [routerLink]="['/listings', item.listingId]">{{ item.title }}</a>
-                      <span class="opt__d">
+                      <span class="zw-option__text">
                         {{ item.similarityLabel }} {{ item.similarityPercent }} % ·
                         {{ item.sold ? 'Verkauft' : 'Angebot' }} · {{ item.conditionLabel }} ·
                         {{ item.age }}
                       </span>
                     </span>
-                    <span class="opt__p">
+                    <span class="zw-price opt__p">
                       {{ item.priceChf | chf }}
                       @if (item.showAdjusted) {
-                        <span class="opt__d">≈ {{ item.adjusted | chf }}</span>
+                        <span class="zw-option__text">≈ {{ item.adjusted | chf }}</span>
                       }
                     </span>
                   </li>
@@ -166,10 +110,10 @@ const since = (days: number) =>
       }
     }
 
-    <fieldset class="opts">
+    <fieldset class="zw-fieldset">
       <legend class="zw-sr-only">Preis</legend>
       @for (s of strategies(); track s.label) {
-        <label class="opt">
+        <label class="zw-option">
           <input
             type="radio"
             name="price-choice"
@@ -178,13 +122,13 @@ const since = (days: number) =>
             (change)="choose(s.amount)"
           />
           <span>
-            <span class="opt__t">{{ s.label }}</span>
-            <span class="opt__d">{{ s.hint }}</span>
+            <span class="zw-option__title">{{ s.label }}</span>
+            <span class="zw-option__text">{{ s.hint }}</span>
           </span>
-          <span class="opt__p">{{ s.amount | chf }}</span>
+          <span class="zw-price opt__p">{{ s.amount | chf }}</span>
         </label>
       }
-      <label class="opt">
+      <label class="zw-option">
         @if (strategies().length) {
           <input
             type="radio"
@@ -194,7 +138,7 @@ const since = (days: number) =>
             (change)="own.set(true); price.set(ownValue())"
           />
         }
-        <span class="opt__t">Eigener Preis</span>
+        <span class="zw-option__title">Eigener Preis</span>
         <span class="zw-affix own">
           <span class="zw-affix__unit">CHF</span>
           <input
@@ -304,7 +248,7 @@ export class PricePanel {
       priceChf: price,
       similarityPercent: item.similarityPercent,
       similarityLabel: SIMILARITY[item.similarity ?? ''] ?? '',
-      conditionLabel: CONDITIONS[item.condition ?? ''] ?? '',
+      conditionLabel: conditionLabel(item.condition),
       age: days <= 0 ? 'heute' : days === 1 ? 'vor 1 Tag' : `vor ${days} Tagen`,
       adjusted,
       showAdjusted: Math.abs(adjusted - price) >= 0.005,

@@ -5,25 +5,18 @@ import { ActivatedRoute } from '@angular/router';
 import { catchError, distinctUntilChanged, filter, map, of, shareReplay, switchMap } from 'rxjs';
 import { ListingDetail } from '../api/models';
 import { ListingsService } from '../api/services';
+import { conditionLabel, metaLine } from '../conditions';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
-import { ListingCard } from '../ui/listing-card';
 import { SectionHeading } from '../ui/section-heading';
-
-const CONDITIONS: Record<NonNullable<ListingDetail['condition']>, string> = {
-  NEW: 'Neu',
-  LIKE_NEW: 'Wie neu',
-  GOOD: 'Gut',
-  USED: 'Gebraucht',
-  DEFECTIVE: 'Defekt',
-};
+import { SummaryCard } from '../ui/summary-card';
 
 /** Listing detail, fixed price: photo left, buying column right, facts and description below. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing',
-  imports: [DatePipe, KeyValuePipe, Badge, Button, ChfPipe, ListingCard, SectionHeading],
+  imports: [DatePipe, KeyValuePipe, Badge, Button, ChfPipe, SectionHeading, SummaryCard],
   templateUrl: './listing.html',
   styles: `
     .cols {
@@ -65,50 +58,23 @@ const CONDITIONS: Record<NonNullable<ListingDetail['condition']>, string> = {
       display: flex;
       gap: var(--space-1);
     }
+    /* The design sets the listing title one step smaller (h2 size) and the detail sections at h3 size. */
     h1 {
-      margin: 0;
       font-size: 24px;
       line-height: 28px;
-      font-weight: 700;
     }
     h2 {
-      margin: 0;
       font-size: 18px;
       line-height: 24px;
       font-weight: 600;
     }
     .meta {
-      margin: 0;
-      font-size: 16px;
       line-height: 24px;
       color: var(--ink-muted);
-    }
-    .price {
-      font-size: 32px;
-      line-height: 36px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      font-variant-numeric: tabular-nums;
     }
     .links {
       display: flex;
       gap: var(--space-6);
-    }
-    .tl {
-      min-height: 44px;
-      padding: 0;
-      border: 0;
-      background: none;
-      font: inherit;
-      font-size: 15px;
-      line-height: 20px;
-      font-weight: 600;
-      color: var(--ink);
-      cursor: pointer;
-    }
-    .tl[disabled] {
-      color: var(--ink-muted);
-      cursor: not-allowed;
     }
     .seller {
       display: flex;
@@ -130,10 +96,6 @@ const CONDITIONS: Record<NonNullable<ListingDetail['condition']>, string> = {
     }
     .seller-name {
       font-weight: 600;
-    }
-    .small {
-      font-size: 14px;
-      line-height: 20px;
     }
     .details {
       grid-column: 1;
@@ -169,8 +131,6 @@ const CONDITIONS: Record<NonNullable<ListingDetail['condition']>, string> = {
       margin: 0;
     }
     .text {
-      margin: 0;
-      line-height: 26px;
       white-space: pre-line;
     }
     .similar {
@@ -180,7 +140,6 @@ const CONDITIONS: Record<NonNullable<ListingDetail['condition']>, string> = {
 })
 export class ListingPage {
   private readonly api = inject(ListingsService);
-  protected readonly conditions = CONDITIONS;
   private readonly listing$ = inject(ActivatedRoute).paramMap.pipe(
     map((params) => Number(params.get('id'))),
     filter((id) => Number.isSafeInteger(id) && id > 0),
@@ -202,10 +161,7 @@ export class ListingPage {
     { initialValue: [] },
   );
 
-  protected join(...parts: (string | undefined)[]): string {
-    return parts
-      .map((part) => part?.trim())
-      .filter(Boolean)
-      .join(' · ');
+  protected meta(item: ListingDetail): string {
+    return metaLine(conditionLabel(item.condition), [item.postcode, item.locality].join(' '));
   }
 }

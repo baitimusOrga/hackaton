@@ -14,17 +14,17 @@
         @case (1) {
           @if (askForPhotos()) {
             <div class="stack">
-              <h1 id="sell-q" class="q">Das konnten wir nicht erkennen.</h1>
-              <p class="sub">
+              <h1 id="sell-q">Das konnten wir nicht erkennen.</h1>
+              <p class="zw-muted">
                 Kein Etikett und kein Modellname. Ein, zwei Fotos mehr, und wir füllen den Rest aus.
               </p>
             </div>
             <ng-container *ngTemplateOutlet="photosTpl" />
-            <ul class="opts" aria-label="Diese Fotos helfen">
+            <ul class="zw-fieldset" aria-label="Diese Fotos helfen">
               <li class="zw-row">
                 <span
-                  ><span class="opt__t">Etikett oder Typenschild, scharf</span>
-                  <span class="sub small"
+                  ><span class="zw-option__title">Etikett oder Typenschild, scharf</span>
+                  <span class="zw-muted zw-small"
                     >Meist unten, hinten oder im Batteriefach. Modell- und Seriennummer reichen
                     uns.</span
                   ></span
@@ -32,16 +32,16 @@
               </li>
               <li class="zw-row">
                 <span
-                  ><span class="opt__t">Der ganze Artikel von vorne</span>
-                  <span class="sub small"
+                  ><span class="zw-option__title">Der ganze Artikel von vorne</span>
+                  <span class="zw-muted zw-small"
                     >Nicht angeschnitten, bei Tageslicht, ohne andere Dinge im Bild.</span
                   ></span
                 >
               </li>
               <li class="zw-row">
                 <span
-                  ><span class="opt__t">Verpackung, Rechnung oder Anleitung</span>
-                  <span class="sub small"
+                  ><span class="zw-option__title">Verpackung, Rechnung oder Anleitung</span>
+                  <span class="zw-muted zw-small"
                     >Falls vorhanden. Der Produktname darauf genügt.</span
                   ></span
                 >
@@ -49,7 +49,7 @@
             </ul>
             <!-- TODO: "Kein Etikett? Dann schreib uns, was es ist": the backend cannot redraft from a typed brand and model yet. -->
             <div class="foot">
-              <button type="button" class="link" (click)="back()">Zurück</button>
+              <button type="button" class="zw-link" (click)="back()">Zurück</button>
               <button appButton type="button" (click)="step.set(2)">Ohne Erkennung weiter</button>
               @if (photos().length < maxPhotos) {
                 <label class="zw-btn zw-btn--primary file">
@@ -68,16 +68,18 @@
             </div>
           } @else {
             <div class="stack">
-              <h1 id="sell-q" class="q">Was verkaufst du?</h1>
-              <p class="sub">Mach ein Foto. Den Rest erkennen wir und fragen nur, was fehlt.</p>
+              <h1 id="sell-q">Was verkaufst du?</h1>
+              <p class="zw-muted">
+                Mach ein Foto. Den Rest erkennen wir und fragen nur, was fehlt.
+              </p>
             </div>
             @if (photos().length) {
               <ng-container *ngTemplateOutlet="photosTpl" />
             } @else {
               <label class="drop">
                 <app-icon name="camera" [size]="40" />
-                <span class="opt__t">Foto aufnehmen oder hochladen</span>
-                <span class="sub small"
+                <span class="zw-option__title">Foto aufnehmen oder hochladen</span>
+                <span class="zw-muted zw-small"
                   >Artikel, Typenschild, Mängel. Bis zu {{ maxPhotos }} Fotos.</span
                 >
                 <input
@@ -110,16 +112,16 @@
               <img class="thumb" [src]="photo.url" alt="" />
             }
             <div class="stack">
-              <h1 id="sell-q" class="q q--sm">{{ fields().title || 'Dein Artikel' }}</h1>
+              <h1 id="sell-q" class="q--sm">{{ fields().title || 'Dein Artikel' }}</h1>
               @if (labelFacts().length) {
-                <p class="sub small">
+                <p class="zw-muted zw-small">
                   Vom Typenschild gelesen:
                   @for (fact of labelFacts(); track fact.name; let last = $last) {
                     {{ fact.value }}{{ last ? '' : ', ' }}
                   }
                 </p>
               }
-              <button type="button" class="link" (click)="view.set('full')">
+              <button type="button" class="zw-link" (click)="view.set('full')">
                 Stimmt nicht, ändern
               </button>
             </div>
@@ -128,24 +130,26 @@
             <div class="stack">
               <p class="strong">{{ question }}</p>
               <!-- TODO: the design answers the open question with chips (variants + "Weiss ich nicht"); the draft only returns the question text, no options. -->
-              <p class="sub small">Wenn du es nicht weisst, schreiben wir «nicht bestätigt».</p>
+              <p class="zw-muted zw-small">
+                Wenn du es nicht weisst, schreiben wir «nicht bestätigt».
+              </p>
             </div>
           }
           <ng-container *ngTemplateOutlet="factsTpl" />
           <ng-container *ngTemplateOutlet="footTpl" />
         }
         @case (3) {
-          <h1 id="sell-q" class="q">In welchem Zustand ist er?</h1>
+          <h1 id="sell-q">In welchem Zustand ist er?</h1>
           <ng-container *ngTemplateOutlet="conditionTpl" />
           <ng-container *ngTemplateOutlet="footTpl" />
         }
         @case (4) {
-          <h1 id="sell-q" class="q">Zu welchem Preis?</h1>
+          <h1 id="sell-q">Zu welchem Preis?</h1>
           <ng-container *ngTemplateOutlet="priceTpl" />
           <ng-container *ngTemplateOutlet="footTpl" />
         }
         @case (5) {
-          <h1 id="sell-q" class="q">Wie kommt er zum Käufer?</h1>
+          <h1 id="sell-q">Wie kommt er zum Käufer?</h1>
           <ng-container *ngTemplateOutlet="placeTpl" />
           <ng-container *ngTemplateOutlet="privacyTpl" />
           <div class="preview">
@@ -156,19 +160,19 @@
               <span class="zw-caption">Festpreis · so erscheint es</span>
               <span class="ellipsis">{{ fields().title }}</span>
               @if (price(); as amount) {
-                <span class="price">{{ amount | chf }}</span>
+                <span class="zw-price">{{ amount | chf }}</span>
               }
               <!-- TODO: add "Abholung oder Versand" once the listing has delivery options. -->
-              <span class="sub small">{{ conditionLabel() }} · {{ locality() }}</span>
+              <span class="zw-muted zw-small">{{ conditionLabel() }} · {{ locality() }}</span>
             </div>
           </div>
-          <p class="sub small">
+          <p class="zw-muted zw-small">
             Titel und Beschreibung haben wir aus deinen Fotos und Antworten geschrieben. Du kannst
             sie jederzeit ändern. Inserieren ist gratis.
           </p>
           <div class="foot">
-            <button type="button" class="link" (click)="back()">Zurück</button>
-            <button type="button" class="link link--muted" (click)="view.set('full')">
+            <button type="button" class="zw-link" (click)="back()">Zurück</button>
+            <button type="button" class="zw-link link--muted" (click)="view.set('full')">
               Erst prüfen
             </button>
             <button appButton variant="primary" type="submit" [disabled]="busy()">
@@ -192,7 +196,7 @@
         <h2 id="sec-photos">Fotos</h2>
         <ng-container *ngTemplateOutlet="photosTpl" />
         @if (labelFacts().length) {
-          <p class="sub small">
+          <p class="zw-muted zw-small">
             Erkannt: {{ fields().title }}. Vom Etikett gelesen:
             @for (fact of labelFacts(); track fact.name; let last = $last) {
               {{ fact.value }}{{ last ? '' : ', ' }}
@@ -282,7 +286,7 @@
         </section>
 
         <div class="foot" style="padding-top: var(--space-6)">
-          <span class="sub small">Inserieren ist gratis. Keine Provision.</span>
+          <span class="zw-muted zw-small">Inserieren ist gratis. Keine Provision.</span>
           <!-- TODO: "Entwurf speichern": the backend cannot store a draft yet. -->
           <button appButton variant="primary" type="submit" [disabled]="busy()">
             {{ busy() ? 'Wird veröffentlicht…' : 'Veröffentlichen' }}
@@ -295,7 +299,7 @@
 
 <ng-template #footTpl>
   <div class="foot">
-    <button type="button" class="link" (click)="back()">Zurück</button>
+    <button type="button" class="zw-link" (click)="back()">Zurück</button>
     <button appButton variant="primary" type="button" [disabled]="!canContinue()" (click)="next()">
       Weiter
     </button>
@@ -303,7 +307,7 @@
 </ng-template>
 
 <ng-template #photosTpl>
-  <ul class="shots" aria-label="Fotos">
+  <ul class="zw-list shots" aria-label="Fotos">
     @for (photo of photos(); track photo.url; let i = $index) {
       <li>
         <img
@@ -324,7 +328,7 @@
             <app-icon name="x" [size]="16" />
           </button>
         } @else if (excluded().has(i)) {
-          <span class="sub small">Weggelassen</span>
+          <span class="zw-muted zw-small">Weggelassen</span>
         }
       </li>
     }
@@ -357,8 +361,8 @@
       <!-- TODO: the design masks private details on the photo and keeps the original; the backend cannot mask yet, so the seller can only leave the photo out. -->
       @for (warning of draft()?.privacyWarnings; track $index) {
         <div>
-          <p class="sub">Foto {{ warning.photo }}: {{ warning.text }}</p>
-          <label class="check">
+          <p class="zw-muted">Foto {{ warning.photo }}: {{ warning.text }}</p>
+          <label class="zw-check">
             <input
               type="checkbox"
               [checked]="excluded().has(warning.photo! - 1)"
@@ -373,9 +377,11 @@
 </ng-template>
 
 <ng-template #factsTpl>
-  <fieldset class="opts stack">
+  <fieldset class="zw-fieldset stack">
     <legend class="strong">Angaben</legend>
-    <p class="sub small">Veröffentlicht wird nur, was vom Etikett stammt oder du bestätigst.</p>
+    <p class="zw-muted zw-small">
+      Veröffentlicht wird nur, was vom Etikett stammt oder du bestätigst.
+    </p>
     <div>
       @for (fact of facts(); track fact.name; let i = $index) {
         <div class="fact" data-testid="fact">
@@ -387,13 +393,13 @@
             [value]="fact.value"
             (input)="editFact(i, $any($event.target).value)"
           />
-          <span class="sub small" data-testid="marker">{{ markers[fact.source] }}</span>
+          <span class="zw-muted zw-small" data-testid="marker">{{ markers[fact.source] }}</span>
           <div class="fact__acts">
             @if (fact.source === 'WEB' && fact.sourceUrl) {
               <a [href]="fact.sourceUrl" target="_blank" rel="noopener noreferrer">Quelle</a>
             }
             @if (fact.source === 'SUGGESTION' || fact.source === 'WEB') {
-              <label class="check">
+              <label class="zw-check">
                 <input
                   type="checkbox"
                   [attr.aria-label]="fact.name + ' stimmt'"
@@ -404,7 +410,7 @@
             }
             <button
               type="button"
-              class="link small"
+              class="zw-link"
               [attr.aria-label]="fact.name + ' entfernen'"
               (click)="removeFact(i)"
             >
@@ -413,7 +419,7 @@
           </div>
         </div>
       } @empty {
-        <p class="sub small">Auf den Fotos haben wir keine Angaben gefunden.</p>
+        <p class="zw-muted zw-small">Auf den Fotos haben wir keine Angaben gefunden.</p>
       }
     </div>
     <div>
@@ -428,19 +434,21 @@
       </button>
     </div>
     @if (!canLookUp()) {
-      <p class="sub small">Bestätige zuerst das Modell. Wir suchen nur, was wir sicher wissen.</p>
+      <p class="zw-muted zw-small">
+        Bestätige zuerst das Modell. Wir suchen nur, was wir sicher wissen.
+      </p>
     }
     @if (webNote()) {
-      <p class="sub small">{{ webNote() }}</p>
+      <p class="zw-muted zw-small">{{ webNote() }}</p>
     }
   </fieldset>
 </ng-template>
 
 <ng-template #conditionTpl>
-  <fieldset class="opts" aria-describedby="condition-hint">
+  <fieldset class="zw-fieldset" aria-describedby="condition-hint">
     <legend class="zw-sr-only">Zustand</legend>
     @for (condition of conditions; track condition.value) {
-      <label class="opt">
+      <label class="zw-option">
         <input
           type="radio"
           name="condition"
@@ -450,18 +458,18 @@
           (change)="setField('condition', condition.value)"
         />
         <span>
-          <span class="opt__t">{{ condition.label }}</span>
-          <span class="sub small">{{ condition.hint }}</span>
+          <span class="zw-option__title">{{ condition.label }}</span>
+          <span class="zw-muted zw-small">{{ condition.hint }}</span>
         </span>
       </label>
     }
   </fieldset>
   @if (!draft()?.condition && !fields().condition) {
-    <p id="condition-hint" class="sub small">
+    <p id="condition-hint" class="zw-muted zw-small">
       Auf den Fotos sehen wir den Zustand nicht. Bitte wähl ihn aus.
     </p>
   } @else if (draft()?.condition && draft()?.condition === fields().condition) {
-    <p id="condition-hint" class="sub small">Aus den Fotos vorgeschlagen, bitte prüfen.</p>
+    <p id="condition-hint" class="zw-muted zw-small">Aus den Fotos vorgeschlagen, bitte prüfen.</p>
   }
   <!-- TODO: "Mängel, falls vorhanden" (prefilled from the photos): the draft and CreateListingRequest have no defects field yet. -->
 </ng-template>
@@ -500,6 +508,6 @@
       />
     </div>
   </div>
-  <p class="sub small">Nur PLZ und Ort sind öffentlich.</p>
+  <p class="zw-muted zw-small">Nur PLZ und Ort sind öffentlich.</p>
   <!-- TODO: pickup / shipping checkboxes ("Versand, Käufer zahlt CHF 35.–", "Im Preis inbegriffen"): CreateListingRequest has no delivery options yet. -->
 </ng-template>

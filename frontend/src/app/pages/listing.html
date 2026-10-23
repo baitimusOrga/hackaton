@@ -16,18 +16,11 @@
         <div class="badges"><app-badge>Festpreis</app-badge></div>
         <h1>{{ item.title }}</h1>
         <!-- TODO: backend has no included accessories or distance to the buyer; extend the meta line once it does. -->
-        <p class="meta">
-          {{
-            join(
-              item.condition && conditions[item.condition],
-              (item.postcode ?? '') + ' ' + (item.locality ?? '')
-            )
-          }}
-        </p>
+        <p class="meta">{{ meta(item) }}</p>
       </div>
 
       <div class="group tight">
-        <span class="price">{{ item.priceChf ?? 0 | chf }}</span>
+        <span class="zw-price-lg">{{ item.priceChf ?? 0 | chf }}</span>
         <!-- TODO: backend has no pickup/shipping cost or new price; show "Abholung gratis · Versand CHF 35.– · neu CHF 1’890.–" once it does. -->
       </div>
 
@@ -36,8 +29,8 @@
         <button appButton variant="primary" [block]="true" type="button" disabled>Kaufen</button>
         <div class="links">
           <!-- TODO: backend has no public Q&A or watchlist; enable these once it does. -->
-          <button type="button" class="tl" disabled>Frage stellen</button>
-          <button type="button" class="tl" disabled>Merken</button>
+          <button type="button" class="zw-link" disabled>Frage stellen</button>
+          <button type="button" class="zw-link" disabled>Merken</button>
         </div>
       </div>
 
@@ -98,13 +91,7 @@
       <app-section-heading headingId="h-sim" heading="Ähnlich, in der Nähe" />
       <div class="zw-grid">
         @for (other of similar(); track other.id) {
-          <app-listing-card
-            [link]="['/listings', other.id]"
-            [title]="other.title ?? ''"
-            [price]="other.priceChf ?? 0"
-            [image]="other.imageUrl ?? ''"
-            [meta]="join(other.condition && conditions[other.condition], other.locality)"
-          />
+          <app-summary-card [listing]="other" />
         }
       </div>
     </section>

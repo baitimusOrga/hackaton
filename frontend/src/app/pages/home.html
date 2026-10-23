@@ -3,7 +3,7 @@
   <p class="zw-hero__lead">
     Schreib es in deinen Worten. Wir suchen nur auf Zweit, in deiner Nähe und schweizweit.
   </p>
-  <form #heroForm class="zw-hero__form" role="search" (ngSubmit)="search()">
+  <form #heroForm class="zw-hero__form" role="search" (ngSubmit)="hero.open(query())">
     <input
       id="hero-q"
       name="q"
@@ -67,13 +67,7 @@
     @if (items.length) {
       <div class="zw-grid">
         @for (item of items; track item.id) {
-          <app-listing-card
-            [link]="['/listings', item.id]"
-            [title]="item.title ?? ''"
-            [price]="item.priceChf ?? 0"
-            [image]="item.imageUrl ?? ''"
-            [meta]="item.meta"
-          />
+          <app-summary-card [listing]="item" />
         }
       </div>
     } @else {

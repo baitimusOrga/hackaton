@@ -17,24 +17,6 @@ import { Button } from '../ui/button';
       gap: var(--space-2);
       padding-top: var(--space-6);
     }
-    h1 {
-      margin: 0;
-      font-size: 32px;
-      line-height: 36px;
-      font-weight: 700;
-      letter-spacing: -0.005em;
-    }
-    h2 {
-      margin: 0;
-      font-size: 24px;
-      line-height: 28px;
-      font-weight: 700;
-    }
-    .bz-list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
     .bz-list .zw-row {
       flex-wrap: wrap;
       align-items: baseline;

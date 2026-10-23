@@ -10,9 +10,8 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
-import { ListingSummary } from '../api/models';
 import { ListingsService } from '../api/services';
 import { HeroSearch } from '../shell/hero-search';
 import { Button } from '../ui/button';
@@ -21,6 +20,7 @@ import { Icon } from '../ui/icon';
 import { IconName } from '../ui/icons';
 import { ListingCard } from '../ui/listing-card';
 import { SectionHeading } from '../ui/section-heading';
+import { SummaryCard } from '../ui/summary-card';
 
 const QUICK_FILTERS = ['Nur Auktionen', 'Unter CHF 50', 'Abholung', 'Endet heute', 'Grüne Wahl'];
 
@@ -35,14 +35,6 @@ const CATEGORIES: { label: string; icon: IconName }[] = [
   { label: 'Maschinen', icon: 'machines' },
   { label: 'Alle Kategorien', icon: 'menu' },
 ];
-
-const CONDITIONS: Record<NonNullable<ListingSummary['condition']>, string> = {
-  NEW: 'Neu',
-  LIKE_NEW: 'Wie neu',
-  GOOD: 'Gut',
-  USED: 'Gebraucht',
-  DEFECTIVE: 'Defekt',
-};
 
 const MINUTE = 60 * 1000;
 // shortcut: the backend has no auctions yet, so "Endet bald" shows the design's sample; load them once the API serves auctions.
@@ -80,13 +72,13 @@ const SAMPLE_AUCTIONS = [
 /** Landing page: hero search, quick filters, categories, ending auctions, new listings, business band. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, Button, Chip, Icon, ListingCard, SectionHeading],
+  imports: [FormsModule, RouterLink, Button, Chip, Icon, ListingCard, SectionHeading, SummaryCard],
   selector: 'app-home',
   host: { class: 'zw-bleed' },
   templateUrl: './home.html',
 })
 export class Home {
-  private readonly router = inject(Router);
+  protected readonly hero = inject(HeroSearch);
   private readonly heroForm = viewChild.required<ElementRef<HTMLElement>>('heroForm');
   protected readonly quickFilters = QUICK_FILTERS;
   protected readonly categories = CATEGORIES;
@@ -100,20 +92,13 @@ export class Home {
     inject(ListingsService)
       .list({})
       .pipe(
-        map((items) =>
-          items.slice(0, 8).map((item) => ({
-            ...item,
-            meta: [item.condition && CONDITIONS[item.condition], item.locality]
-              .filter(Boolean)
-              .join(' · '),
-          })),
-        ),
+        map((items) => items.slice(0, 8)),
         catchError(() => of([])),
       ),
   );
 
   constructor() {
-    const hero = inject(HeroSearch);
+    const hero = this.hero;
     hero.active.set(true);
     hero.visible.set(true);
     let observer: IntersectionObserver | undefined;
@@ -130,10 +115,5 @@ export class Home {
       hero.active.set(false);
       hero.visible.set(false);
     });
-  }
-
-  protected search(): void {
-    const q = this.query().trim();
-    void this.router.navigate(['/find'], { queryParams: q ? { q } : {} });
   }
 }

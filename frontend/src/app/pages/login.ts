@@ -11,34 +11,21 @@ import { Button } from '../ui/button';
   selector: 'app-login',
   imports: [FormsModule, RouterLink, Button],
   styles: `
-    :host {
-      display: block;
+    section {
       max-width: 440px;
       margin: 0 auto;
       padding: var(--space-12) 0 var(--space-16);
     }
     h1 {
-      margin: 0 0 var(--space-6);
-      font-size: 28px;
-      line-height: 32px;
-      font-weight: 700;
+      margin-bottom: var(--space-6);
     }
     form {
       display: flex;
       flex-direction: column;
       gap: var(--space-4);
     }
-    .zw-help {
-      margin: 0;
-    }
     .switch {
-      margin: var(--space-6) 0 0;
-    }
-    .switch a {
-      display: inline-flex;
-      align-items: center;
-      min-height: 44px;
-      font-weight: 600;
+      margin-top: var(--space-6);
     }
   `,
   template: `
@@ -138,7 +125,11 @@ import { Button } from '../ui/button';
       </form>
       <p class="switch">
         {{ registering ? 'Schon ein Konto?' : 'Neu bei Zweit?' }}
-        <a [routerLink]="registering ? '/login' : '/register'" [queryParams]="{ returnUrl }">
+        <a
+          class="zw-link"
+          [routerLink]="registering ? '/login' : '/register'"
+          [queryParams]="{ returnUrl }"
+        >
           {{ registering ? 'Anmelden' : 'Registrieren' }}
         </a>
       </p>
