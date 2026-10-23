@@ -1,0 +1,101 @@
+package one.absent.hackaton.ai;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.json.JsonMapper;
+
+class AiClientTest {
+
+    record Answer(String title) {
+    }
+
+    static final String SCHEMA = """
+            {"type": "object", "properties": {"title": {"type": "string"}},
+             "required": ["title"], "additionalProperties": false}""";
+
+    final RestClient.Builder builder = RestClient.builder();
+    final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+
+    AiClient client(String apiKey) {
+        return new AiClient(builder, JsonMapper.builder().build(), apiKey, "claude-sonnet-5-5", 1000, "https://ai.test");
+    }
+
+    static String message(String stopReason, String text) {
+        return """
+                {"stop_reason": "%s", "content": [
+                  {"type": "thinking", "thinking": ""},
+                  {"type": "text", "text": %s}]}""".formatted(stopReason, JsonMapper.builder().build().writeValueAsString(text));
+    }
+
+    @Test
+    void sendsImagesAndSchemaAndParsesTheAnswer() {
+        server.expect(requestTo("https://ai.test/v1/messages"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("x-api-key", "test-key"))
+                .andExpect(header("anthropic-version", "2026-10-21"))
+                .andExpect(jsonPath("$.model").value("claude-sonnet-5-5"))
+                .andExpect(jsonPath("$.system").value("Identify the item."))
+                .andExpect(jsonPath("$.fallbacks").value("default"))
+                .andExpect(jsonPath("$.output_config.format.type").value("json_schema"))
+                .andExpect(jsonPath("$.output_config.format.schema.required[0]").value("title"))
+                .andExpect(jsonPath("$.messages[0].content[0].type").value("image"))
+                .andExpect(jsonPath("$.messages[0].content[0].source.media_type").value("image/png"))
+                .andExpect(jsonPath("$.messages[0].content[0].source.data").value("AQID"))
+                .andExpect(jsonPath("$.messages[0].content[1].text").value("What is this?"))
+                .andRespond(withSuccess(message("end_turn", "{\"title\": \"iMac 27\\\" 5K\"}"), MediaType.APPLICATION_JSON));
+
+        Answer answer = client("test-key").ask("Identify the item.", "What is this?",
+                List.of(new AiClient.Image(new byte[] {1, 2, 3}, "image/png")), SCHEMA, Answer.class);
+
+        assertThat(answer.title()).isEqualTo("iMac 27\" 5K");
+        server.verify();
+    }
+
+    @Test
+    void missingKeyIs503WithoutCallingTheApi() {
+        assertThatThrownBy(() -> client("").ask("s", "t", List.of(), SCHEMA, Answer.class))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
+        server.verify();
+    }
+
+    @Test
+    void apiErrorIs503() {
+        server.expect(requestTo("https://ai.test/v1/messages")).andRespond(withServerError());
+
+        assertThatThrownBy(() -> client("test-key").ask("s", "t", List.of(), SCHEMA, Answer.class))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
+    }
+
+    @Test
+    void refusalOrBrokenJsonIs502() {
+        server.expect(requestTo("https://ai.test/v1/messages"))
+                .andRespond(withSuccess(message("refusal", ""), MediaType.APPLICATION_JSON));
+        server.expect(requestTo("https://ai.test/v1/messages"))
+                .andRespond(withSuccess(message("end_turn", "not json"), MediaType.APPLICATION_JSON));
+        AiClient client = client("test-key");
+
+        for (int i = 0; i < 2; i++) {
+            assertThatThrownBy(() -> client.ask("s", "t", List.of(), SCHEMA, Answer.class))
+                    .isInstanceOfSatisfying(ResponseStatusException.class,
+                            e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY));
+        }
+    }
+}

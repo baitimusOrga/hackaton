@@ -59,6 +59,8 @@ Run locally: `cd backend && ./mvnw spring-boot:run` (starts Postgres via Docker)
 - **DTOs are records, entities use Lombok** (`@Getter @Setter @NoArgsConstructor`). Never `@Data`
   or `@EqualsAndHashCode` on an entity (breaks Hibernate with lazy relations); never return an
   entity from a controller.
+- **AI calls go through `AiClient`** (`backend/.../ai/`): `ask(system, text, images, schema, Type.class)`
+  returns a record that matches the JSON schema. Tests mock `AiClient`; never call the API in a normal test.
 - **Config comes from the environment.** New setting → key in `application.yml` with a local
   default, `${MY_KEY}` for secrets; never commit a real secret.
 - Code, comments, identifiers, commit messages and PR texts are in **English**.
