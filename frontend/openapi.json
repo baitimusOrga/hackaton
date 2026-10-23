@@ -521,6 +521,32 @@
         }
       }
     },
+    "/api/places/{postcode}" : {
+      "get" : {
+        "tags" : [ "Places" ],
+        "operationId" : "place",
+        "parameters" : [ {
+          "name" : "postcode",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Place"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/photos/{id}" : {
       "get" : {
         "tags" : [ "Selling" ],
@@ -1462,6 +1488,17 @@
           }
         },
         "required" : [ "itemIds" ]
+      },
+      "Place" : {
+        "type" : "object",
+        "properties" : {
+          "postcode" : {
+            "type" : "string"
+          },
+          "locality" : {
+            "type" : "string"
+          }
+        }
       },
       "Info" : {
         "type" : "object",

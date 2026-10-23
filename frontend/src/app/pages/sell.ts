@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { HttpContext } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { ListingsService, SellingService } from '../api/services';
+import { ListingsService, PlacesService, SellingService } from '../api/services';
 import {
   CreateListingRequest,
   Detection,
@@ -12,7 +13,7 @@ import {
 } from '../api/models';
 import { PricePanel } from '../components/price-panel';
 import { DraftStream } from '../draft-stream';
-import { ErrorBanner } from '../errors';
+import { ErrorBanner, HANDLES_ERRORS } from '../errors';
 import { CONDITION, GapCard, KnownFact, completeness, openGaps } from '../gaps';
 
 type Source = KnownFact['source'];
@@ -29,6 +30,8 @@ interface SellPhoto {
 }
 
 const MAX_PHOTOS = 5;
+// per-browser default for the next listing
+const LAST_LOCATION = 'sell.lastLocation';
 const MARKERS: Record<Source, string> = {
   LABEL: 'From label',
   SUGGESTION: 'Suggested — please check',
@@ -449,7 +452,7 @@ const MARKER_STYLES: Record<Source, string> = {
               pattern="[0-9]{4}"
               inputmode="numeric"
               [value]="postcode()"
-              (input)="postcode.set($any($event.target).value)"
+              (input)="setPostcode($any($event.target).value)"
           /></label>
           <label
             >Locality
@@ -472,6 +475,7 @@ const MARKER_STYLES: Record<Source, string> = {
 export class Sell {
   private readonly api = inject(SellingService);
   private readonly stream = inject(DraftStream);
+  private readonly places = inject(PlacesService);
   private readonly banner = inject(ErrorBanner);
   private readonly router = inject(Router);
   protected readonly maxPhotos = MAX_PHOTOS;
@@ -539,8 +543,8 @@ export class Sell {
     ),
   );
   protected readonly price = signal<number | null>(null);
-  protected readonly postcode = signal('');
-  protected readonly locality = signal('');
+  protected readonly postcode = signal(lastLocation().postcode);
+  protected readonly locality = signal(lastLocation().locality);
   // fields the seller typed in keep their value when the draft is re-run
   private readonly sellerFields = new Set<Field>();
 
@@ -755,6 +759,19 @@ export class Sell {
     });
   }
 
+  /** A complete postcode fills in its locality; the seller can still change the locality. */
+  protected setPostcode(postcode: string): void {
+    this.postcode.set(postcode);
+    if (!/^\d{4}$/.test(postcode)) return;
+    this.places.place({ postcode }, new HttpContext().set(HANDLES_ERRORS, true)).subscribe({
+      next: (place) => {
+        if (this.postcode() === postcode && place.locality) this.locality.set(place.locality);
+      },
+      // an unknown postcode leaves the locality as the seller typed it
+      error: () => undefined,
+    });
+  }
+
   protected removeFact(index: number): void {
     this.facts.update((facts) => facts.filter((_, i) => i !== index));
   }
@@ -782,8 +799,28 @@ export class Sell {
     };
     this.busy.set(true);
     this.api.publish({ body }).subscribe({
-      next: (listing) => void this.router.navigate(['/listings', listing.id]),
+      next: (listing) => {
+        saveLastLocation(body.postcode, body.locality);
+        void this.router.navigate(['/listings', listing.id]);
+      },
       error: () => this.busy.set(false),
     });
+  }
+}
+
+function lastLocation(): { postcode: string; locality: string } {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LAST_LOCATION) ?? '{}');
+    return { postcode: saved.postcode ?? '', locality: saved.locality ?? '' };
+  } catch {
+    return { postcode: '', locality: '' };
+  }
+}
+
+function saveLastLocation(postcode: string, locality: string): void {
+  try {
+    localStorage.setItem(LAST_LOCATION, JSON.stringify({ postcode, locality }));
+  } catch {
+    // private mode or blocked storage: no default next time
   }
 }

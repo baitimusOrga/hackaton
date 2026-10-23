@@ -17,6 +17,7 @@ export type { KnownFact } from './models/known-fact';
 export type { ListingDetail } from './models/listing-detail';
 export type { ListingDraft } from './models/listing-draft';
 export type { ListingSummary } from './models/listing-summary';
+export type { Place } from './models/place';
 export type { PriceEstimate } from './models/price-estimate';
 export type { PriceEvidence } from './models/price-evidence';
 export type { PrivacyMark } from './models/privacy-mark';

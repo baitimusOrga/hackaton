@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { ListingsService, SellingService } from '../api/services';
+import { ListingsService, PlacesService, SellingService } from '../api/services';
 import { DraftEvent, ListingDraft } from '../api/models';
 import { DraftStream } from '../draft-stream';
 import { ErrorBanner } from '../errors';
@@ -39,7 +39,7 @@ function button(element: HTMLElement, text: string): HTMLButtonElement {
 }
 
 /** Opens the sell page, adds one photo and runs the analysis with the given stream behaviour. */
-async function analyse(runs: Run[], extra: object = {}) {
+async function analyse(runs: Run[], extra: object = {}, place = vi.fn()) {
   URL.createObjectURL = vi.fn().mockReturnValue('blob:photo');
   const uploadPhotos = vi.fn().mockReturnValue(of([7]));
   const run = vi.fn();
@@ -50,6 +50,7 @@ async function analyse(runs: Run[], extra: object = {}) {
       { provide: SellingService, useValue: { uploadPhotos, ...extra } },
       { provide: ListingsService, useValue: { categories: () => of(CATEGORIES) } },
       { provide: DraftStream, useValue: { run } },
+      { provide: PlacesService, useValue: { place } },
     ],
   });
   const fixture = TestBed.createComponent(Sell);
@@ -63,7 +64,7 @@ async function analyse(runs: Run[], extra: object = {}) {
   await fixture.whenStable();
   button(element, 'Analyse').click();
   await fixture.whenStable();
-  return { fixture, element, uploadPhotos, run };
+  return { fixture, element, uploadPhotos, run, place };
 }
 
 /** Runs the analysis and skips straight to the review form. */
@@ -229,6 +230,38 @@ describe('Sell', () => {
     expect(
       element.querySelector<HTMLAnchorElement>('a[href="https://example.com/specs"]')!.textContent,
     ).toContain('Source');
+  });
+
+  it('fills the locality from the postcode and keeps it editable', async () => {
+    const place = vi.fn().mockReturnValue(of({ postcode: '1700', locality: 'Fribourg' }));
+    const page = await analyse([streams(done(DRAFT))], {}, place);
+    button(page.element, 'To overview').click();
+    await page.fixture.whenStable();
+    const postcode = page.element.querySelector<HTMLInputElement>('input[name="postcode"]')!;
+    const locality = () => page.element.querySelector<HTMLInputElement>('input[name="locality"]')!;
+
+    postcode.value = '1700';
+    postcode.dispatchEvent(new Event('input'));
+    await page.fixture.whenStable();
+
+    expect(place.mock.calls[0][0]).toEqual({ postcode: '1700' });
+    expect(locality().value).toBe('Fribourg');
+    locality().value = 'Villars-sur-Glâne';
+    locality().dispatchEvent(new Event('input'));
+    await page.fixture.whenStable();
+    expect(locality().value).toBe('Villars-sur-Glâne');
+  });
+
+  it('starts with the last location used', async () => {
+    localStorage.setItem(
+      'sell.lastLocation',
+      JSON.stringify({ postcode: '8004', locality: 'Zürich' }),
+    );
+    const { element } = await review(DRAFT);
+    localStorage.removeItem('sell.lastLocation');
+
+    expect(element.querySelector<HTMLInputElement>('input[name="postcode"]')!.value).toBe('8004');
+    expect(element.querySelector<HTMLInputElement>('input[name="locality"]')!.value).toBe('Zürich');
   });
 
   it('labels every fact input', async () => {

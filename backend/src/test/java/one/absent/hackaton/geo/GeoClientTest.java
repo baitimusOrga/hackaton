@@ -24,10 +24,11 @@ class GeoClientTest {
     @Test
     void readsTheCentroidAndCachesIt() {
         server.expect(once(), requestTo(URL)).andRespond(withSuccess(
-                "{\"results\":[{\"attrs\":{\"lat\":47.378,\"lon\":8.5233}}]}", MediaType.APPLICATION_JSON));
+                "{\"results\":[{\"attrs\":{\"lat\":47.378,\"lon\":8.5233,\"label\":\"<b>8004 - Zürich</b>\"}}]}",
+                MediaType.APPLICATION_JSON));
 
         assertThat(client.locate("8004")).contains(new Coordinates(47.378, 8.5233));
-        assertThat(client.locate("8004")).isPresent(); // second call: no request, the mock allows only one
+        assertThat(client.locality("8004")).contains("Zürich"); // second call: no request, the mock allows only one
         server.verify();
     }
 

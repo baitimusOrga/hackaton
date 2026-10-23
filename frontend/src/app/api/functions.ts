@@ -39,5 +39,7 @@ export type { Get$Params as Get$Params } from './fn/listings/get';
 export { get as get } from './fn/listings/get';
 export type { Categories$Params as Categories$Params } from './fn/listings/categories';
 export { categories as categories } from './fn/listings/categories';
+export type { Place$Params as Place$Params } from './fn/places/place';
+export { place as place } from './fn/places/place';
 export type { Info$Params as Info$Params } from './fn/info/info';
 export { info as info } from './fn/info/info';
