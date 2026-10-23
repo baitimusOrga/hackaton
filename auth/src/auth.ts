@@ -15,7 +15,14 @@ export function createAuth(config: AuthConfig) {
     emailAndPassword: { enabled: true, minPasswordLength: 12, maxPasswordLength: 128 },
     session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
     rateLimit: { enabled: true, storage: "database" },
+    advanced: {
+      ipAddress: {
+        ...(config.trustedProxies.length && { trustedProxies: config.trustedProxies }),
+        ...(config.ipHeader && { ipAddressHeaders: [config.ipHeader] }),
+      },
+    },
     plugins: [jwt({
+      disableSettingJwtHeader: true,
       jwks: { keyPairConfig: { alg: "RS256" } },
       jwt: {
         issuer: config.baseURL,

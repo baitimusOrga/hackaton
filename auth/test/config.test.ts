@@ -12,3 +12,9 @@ test("accepts a local origin and rejects redirects or production HTTP", () => {
   assert.throws(() => readConfig({ ...env, BETTER_AUTH_URL: "https://example.com/path" }), /origin/);
   assert.throws(() => readConfig({ ...env, NODE_ENV: "production" }), /HTTPS/);
 });
+test("parses trusted proxies and the client IP header", () => {
+  assert.deepEqual(readConfig(env).trustedProxies, []);
+  const c = readConfig({ ...env, AUTH_TRUSTED_PROXIES: "10.0.0.0/8, 172.16.0.1,", AUTH_IP_HEADER: "CF-Connecting-IP" });
+  assert.deepEqual(c.trustedProxies, ["10.0.0.0/8", "172.16.0.1"]);
+  assert.equal(c.ipHeader, "cf-connecting-ip");
+});
