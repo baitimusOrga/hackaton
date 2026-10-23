@@ -60,6 +60,9 @@ ai:
   max-tokens: 16000
   base-url: https://api.anthropic.com
 
+geo:
+  base-url: https://api3.geo.admin.ch      # swisstopo: postcode → coordinates, free, no key
+
 app:
   auth:
     issuer: ${AUTH_ISSUER:http://localhost:4200}

@@ -11,7 +11,9 @@ export interface ListingDetail {
   description?: string;
   id?: number;
   imageUrl?: string;
+  latitude?: (number | null);
   locality?: string;
+  longitude?: (number | null);
   postcode?: string;
   priceChf?: number;
   sellerName?: (string | null);

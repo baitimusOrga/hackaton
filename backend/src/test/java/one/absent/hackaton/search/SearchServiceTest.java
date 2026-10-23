@@ -21,14 +21,14 @@ class SearchServiceTest {
 
     static final ListingDetail IMAC = new ListingDetail(1, "iMac 27\" Retina 5K (2017)", new BigDecimal("450"),
             Condition.GOOD, "Computers", "8004", "Zürich", null, "Works well.",
-            Map.of("Display", "27\" 5K", "RAM", "16 GB", "Year", "2017"), Instant.now(), null);
+            Map.of("Display", "27\" 5K", "RAM", "16 GB", "Year", "2017"), Instant.now(), null, null, null);
     static final ListingDetail IMAC_2019 = new ListingDetail(2, "iMac 27\" Retina 5K (2019)", new BigDecimal("720"),
             Condition.LIKE_NEW, "Computers", "3007", "Bern", null, "Very good condition.",
-            Map.of("Display", "27\" 5K", "Year", "2019"), Instant.now(), null);
+            Map.of("Display", "27\" 5K", "Year", "2019"), Instant.now(), null, null, null);
     static final ListingDetail OLD_IMAC = new ListingDetail(3, "Apple iMac 27 inch", new BigDecimal("300"),
-            Condition.USED, "Computers", "8001", "Zürich", null, "Older iMac.", Map.of(), Instant.now(), null);
+            Condition.USED, "Computers", "8001", "Zürich", null, "Older iMac.", Map.of(), Instant.now(), null, null, null);
     static final ListingDetail DEFECTIVE_PHONE = new ListingDetail(4, "Phone", new BigDecimal("50"),
-            Condition.DEFECTIVE, "Phones", "8001", "Zürich", null, "Broken screen.", Map.of(), Instant.now(), null);
+            Condition.DEFECTIVE, "Phones", "8001", "Zürich", null, "Broken screen.", Map.of(), Instant.now(), null, null, null);
 
     static Requirement req(String attribute, String value) {
         return new Requirement(attribute, value, EXACT);
@@ -121,16 +121,16 @@ class SearchServiceTest {
     }
 
     static SearchService service() {
-        return new SearchService(null, null, null, "model");
+        return new SearchService(null, null, null, "model", null);
     }
 
     static ListingDetail withAttributes(ListingDetail l, Map<String, String> attributes) {
         return new ListingDetail(l.id(), l.title(), l.priceChf(), l.condition(), l.category(), l.postcode(),
-                l.locality(), l.imageUrl(), l.description(), attributes, l.createdAt(), null);
+                l.locality(), l.imageUrl(), l.description(), attributes, l.createdAt(), null, null, null);
     }
 
     static ListingDetail withCondition(ListingDetail l, Condition condition) {
         return new ListingDetail(l.id(), l.title(), l.priceChf(), condition, l.category(), l.postcode(),
-                l.locality(), l.imageUrl(), l.description(), l.attributes(), l.createdAt(), null);
+                l.locality(), l.imageUrl(), l.description(), l.attributes(), l.createdAt(), null, null, null);
     }
 }

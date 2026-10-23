@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import one.absent.hackaton.geo.GeoClient;
 import jakarta.validation.Valid;
 import one.absent.hackaton.listing.Listing;
 import one.absent.hackaton.listing.ListingDetail;
@@ -24,9 +25,12 @@ public class SellingController {
     private final ListingRepository listings;
     private final PhotoRepository photoRepository;
 
-    public SellingController(ListingRepository listings, PhotoRepository photoRepository) {
+    private final GeoClient geo;
+
+    public SellingController(ListingRepository listings, PhotoRepository photoRepository, GeoClient geo) {
         this.listings = listings;
         this.photoRepository = photoRepository;
+        this.geo = geo;
     }
 
     @PostMapping
@@ -50,6 +54,10 @@ public class SellingController {
         listing.setPriceChf(request.priceChf());
         listing.setPostcode(request.postcode());
         listing.setLocality(request.locality());
+        geo.locate(request.postcode()).ifPresent(c -> {
+            listing.setLatitude(c.latitude());
+            listing.setLongitude(c.longitude());
+        });
         listing.setAttributes(new HashMap<>(request.attributes()));
         listing.setCreatedAt(Instant.now());
         listing.setSellerId(seller.getSubject());

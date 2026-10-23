@@ -210,6 +210,14 @@
           "schema" : {
             "type" : "string"
           }
+        }, {
+          "name" : "radiusKm",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "number",
+            "format" : "double"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -872,6 +880,14 @@
           },
           "imageUrl" : {
             "type" : "string"
+          },
+          "latitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "longitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
           }
         }
       },
@@ -1022,6 +1038,14 @@
           },
           "sellerName" : {
             "type" : [ "string", "null" ]
+          },
+          "latitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "longitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
           }
         }
       },
