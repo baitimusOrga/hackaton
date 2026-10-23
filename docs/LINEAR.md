@@ -6,8 +6,8 @@ Linear holds the work, the repo holds the rules, a human merges.
 
 | Status | Who | Means |
 |---|---|---|
-| Todo | anyone | idea or rough task |
-| Ready | a human | written with the template below, small enough for one PR; agents may take it |
+| Backlog | anyone | idea or rough task |
+| Todo | a human | written with the template below, small enough for one PR; agents may take it |
 | In Progress | the agent / person working on it | branch exists |
 | In Review | set when the PR is green | a human reviews and merges |
 | Done | Linear, on merge | via `Fixes <ISSUE-ID>` in the PR |

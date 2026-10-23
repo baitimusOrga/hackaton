@@ -1,6 +1,6 @@
 ---
 name: work-issue
-description: Use when asked to work on a Linear issue in the hackaton repo — "/work-issue HAC-12", "mach HAC-12", "nimm das nächste Ready-Issue", or a pasted Linear issue link. Drives one issue from Ready to an open, green pull request linked to Linear, then stops; merging stays with a human.
+description: Use when asked to work on a Linear issue in the hackaton repo — "/work-issue HAC-12", "mach HAC-12", "nimm das nächste Todo-Issue", or a pasted Linear issue link. Drives one issue from Todo (released) to an open, green pull request linked to Linear, then stops; merging stays with a human.
 ---
 
 # work-issue — one Linear issue → one green PR
@@ -14,9 +14,10 @@ Fetch it through the Linear MCP server (`linear`): title, description, acceptanc
 comments, labels, status. If the Linear tools are missing, ask the user to authorize the
 `linear` server (`/mcp`) or to paste the issue; don't guess its content.
 
-## 2. Ready check — stop here if any of these fails
+## 2. Readiness check — stop here if any of these fails
 
-- Status is **Ready** (a human released it). Not Ready → ask, don't start.
+- Status is **Todo** (a human released it; **Backlog** means not written up yet). Backlog or
+  anything else → ask, don't start.
 - It has **acceptance criteria you can check** (a request, a screen state, a test). Vague
   ("make it nicer") → comment on the issue with the concrete questions, tell the user, stop.
 - It fits **one PR** (roughly half a day). Bigger → propose a split as a comment, stop.
