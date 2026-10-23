@@ -37,12 +37,12 @@ Needs JDK 21, Node 24.15+ (or 22.22.3+) and Docker.
 
 ```bash
 cd backend && ./mvnw spring-boot:run       # API on :8080, starts Postgres from docker-compose.yml
-cd frontend && npm ci && npm start         # http://localhost:4200, /api is proxied to :8080
+cd frontend && pnpm install && pnpm start         # http://localhost:4200, /api is proxied to :8080
 ```
 
 ### IntelliJ
 
-`.run/` holds shared run configurations: `backend` (Maven `spring-boot:run`), `frontend` (`npm start`) and `dev` (both at once). They contain no machine-specific paths, so each developer sets these once in their own IDE (`.idea/` isn't committed):
+`.run/` holds shared run configurations: `backend` (Maven `spring-boot:run`), `frontend` (`pnpm start`) and `dev` (both at once). They contain no machine-specific paths, so each developer sets these once in their own IDE (`.idea/` isn't committed):
 
 - **Project SDK**: *File → Project Structure → Project → SDK* = a JDK 21. Without it `backend` fails with "Project JDK is not specified".
 - **Node interpreter**: *Settings → Languages & Frameworks → Node.js* = Node 24.15+ (or 22.22.3+). `frontend` uses the project's interpreter.
