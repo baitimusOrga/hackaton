@@ -15,6 +15,9 @@ Where new code goes and the recipe for a feature end to end:
 [`.claude/skills/hackaton-architecture/SKILL.md`](.claude/skills/hackaton-architecture/SKILL.md)
 (Claude loads it as a skill; other agents read it before building a feature).
 
+Linear issues: work one with [`.claude/skills/work-issue/SKILL.md`](.claude/skills/work-issue/SKILL.md)
+(`/work-issue <ISSUE-ID>` in Claude Code); flow and issue template in [`docs/LINEAR.md`](docs/LINEAR.md).
+
 **How to write code and spend context:** [`docs/LEAN-CODE.md`](docs/LEAN-CODE.md) — read it before
 every task; it applies to all agents.
 

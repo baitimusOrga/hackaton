@@ -3,6 +3,10 @@
     "idea": {
       "url": "http://127.0.0.1:64342/stream",
       "type": "http"
+    },
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
     }
   }
 }
