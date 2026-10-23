@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.listing.Listing;
 import one.absent.hackaton.listing.ListingDetail;
+import one.absent.hackaton.listing.ListingStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -197,8 +198,9 @@ public class SearchService {
     }
 
     List<ListingDetail> candidates(SearchRequirements req, boolean withKeywords) {
-        StringBuilder jpql = new StringBuilder("select l from Listing l where 1 = 1");
+        StringBuilder jpql = new StringBuilder("select l from Listing l where l.status = :available");
         Map<String, Object> params = new HashMap<>();
+        params.put("available", ListingStatus.AVAILABLE);
         if (req.maxBudgetChf() != null) {
             jpql.append(" and l.priceChf <= :budget");
             params.put("budget", req.maxBudgetChf());

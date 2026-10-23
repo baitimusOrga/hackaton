@@ -14,7 +14,6 @@ Rules:
 - `listing_attribute`: attribute names/values owned by a listing. Demo data uses only the canonical keys `Brand, Model, Year, Color, Size, Display, Resolution, CPU, RAM, Storage, Material, Dimensions`.
 - `listing.status`: `AVAILABLE` (default) or `SOLD`; `GET /api/listings` only returns `AVAILABLE`, newest first. V6 adds 20 fictional demo listings with ids 1001–1020.
 - Nullable `listing.seller_id` and `seller_name` store the verified Better Auth subject and a display-name snapshot at publication. Existing demos retain null sellers. Auth owns the separate `auth` schema, with no cross-schema user foreign key.
-
 - `photo`: uploaded listing photos (bytes + content type) with the uploading seller's subject. `listing_id` stays null until the photo is published with a listing; `listing.image_url` then points at `/api/photos/{first photo id}`. Unpublished draft photos are not cleaned up yet.
 
 ## Migrations so far
