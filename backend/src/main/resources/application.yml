@@ -8,6 +8,10 @@ spring:
     url: jdbc:postgresql://localhost:5432/hackaton
     username: hackaton
     password: hackaton
+  docker:
+    compose:
+      file: ../docker-compose.yml       # local only: spring-boot-docker-compose isn't in the image
+      lifecycle-management: start-only  # keep Postgres running between backend restarts
   jpa:
     open-in-view: false
     hibernate:
