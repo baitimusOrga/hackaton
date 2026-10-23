@@ -27,7 +27,7 @@ describe('DraftStream', () => {
       .mockResolvedValue(
         new Response(
           streamOf(
-            'data: {"type":"DETECTION","detection":{"photo":1,"box":[0,0,1,1],"label":"Dell"}}\n\ndata: {"ty',
+            'data:{"type":"DETECTION","detection":{"photo":1,"box":[0,0,1,1],"label":"Dell"}}\n\ndata: {"ty',
             'pe":"ERROR","detail":"x"}\n\n',
           ),
         ),

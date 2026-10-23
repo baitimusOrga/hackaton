@@ -160,7 +160,8 @@ class AiClientTest {
         server.expect(requestTo("https://ai.test/v1/messages"))
                 .andExpect(jsonPath("$.stream").value(true))
                 .andExpect(jsonPath("$.tools").doesNotExist())
-                .andExpect(jsonPath("$.output_config").doesNotExist())
+                .andExpect(jsonPath("$.output_config.effort").value("low"))
+                .andExpect(jsonPath("$.output_config.format").doesNotExist())
                 .andRespond(withSuccess(sse(Map.of("type", "message_start"), text("{\"a\":1}\n{\"b\""),
                         Map.of("type", "content_block_delta", "delta", Map.of("type", "thinking_delta", "thinking", "hm")),
                         text(":2}"), stop("end_turn")), MediaType.TEXT_EVENT_STREAM));

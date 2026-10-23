@@ -84,7 +84,7 @@ class DraftControllerTest {
                 .formatted(id));
 
         assertThat(body.split("\n\n")).hasSize(3);
-        assertThat(body).startsWith("data: {\"type\":\"DETECTION\"");
+        assertThat(body).startsWith("data:{\"type\":\"DETECTION\"");
         assertThat(body).contains("\"type\":\"GAP\"", "\"type\":\"DRAFT\"", "\"photoIds\":[" + id + "]");
         ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
         verify(ai).streamLines(anyString(), text.capture(), anyList(), any());

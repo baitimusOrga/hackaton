@@ -1,9 +1,7 @@
 package one.absent.hackaton.selling;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -32,7 +30,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tools.jackson.databind.json.JsonMapper;
 
 /** Streams a listing draft from the seller's uploaded photos as server-sent events. */
@@ -111,28 +109,33 @@ public class DraftController {
             content = @Content(mediaType = MediaType.TEXT_EVENT_STREAM_VALUE,
                     schema = @Schema(implementation = DraftEvent.class))))
     @PostMapping(value = "/api/listing-drafts/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public ResponseEntity<StreamingResponseBody> streamDraft(@Valid @RequestBody DraftRequest request,
-                                                             @AuthenticationPrincipal Jwt seller) {
+    public ResponseEntity<SseEmitter> streamDraft(@Valid @RequestBody DraftRequest request,
+                                                  @AuthenticationPrincipal Jwt seller) {
         List<AiClient.Image> images = imagesOf(request.photoIds(), seller.getSubject());
         String text = "Create the listing draft for the item in these photos." + (request.confirmedFacts().isEmpty()
                 ? "" : "\nThe seller confirmed:\n" + request.confirmedFacts().stream()
                         .map(f -> f.name() + ": " + f.value()).collect(Collectors.joining("\n")));
-        StreamingResponseBody body = out -> {
-            Consumer<DraftEvent> emit = event -> write(out, event);
+        // SseEmitter flushes every event; StreamingResponseBody's stream does not
+        var emitter = new SseEmitter();
+        Consumer<DraftEvent> emit = event -> send(emitter, event);
+        Thread.ofVirtual().start(() -> {
             try {
                 var lines = new DraftLines(json, images.size(), emit);
                 ai.streamLines(SYSTEM, text, images, lines);
                 lines.finish(request.photoIds(), prices);
             } catch (ResponseStatusException e) {
                 emit.accept(DraftEvent.error(e.getReason()));
+            } catch (RuntimeException e) {
+                emitter.completeWithError(e);
+                return;
             }
-        };
+            emitter.complete();
+        });
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noCache())
                 // keeps a reverse proxy from buffering the stream
                 .header("X-Accel-Buffering", "no")
-                .contentType(MediaType.TEXT_EVENT_STREAM)
-                .body(body);
+                .body(emitter);
     }
 
     /** The images of the seller's unpublished photos, in request order. */
@@ -149,10 +152,9 @@ public class DraftController {
         }).toList();
     }
 
-    private void write(OutputStream out, DraftEvent event) {
+    private static void send(SseEmitter emitter, DraftEvent event) {
         try {
-            out.write(("data: " + json.writeValueAsString(event) + "\n\n").getBytes(StandardCharsets.UTF_8));
-            out.flush();
+            emitter.send(event, MediaType.APPLICATION_JSON);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

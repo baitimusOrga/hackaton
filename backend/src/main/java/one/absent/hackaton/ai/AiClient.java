@@ -91,6 +91,8 @@ public class AiClient {
         }
         Map<String, Object> request = request(model, system, text, images, null, false);
         request.put("stream", true);
+        // without it the model thinks silently first and then writes every line in one burst
+        request.put("output_config", Map.of("effort", "low"));
         try {
             http.post().uri("/v1/messages")
                     .header("x-api-key", apiKey)
@@ -229,6 +231,8 @@ public class AiClient {
     private static JdkClientHttpRequestFactory timeout() {
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory();
         factory.setReadTimeout(Duration.ofSeconds(120));
+        // the gzip decompression buffers a streamed answer until it is complete
+        factory.enableCompression(false);
         return factory;
     }
 

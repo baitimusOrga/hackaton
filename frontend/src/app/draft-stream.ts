@@ -35,7 +35,8 @@ export class DraftStream {
       const events = buffer.split('\n\n');
       buffer = events.pop()!;
       for (const event of events) {
-        if (event.startsWith('data: ')) onEvent(JSON.parse(event.slice(6)) as DraftEvent);
+        // Spring writes "data:{...}", the SSE spec also allows "data: {...}"
+        if (event.startsWith('data:')) onEvent(JSON.parse(event.slice(5)) as DraftEvent);
       }
     }
   }
