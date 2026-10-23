@@ -41,3 +41,11 @@ The older experimental session PR used a different Flyway V4. Do not delete or r
 Cookie sessions stay inside Better Auth, with origin/CSRF checks enabled. API JWTs use RS256, public origin as issuer, `hackaton-api` as audience, five-minute expiry, and `sub`, `name`, `email` identity claims. Private signing keys remain encrypted in Better Auth's schema. Rate limits use the database.
 
 Passwords are 12–128 characters. Email verification, password reset and social login are outside the current HAC-32 scope, so no mail server is required.
+
+## Staging rollout (HAC-34)
+
+The auth deploy job builds `hackaton-auth:staging` on main pushes only. Auth CI runs the build and integration suite against an isolated Postgres service. Production auth promotion is a separate rollout.
+
+Merge the auth service and deployment workflow first, wait for the auth image, then sync staging environment secrets and merge deployments PR #2. `STAGING_BETTER_AUTH_SECRET` is configured in the application repository; its value must remain stable after rollout. The shared environment sync removes the `STAGING_` prefix. Compose requires `BETTER_AUTH_SECRET` and routes `/api/auth` to auth at priority 200, ahead of Spring's `/api` route at 100. Spring reads JWKS internally from `http://auth:3000/api/auth/jwks` and validates the public staging origin as issuer.
+
+Deploy the login UI before JWT-protected writes. Verify signup, signin, `/api/auth/token`, `/api/auth/jwks`, anonymous write 401, authenticated publication and seller detail on staging. PRs being green does not confirm this live acceptance check.
