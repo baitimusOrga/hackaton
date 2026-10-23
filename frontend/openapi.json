@@ -176,6 +176,37 @@
         }
       }
     },
+    "/api/listing-drafts/web-facts" : {
+      "post" : {
+        "tags" : [ "Selling" ],
+        "operationId" : "completeFacts",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WebFactsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DraftFact"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/photos/{id}" : {
       "get" : {
         "tags" : [ "Selling" ],
@@ -505,7 +536,10 @@
           },
           "source" : {
             "type" : "string",
-            "enum" : [ "LABEL", "SELLER", "SUGGESTION" ]
+            "enum" : [ "LABEL", "SELLER", "SUGGESTION", "WEB" ]
+          },
+          "sourceUrl" : {
+            "type" : [ "string", "null" ]
           }
         }
       },
@@ -546,6 +580,12 @@
           },
           "price" : {
             "$ref" : "#/components/schemas/PriceEstimate"
+          },
+          "privacyWarnings" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrivacyWarning"
+            }
           }
         }
       },
@@ -593,6 +633,62 @@
             "type" : "number"
           }
         }
+      },
+      "PrivacyWarning" : {
+        "type" : "object",
+        "properties" : {
+          "photo" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "text" : {
+            "type" : "string"
+          }
+        }
+      },
+      "KnownFact" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "value" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "LABEL", "SELLER", "SUGGESTION", "WEB" ]
+          }
+        },
+        "required" : [ "name", "source", "value" ]
+      },
+      "WebFactsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "category" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "facts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/KnownFact"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "category", "facts", "title" ]
       },
       "Info" : {
         "type" : "object",

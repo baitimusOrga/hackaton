@@ -35,6 +35,7 @@ public class SecurityConfig {
             .requestCache(cache -> cache.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.POST, "/api/listings", "/api/listing-drafts").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/listing-drafts/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/photos/**").permitAll()
                 .anyRequest().permitAll())
             .exceptionHandling(errors -> errors.authenticationEntryPoint((req, res, ex) -> unauthorized(res)))

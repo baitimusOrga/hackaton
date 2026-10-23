@@ -4,13 +4,16 @@
 export type { CreateListingRequest } from './models/create-listing-request';
 export type { DraftFact } from './models/draft-fact';
 export type { Info } from './models/info';
+export type { KnownFact } from './models/known-fact';
 export type { ListingDetail } from './models/listing-detail';
 export type { ListingDraft } from './models/listing-draft';
 export type { ListingSummary } from './models/listing-summary';
 export type { PriceEstimate } from './models/price-estimate';
 export type { PriceEvidence } from './models/price-evidence';
+export type { PrivacyWarning } from './models/privacy-warning';
 export type { Requirement } from './models/requirement';
 export type { SearchMatch } from './models/search-match';
 export type { SearchRequest } from './models/search-request';
 export type { SearchRequirements } from './models/search-requirements';
 export type { SearchResults } from './models/search-results';
+export type { WebFactsRequest } from './models/web-facts-request';

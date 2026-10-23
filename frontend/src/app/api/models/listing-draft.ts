@@ -3,6 +3,7 @@
 
 import { DraftFact } from '../models/draft-fact';
 import { PriceEstimate } from '../models/price-estimate';
+import { PrivacyWarning } from '../models/privacy-warning';
 export interface ListingDraft {
   category?: string;
   condition?: ('NEW' | 'LIKE_NEW' | 'GOOD' | 'USED' | 'DEFECTIVE' | null);
@@ -10,6 +11,7 @@ export interface ListingDraft {
   facts?: Array<DraftFact>;
   photoIds?: Array<number>;
   price?: PriceEstimate;
+  privacyWarnings?: Array<PrivacyWarning>;
   questions?: Array<string>;
   title?: string;
 }

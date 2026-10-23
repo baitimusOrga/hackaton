@@ -10,8 +10,11 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { completeFacts } from '../fn/selling/complete-facts';
+import { CompleteFacts$Params } from '../fn/selling/complete-facts';
 import { createDraft } from '../fn/selling/create-draft';
 import { CreateDraft$Params } from '../fn/selling/create-draft';
+import { DraftFact } from '../models/draft-fact';
 import { getPhoto } from '../fn/selling/get-photo';
 import { GetPhoto$Params } from '../fn/selling/get-photo';
 import { ListingDetail } from '../models/listing-detail';
@@ -76,6 +79,33 @@ export class SellingService extends BaseService {
     const resp = this.createDraft$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<ListingDraft>): ListingDraft => r.body)
+    );
+  }
+
+  /** Path part for operation `completeFacts()` */
+  static readonly CompleteFactsPath = '/api/listing-drafts/web-facts';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `completeFacts()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  completeFacts$Response(params: CompleteFacts$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<DraftFact>>> {
+    const obs = completeFacts(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `completeFacts$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  completeFacts(params: CompleteFacts$Params, context?: HttpContext): Observable<Array<DraftFact>> {
+    const resp = this.completeFacts$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<DraftFact>>): Array<DraftFact> => r.body)
     );
   }
 

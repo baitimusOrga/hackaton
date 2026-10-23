@@ -1,5 +1,6 @@
 package one.absent.hackaton.selling;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -52,14 +53,17 @@ class DraftControllerTest {
     @Test void draftFromOnePhotoStoresItAndReturnsFactsQuestionsAndPrice() throws Exception {
         when(ai.ask(anyString(), anyString(), anyList(), anyString(), eq(DraftController.AiDraft.class)))
                 .thenReturn(new DraftController.AiDraft("Monitors", "Dell U2719D monitor", "A 27 inch monitor.",
-                        Condition.GOOD, List.of(new DraftFact("Brand", "Dell", FactSource.LABEL),
-                        new DraftFact("Size", "27\"", FactSource.SUGGESTION)),
-                        List.of("Please photograph the model label.")));
+                        null, List.of(new DraftFact("Brand", "Dell", FactSource.LABEL, null),
+                        new DraftFact("Size", "27\"", FactSource.SUGGESTION, null)),
+                        List.of("Please photograph the model label."),
+                        List.of(new ListingDraft.PrivacyWarning(1, "Shows a serial number."))));
         long before = photos.count();
         String body = mvc.perform(multipart("/api/listing-drafts").file(photo("image/png"))
                         .with(jwt().jwt(j -> j.subject("seller"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.category").value("Monitors"))
+                .andExpect(jsonPath("$.condition").value(nullValue()))
+                .andExpect(jsonPath("$.privacyWarnings[0].photo").value(1))
                 .andExpect(jsonPath("$.facts[0].source").value("LABEL"))
                 .andExpect(jsonPath("$.questions[0]").value("Please photograph the model label."))
                 // price numbers depend on the demo listings (V4/V6); PriceEstimatorTest covers the math
@@ -88,6 +92,14 @@ class DraftControllerTest {
         mvc.perform(post("/api/listings").with(jwt().jwt(j -> j.subject("seller")))
                         .contentType(MediaType.APPLICATION_JSON).content(listing))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test void shortTitleCutsAtAWordBoundary() {
+        String title = "Apple iMac 27 inch Retina 5K 2017 with Intel Core i5 and 16 GB RAM and 1 TB Fusion Drive";
+        String cut = DraftController.shortTitle(title);
+        assertThat(cut.length()).isLessThanOrEqualTo(60);
+        assertThat(title).startsWith(cut + " ");
+        assertThat(DraftController.shortTitle("Dell U2719D")).isEqualTo("Dell U2719D");
     }
 
     @Test void wrongTypeIsRejected() throws Exception {

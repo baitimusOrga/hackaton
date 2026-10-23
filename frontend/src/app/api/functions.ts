@@ -13,6 +13,8 @@ export type { Publish$Params as Publish$Params } from './fn/selling/publish';
 export { publish as publish } from './fn/selling/publish';
 export type { CreateDraft$Params as CreateDraft$Params } from './fn/selling/create-draft';
 export { createDraft as createDraft } from './fn/selling/create-draft';
+export type { CompleteFacts$Params as CompleteFacts$Params } from './fn/selling/complete-facts';
+export { completeFacts as completeFacts } from './fn/selling/complete-facts';
 export type { GetPhoto$Params as GetPhoto$Params } from './fn/selling/get-photo';
 export { getPhoto as getPhoto } from './fn/selling/get-photo';
 export type { Info$Params as Info$Params } from './fn/info/info';
