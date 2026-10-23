@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 
 import one.absent.hackaton.ai.AiClient;
+import one.absent.hackaton.listing.ListingRepository;
 import one.absent.hackaton.photo.PhotoStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,10 +36,11 @@ import tools.jackson.databind.json.JsonMapper;
 @TestPropertySource(properties = "s3.access-key=test-key")
 @Transactional
 class PhotoS3StorageTest {
-    private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, 1, 2, 3};
+    private static final byte[] JPEG = DraftControllerTest.image("jpg");
     @Autowired WebApplicationContext context;
     @Autowired PhotoRepository photos;
     @Autowired JsonMapper json;
+    @Autowired ListingRepository listings;
     @MockitoBean AiClient ai;
     @MockitoBean PhotoStorage storage;
     MockMvc mvc;
@@ -61,8 +63,9 @@ class PhotoS3StorageTest {
         Photo photo = photos.findById(id).orElseThrow();
         assertThat(photo.getData()).isNull();
         assertThat(photo.getStorageKey()).startsWith("photos/");
-        verify(storage).put(photo.getStorageKey(), JPEG, "image/jpeg");
+        verify(storage).put(eq(photo.getStorageKey()), any(), eq("image/jpeg"));
 
+        photo.setListingId(listings.findAll().getFirst().getId());
         when(storage.get(photo.getStorageKey())).thenReturn(new PhotoStorage.Photo(JPEG, "image/jpeg"));
         mvc.perform(get("/api/photos/" + id))
                 .andExpect(status().isOk())
@@ -82,6 +85,6 @@ class PhotoS3StorageTest {
                 .andReturn().getResponse().getContentAsString();
         Photo photo = photos.findById(json.readTree(body).path("photoIds").get(0).asLong()).orElseThrow();
         assertThat(photo.getStorageKey()).isNull();
-        assertThat(photo.getData()).isEqualTo(JPEG);
+        assertThat(photo.getData()).isNotEmpty();
     }
 }

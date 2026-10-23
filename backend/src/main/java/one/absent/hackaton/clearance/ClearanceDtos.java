@@ -20,7 +20,11 @@ public final class ClearanceDtos {
     public record UpdateItemRequest(@NotBlank @Size(max = 120) String name,
                                     @NotBlank @Size(max = 80) String category,
                                     @Min(1) @Max(10000) int quantity, boolean quantityConfirmed,
-                                    @NotNull Condition condition, @Size(max = 1000) String notes) {}
+                                    @NotNull Condition condition, @Size(max = 1000) String notes,
+                                    @Schema(nullable = true, description = "Price per piece the company sets; "
+                                            + "null keeps the estimate unconfirmed")
+                                    @DecimalMin(value = "0", inclusive = false) @Digits(integer = 10, fraction = 2)
+                                    BigDecimal unitPriceChf) {}
 
     public record ChooseRouteRequest(@NotNull Route route) {}
 
@@ -38,7 +42,12 @@ public final class ClearanceDtos {
 
     public record ItemView(long id, String name, String category, int quantity, boolean quantityConfirmed,
                            Condition condition, @Schema(nullable = true) String notes,
-                           BigDecimal estimatedUnitChf, BigDecimal estimatedTotalChf, ItemStatus status,
+                           BigDecimal estimatedUnitChf,
+                           @Schema(description = "Price per piece used at publishing: the company's price, "
+                                   + "else the estimate") BigDecimal unitPriceChf,
+                           @Schema(description = "Whether the company set the unit price itself")
+                           boolean priceConfirmed,
+                           BigDecimal estimatedTotalChf, ItemStatus status,
                            @Schema(nullable = true) Long listingId) {}
 
     public record Totals(int itemLines, int units, BigDecimal estimatedResaleChf, int draft, int listed, int sold) {}

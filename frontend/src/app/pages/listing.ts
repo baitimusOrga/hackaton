@@ -26,7 +26,7 @@ import { ListingsService } from '../api/services';
           {{ item.createdAt | date: 'mediumDate' }}
         </p>
         <p data-testid="seller">
-          {{ item.sellerName ? 'Sold by ' + item.sellerName : 'Demo listing' }}
+          {{ item.sellerName ? 'Sold by ' + item.sellerName + ' (self-declared)' : 'Demo listing' }}
         </p>
         <p class="whitespace-pre-line">{{ item.description }}</p>
         <p>{{ item.postcode }} {{ item.locality }}</p>

@@ -36,6 +36,24 @@ class SecurityTest {
         mvc.perform(post("/api/listings").header("Authorization", "Bearer invalid"))
             .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.detail").value("Please log in."));
     }
+    @Test void unlistedRoutesAreDeniedByDefault() throws Exception {
+        mvc.perform(get("/api/clearance/projects")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/does-not-exist")).andExpect(status().isUnauthorized());
+        mvc.perform(delete("/api/listings/1")).andExpect(status().isUnauthorized());
+    }
+    @Test void publicRoutesStayOpen() throws Exception {
+        mvc.perform(get("/api/listings")).andExpect(status().isOk());
+        mvc.perform(get("/api/openapi.json")).andExpect(status().isOk());
+        mvc.perform(post("/api/searches").contentType(MediaType.APPLICATION_JSON).content("{\"text\":\"bike\"}"))
+            .andExpect(status().is(org.hamcrest.Matchers.not(401)));
+    }
+    @Test void oversizedSearchRequirementsAreRejected() throws Exception {
+        var item = "{\"attribute\":\"a\",\"value\":\"b\"}";
+        var many = String.join(",", java.util.Collections.nCopies(21, item));
+        mvc.perform(post("/api/searches/matches").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"mustHave\":[" + many + "],\"niceToHave\":[],\"keywords\":[],\"acceptUnknown\":false}"))
+            .andExpect(status().isBadRequest());
+    }
     @Test void publicReadsRemainPublic() throws Exception {
         mvc.perform(get("/api/info")).andExpect(status().isOk());
         mvc.perform(get("/actuator/health")).andExpect(status().isOk());
