@@ -2,11 +2,13 @@
 
 This branch adds registration, login/logout, server-side session expiry, a private profile and email password recovery. External-provider sign-in remains optional future work.
 
+Architecture decision for review: this implementation uses Spring Security sessions inside the existing backend. The architecture notes describe a possible Better Auth service; this PR does not introduce that service or a second authentication system.
+
 ## Local walkthrough
 
 1. Start the existing Postgres service with `docker compose up -d db`.
 2. In `backend/`, run `./mvnw spring-boot:run -Dspring-boot.run.profiles=local` (`.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"` on Windows).
-3. In `frontend/`, run `npm start` and visit `http://localhost:4200/register`.
+3. In `frontend/`, run `pnpm start` and visit `http://localhost:4200/register`.
 4. Register with a unique email, display name and password of 12–128 characters. Sign in, edit `/account`, refresh to verify the session survives, then sign out.
 5. Password recovery requires a local SMTP catcher listening on localhost:1025 or configured SMTP credentials. The app never prints recovery links or tokens to logs. Follow the email's link to `/reset-password#token=...`; it expires after 30 minutes. A successful reset signs out every session, and the link cannot be reused.
 
@@ -72,4 +74,4 @@ All new API endpoints require authentication unless explicitly permitted in `Sec
 
 Backend: `./mvnw verify`. Tests include the real Spring Security and Spring Session filters against the H2 database in PostgreSQL mode. They check password hashing, generic login failures, CSRF, session rotation/logout/expiry, HTTPS cookie flags, profile isolation, canton validation, reset expiry/replacement/single use/session revocation, and throttling. SMTP is mocked in automated tests.
 
-Frontend: `npm run lint`, `npm test -- --watch=false`, `npm run build`. Tests cover CSRF transport, login/session restoration, logout, expired sessions, failed server access, confirmation validation and recovery UI.
+Frontend: `pnpm run api`, `pnpm run format:check`, `pnpm exec ng lint`, `pnpm exec ng test --watch=false`, `pnpm exec ng build`. Tests cover CSRF transport, login/session restoration, logout, expired sessions, failed server access, confirmation validation and recovery UI.

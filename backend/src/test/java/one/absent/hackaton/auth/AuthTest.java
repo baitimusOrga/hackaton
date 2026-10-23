@@ -104,9 +104,9 @@ class AuthTest {
     @Test
     void registrationHashesPasswordsAndNormalizesEmail() throws Exception {
         register("Baitimus@Example.com");
-        var account = accounts.byEmail("baitimus@example.com").orElseThrow();
-        assertThat(account.passwordHash()).doesNotContain("correct horse");
-        assertThat(encoder.matches("correct horse battery staple", account.passwordHash())).isTrue();
+        var account = accounts.findByEmail("baitimus@example.com").orElseThrow();
+        assertThat(account.getPasswordHash()).doesNotContain("correct horse");
+        assertThat(encoder.matches("correct horse battery staple", account.getPasswordHash())).isTrue();
         send(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content("""
             {"email":"baitimus@example.com","password":"another long password","displayName":"Other"}
             """), csrf(), 409);
@@ -167,8 +167,8 @@ class AuthTest {
         send(put("/api/auth/me").contentType(MediaType.APPLICATION_JSON).content("""
             {"displayName":"New name","location":"Luzern","canton":"LU","contactPreference":"EMAIL","id":999}
             """), browser, 200);
-        assertThat(accounts.byEmail("baitimus@example.com").orElseThrow().canton()).isEqualTo("LU");
-        assertThat(accounts.byEmail("other@example.com").orElseThrow().displayName()).isEqualTo("Baitimus");
+        assertThat(accounts.findByEmail("baitimus@example.com").orElseThrow().getCanton()).isEqualTo("LU");
+        assertThat(accounts.findByEmail("other@example.com").orElseThrow().getDisplayName()).isEqualTo("Baitimus");
         send(put("/api/auth/me").contentType(MediaType.APPLICATION_JSON).content("""
             {"displayName":"New name","location":"Luzern","canton":"XX","contactPreference":"EMAIL"}
             """), browser, 400);
@@ -244,7 +244,7 @@ class AuthTest {
         send(put("/api/auth/me").contentType(MediaType.APPLICATION_JSON).content("""
             {"displayName":"Baitimus","location":"","canton":null,"contactPreference":"IN_APP"}
             """), browser, 200);
-        assertThat(accounts.byEmail("baitimus@example.com").orElseThrow().canton()).isNull();
+        assertThat(accounts.findByEmail("baitimus@example.com").orElseThrow().getCanton()).isNull();
     }
 
     @Test
@@ -274,13 +274,13 @@ class AuthTest {
     void localTestUserIsSeededOnceAndCanSignIn() throws Exception {
         var seeder = new LocalTestUserSeeder(accounts, encoder, "dev", "jdbc:postgresql://localhost:5432/hackaton");
         seeder.run(null);
-        var original = accounts.byEmail(LocalTestUserSeeder.EMAIL).orElseThrow();
+        var original = accounts.findByEmail(LocalTestUserSeeder.EMAIL).orElseThrow();
         seeder.run(null);
-        var repeated = accounts.byEmail(LocalTestUserSeeder.EMAIL).orElseThrow();
-        assertThat(repeated.id()).isEqualTo(original.id());
-        assertThat(repeated.passwordHash()).isEqualTo(original.passwordHash());
-        assertThat(repeated.passwordHash()).isNotEqualTo(LocalTestUserSeeder.PASSWORD);
-        assertThat(repeated.canton()).isEqualTo("LU");
+        var repeated = accounts.findByEmail(LocalTestUserSeeder.EMAIL).orElseThrow();
+        assertThat(repeated.getId()).isEqualTo(original.getId());
+        assertThat(repeated.getPasswordHash()).isEqualTo(original.getPasswordHash());
+        assertThat(repeated.getPasswordHash()).isNotEqualTo(LocalTestUserSeeder.PASSWORD);
+        assertThat(repeated.getCanton()).isEqualTo("LU");
         send(post("/api/auth/login").param("email", LocalTestUserSeeder.EMAIL)
             .param("password", LocalTestUserSeeder.PASSWORD), csrf(), 204);
         assertThat(jdbc.sql("select count(*) from app_user").query(Long.class).single()).isEqualTo(1);

@@ -1,46 +1,64 @@
-import { HttpClient, HttpErrorResponse, HttpInterceptorFn, HttpParams } from '@angular/common/http';
+import { HttpContext, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { firstValueFrom, switchMap } from 'rxjs';
-import { APP_CONFIG } from '../config';
+import { AccountsService } from '../api/services/accounts.service';
+import { Profile } from '../api/models/profile';
+import { ProfileUpdate } from '../api/models/profile-update';
+import { HANDLES_ERRORS, Problem } from '../errors';
+
+export type { Profile, ProfileUpdate };
 
 export const CANTONS = [
-  'AG', 'AI', 'AR', 'BE', 'BL', 'BS', 'FR', 'GE', 'GL', 'GR', 'JU', 'LU', 'NE',
-  'NW', 'OW', 'SG', 'SH', 'SO', 'SZ', 'TG', 'TI', 'UR', 'VD', 'VS', 'ZG', 'ZH',
+  'AG',
+  'AI',
+  'AR',
+  'BE',
+  'BL',
+  'BS',
+  'FR',
+  'GE',
+  'GL',
+  'GR',
+  'JU',
+  'LU',
+  'NE',
+  'NW',
+  'OW',
+  'SG',
+  'SH',
+  'SO',
+  'SZ',
+  'TG',
+  'TI',
+  'UR',
+  'VD',
+  'VS',
+  'ZG',
+  'ZH',
 ] as const;
 
-export interface Profile {
-  id: number;
-  email: string;
-  displayName: string;
-  location: string;
-  canton: string | null;
-  contactPreference: 'IN_APP' | 'EMAIL';
-}
-export type ProfileUpdate = Pick<Profile, 'displayName' | 'location' | 'canton' | 'contactPreference'>;
-
-/** Fetch a fresh, masked Spring CSRF token for every API mutation, including login/logout.
- * Authentication stays in the HttpOnly session cookie, never localStorage.
- */
+/** Fetch a fresh masked CSRF token after session changes; credentials stay in HttpOnly cookies. */
 export const csrfInterceptor: HttpInterceptorFn = (request, next) => {
-  const base = inject(APP_CONFIG).apiUrl;
-  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method) || !request.url.startsWith(`${base}/`)) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method) || !request.url.startsWith('/api/')) {
     return next(request);
   }
-  return inject(HttpClient).get<{ headerName: string; token: string }>(`${base}/auth/csrf`).pipe(
-    switchMap((csrf) => next(request.clone({ setHeaders: { [csrf.headerName]: csrf.token } }))),
-  );
+  return inject(AccountsService)
+    .csrf(undefined, request.context)
+    .pipe(
+      switchMap((csrf) => next(request.clone({ setHeaders: { [csrf.headerName]: csrf.token } }))),
+    );
 };
 
 @Injectable({ providedIn: 'root' })
 export class Auth {
-  private readonly http = inject(HttpClient);
-  private readonly base = `${inject(APP_CONFIG).apiUrl}/auth`;
+  private readonly client = inject(AccountsService);
+  private readonly context = new HttpContext().set(HANDLES_ERRORS, true);
   readonly user = signal<Profile | null>(null);
 
   async restore(): Promise<Profile | null> {
     try {
-      const profile = await firstValueFrom(this.http.get<Profile>(`${this.base}/me`));
+      const profile = await firstValueFrom(this.client.me(undefined, this.context));
       this.user.set(profile);
       return profile;
     } catch (error) {
@@ -51,23 +69,24 @@ export class Auth {
   }
 
   async login(email: string, password: string): Promise<void> {
-    const body = new HttpParams().set('email', email).set('password', password);
-    await firstValueFrom(this.http.post<void>(`${this.base}/login`, body));
+    await firstValueFrom(this.client.login({ body: { email, password } }, this.context));
     await this.restore();
   }
 
   register(email: string, password: string, displayName: string): Promise<void> {
-    return firstValueFrom(this.http.post<void>(`${this.base}/register`, { email, password, displayName }));
+    return firstValueFrom(
+      this.client.register({ body: { email, password, displayName } }, this.context),
+    );
   }
 
   async logout(): Promise<void> {
-    await firstValueFrom(this.http.post<void>(`${this.base}/logout`, {}));
+    await firstValueFrom(this.client.logout(undefined, this.context));
     this.user.set(null);
   }
 
   async update(profile: ProfileUpdate): Promise<void> {
     try {
-      this.user.set(await firstValueFrom(this.http.put<Profile>(`${this.base}/me`, profile)));
+      this.user.set(await firstValueFrom(this.client.update({ body: profile }, this.context)));
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 401) this.user.set(null);
       throw error;
@@ -75,11 +94,11 @@ export class Auth {
   }
 
   forgotPassword(email: string): Promise<void> {
-    return firstValueFrom(this.http.post<void>(`${this.base}/forgot-password`, { email }));
+    return firstValueFrom(this.client.forgotPassword({ body: { email } }, this.context));
   }
 
   async resetPassword(token: string, password: string): Promise<void> {
-    await firstValueFrom(this.http.post<void>(`${this.base}/reset-password`, { token, password }));
+    await firstValueFrom(this.client.resetPassword({ body: { token, password } }, this.context));
     this.user.set(null);
   }
 }
@@ -88,8 +107,12 @@ export function authError(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
     if (error.status === 0) return 'Cannot reach the server. Please try again.';
     if (error.status === 401) return 'Please sign in again. Your session may have expired.';
-    if (Array.isArray(error.error?.errors)) return error.error.errors.join(' ');
-    if (typeof error.error?.detail === 'string') return error.error.detail;
+    const problem = (error.error ?? {}) as Problem;
+    if (problem.errors)
+      return Object.entries(problem.errors)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join(' ');
+    if (problem.detail) return problem.detail;
   }
   return 'Something went wrong. Please try again.';
 }

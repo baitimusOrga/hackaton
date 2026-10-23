@@ -24,8 +24,8 @@ public class SecurityConfig {
 
     @Bean
     UserDetailsService userDetailsService(AccountRepository accounts) {
-        return email -> accounts.byEmail(email.strip().toLowerCase(Locale.ROOT))
-            .map(a -> User.withUsername(a.email()).password(a.passwordHash()).roles("USER").build())
+        return email -> accounts.findByEmail(email.strip().toLowerCase(Locale.ROOT))
+            .map(a -> User.withUsername(a.getEmail()).password(a.getPasswordHash()).roles("USER").build())
             .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
     }
 

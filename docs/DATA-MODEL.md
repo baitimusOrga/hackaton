@@ -1,6 +1,6 @@
 # Data model
 
-Postgres 16. The schema is owned by **Flyway**: `backend/src/main/resources/db/migration/V<n>__<what>.sql`. Hibernate only validates it (`ddl-auto: validate`), so a new column needs a migration and a corresponding change to its entity or JDBC mapping.
+Postgres 16. The schema is owned by **Flyway**: `backend/src/main/resources/db/migration/V<n>__<what>.sql`. Hibernate only validates it (`ddl-auto: validate`), so a new column needs a migration and a corresponding change to its entity.
 
 Rules:
 
@@ -20,7 +20,7 @@ Rules:
 
 Contact preferences are `IN_APP` and `EMAIL`; canton is null or one of the 26 canonical two-letter codes. Email/password fields are excluded from public profile serialization except the account email on the authenticated `/me` endpoint. There is no public user directory.
 
-Accounts use `JdbcClient` rather than a JPA entity. Future listings should reference `app_user.id` and derive ownership from the authenticated principal, never from a submitted owner ID. Authenticated access alone does not authorize editing another user's listing.
+Accounts use the `Account` JPA entity and Spring Data repository. Future listings should reference `app_user.id` and derive ownership from the authenticated principal, never from a submitted owner ID. Authenticated access alone does not authorize editing another user's listing.
 
 Spring Session's schema initialization is disabled: its tables are also managed by Flyway. The next migration after this branch is V5; coordinate numbering with other feature branches before merging.
 

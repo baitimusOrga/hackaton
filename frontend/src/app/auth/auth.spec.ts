@@ -1,12 +1,17 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { APP_CONFIG } from '../config';
+import { provideApiConfiguration } from '../api/api-configuration';
 import { Auth, csrfInterceptor, Profile } from './auth';
+import { ErrorBanner, errorInterceptor } from '../errors';
 
 const profile: Profile = {
-  id: 1, email: 'baitimus@example.com', displayName: 'Baitimus',
-  location: '', canton: null, contactPreference: 'IN_APP',
+  id: 1,
+  email: 'baitimus@example.com',
+  displayName: 'Baitimus',
+  location: '',
+  canton: null,
+  contactPreference: 'IN_APP',
 };
 
 describe('Account sessions and CSRF', () => {
@@ -16,8 +21,9 @@ describe('Account sessions and CSRF', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(withInterceptors([csrfInterceptor])), provideHttpClientTesting(),
-        { provide: APP_CONFIG, useValue: { apiUrl: '/api' } },
+        provideHttpClient(withInterceptors([errorInterceptor, csrfInterceptor])),
+        provideHttpClientTesting(),
+        provideApiConfiguration(''),
       ],
     });
     auth = TestBed.inject(Auth);
@@ -30,8 +36,10 @@ describe('Account sessions and CSRF', () => {
     http.expectOne('/api/auth/csrf').flush({ headerName: 'X-CSRF-TOKEN', token: 'masked-token' });
     const login = http.expectOne('/api/auth/login');
     expect(login.request.headers.get('X-CSRF-TOKEN')).toBe('masked-token');
-    expect(login.request.body.get('email')).toBe(profile.email);
-    expect(login.request.body.get('password')).toBe('correct horse battery staple');
+    const credentials = new URLSearchParams(login.request.serializeBody() as string);
+    expect(credentials.get('email')).toBe(profile.email);
+    expect(credentials.get('password')).toBe('correct horse battery staple');
+    expect(login.request.headers.get('Content-Type')).toBe('application/x-www-form-urlencoded');
     login.flush(null, { status: 204, statusText: 'No Content' });
     await Promise.resolve();
     http.expectOne('/api/auth/me').flush(profile);
@@ -49,6 +57,7 @@ describe('Account sessions and CSRF', () => {
     logout.flush(null);
     await result;
     expect(auth.user()).toBeNull();
+    expect(TestBed.inject(ErrorBanner).message()).toBeNull();
   });
 
   it('treats an expired session as signed out', async () => {

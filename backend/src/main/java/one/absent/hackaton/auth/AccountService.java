@@ -10,7 +10,7 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Locale;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,21 +38,23 @@ public class AccountService {
     @Transactional
     public void register(AuthController.Register request) {
         try {
-            accounts.create(normalize(request.email()), encoder.encode(request.password()),
-                request.displayName().strip(), Instant.now());
-        } catch (DuplicateKeyException e) {
+            accounts.saveAndFlush(new Account(normalize(request.email()), encoder.encode(request.password()),
+                request.displayName().strip()));
+        } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Unable to register with these details.");
         }
     }
 
+    @Transactional
     public void forgotPassword(String email) {
-        accounts.byEmail(normalize(email)).ifPresent(account -> {
+        accounts.findByEmail(normalize(email)).ifPresent(account -> {
             byte[] bytes = new byte[32];
             random.nextBytes(bytes);
             String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-            accounts.setResetToken(account.id(), hash(token), Instant.now().plus(30, ChronoUnit.MINUTES));
+            account.setResetTokenHash(hash(token));
+            account.setResetExpiresAt(Instant.now().plus(30, ChronoUnit.MINUTES));
             try {
-                mail.send(account.email(), token);
+                mail.send(account.getEmail(), token);
             } catch (MailException e) {
                 // Never log the address, message, token or SMTP exception (may contain credentials).
                 LoggerFactory.getLogger(AccountService.class).warn("Password recovery email could not be delivered; check SMTP configuration.");
@@ -64,9 +66,21 @@ public class AccountService {
     public void resetPassword(String token, String password) {
         var account = accounts.lockResetToken(hash(token), Instant.now())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "This reset link is invalid or has expired."));
-        accounts.resetPassword(account.id(), encoder.encode(password));
+        account.setPasswordHash(encoder.encode(password));
+        account.setResetTokenHash(null);
+        account.setResetExpiresAt(null);
         // All browsers must sign in again after recovery.
-        sessions.findByPrincipalName(account.email()).keySet().forEach(sessions::deleteById);
+        sessions.findByPrincipalName(account.getEmail()).keySet().forEach(sessions::deleteById);
+    }
+
+    @Transactional
+    public AuthController.Profile updateProfile(String email, AuthController.ProfileUpdate request) {
+        var account = accounts.findByEmail(email).orElseThrow();
+        account.setDisplayName(request.displayName().strip());
+        account.setLocation(request.location().strip());
+        account.setCanton(request.canton() == null ? null : request.canton().name());
+        account.setContactPreference(request.contactPreference().name());
+        return AuthController.Profile.of(account);
     }
 
     static String normalize(String email) { return email.strip().toLowerCase(Locale.ROOT); }

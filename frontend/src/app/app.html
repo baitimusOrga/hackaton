@@ -1,10 +1,19 @@
-<header class="site-header">
-  <a routerLink="/" class="brand">hackaton</a>
-  <nav aria-label="Main navigation">
+<header
+  class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4 sm:px-8"
+>
+  <a routerLink="/" class="text-xl font-bold">hackaton</a>
+  <nav class="flex flex-wrap items-center gap-4" aria-label="Main navigation">
     <a routerLink="/">Discover</a>
     @if (auth.user(); as user) {
       <a routerLink="/account">{{ user.displayName }}</a>
-      <button type="button" (click)="logout()" [disabled]="busy()">Sign out</button>
+      <button
+        class="cursor-pointer rounded-md bg-teal-800 px-4 py-2 text-white disabled:opacity-50"
+        type="button"
+        (click)="logout()"
+        [disabled]="busy()"
+      >
+        Sign out
+      </button>
     } @else {
       <a routerLink="/login">Sign in</a>
       <a routerLink="/register">Create account</a>

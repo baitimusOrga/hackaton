@@ -7,6 +7,113 @@
     "url" : "/"
   } ],
   "paths" : {
+    "/api/auth/me" : {
+      "get" : {
+        "tags" : [ "Accounts" ],
+        "operationId" : "me",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Profile"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "Accounts" ],
+        "operationId" : "update",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProfileUpdate"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Profile"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password" : {
+      "post" : {
+        "tags" : [ "Accounts" ],
+        "operationId" : "resetPassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResetPassword"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/auth/register" : {
+      "post" : {
+        "tags" : [ "Accounts" ],
+        "operationId" : "register",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Register"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created"
+          }
+        }
+      }
+    },
+    "/api/auth/forgot-password" : {
+      "post" : {
+        "tags" : [ "Accounts" ],
+        "operationId" : "forgotPassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ForgotPassword"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted"
+          }
+        }
+      }
+    },
     "/api/info" : {
       "get" : {
         "tags" : [ "Info" ],
@@ -24,10 +131,172 @@
           }
         }
       }
+    },
+    "/api/auth/csrf" : {
+      "get" : {
+        "tags" : [ "Accounts" ],
+        "operationId" : "csrf",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Csrf"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login" : {
+      "post" : {
+        "tags" : [ "Accounts" ],
+        "summary" : "Sign in and rotate the session",
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/x-www-form-urlencoded" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "email" : {
+                    "type" : "string"
+                  },
+                  "password" : {
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "email", "password" ]
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Signed in"
+          }
+        }
+      }
+    },
+    "/api/auth/logout" : {
+      "post" : {
+        "tags" : [ "Accounts" ],
+        "summary" : "Invalidate the current session",
+        "operationId" : "logout",
+        "responses" : {
+          "204" : {
+            "description" : "Signed out"
+          }
+        }
+      }
     }
   },
   "components" : {
     "schemas" : {
+      "ProfileUpdate" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "location" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "canton" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU", "LU", "NE", "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR", "VD", "VS", "ZG", "ZH" ]
+          },
+          "contactPreference" : {
+            "type" : "string",
+            "enum" : [ "IN_APP", "EMAIL" ]
+          }
+        },
+        "required" : [ "contactPreference", "displayName", "location" ]
+      },
+      "Profile" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "location" : {
+            "type" : "string"
+          },
+          "canton" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU", "LU", "NE", "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR", "VD", "VS", "ZG", "ZH" ]
+          },
+          "contactPreference" : {
+            "type" : "string",
+            "enum" : [ "IN_APP", "EMAIL" ]
+          }
+        },
+        "required" : [ "canton", "contactPreference", "displayName", "email", "id", "location" ]
+      },
+      "ResetPassword" : {
+        "type" : "object",
+        "properties" : {
+          "token" : {
+            "type" : "string",
+            "maxLength" : 128,
+            "minLength" : 0
+          },
+          "password" : {
+            "type" : "string",
+            "maxLength" : 128,
+            "minLength" : 12
+          }
+        },
+        "required" : [ "password", "token" ]
+      },
+      "Register" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0
+          },
+          "password" : {
+            "type" : "string",
+            "maxLength" : 128,
+            "minLength" : 12
+          },
+          "displayName" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "displayName", "email", "password" ]
+      },
+      "ForgotPassword" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "email" ]
+      },
       "Info" : {
         "type" : "object",
         "properties" : {
@@ -41,6 +310,18 @@
             "type" : "string"
           }
         }
+      },
+      "Csrf" : {
+        "type" : "object",
+        "properties" : {
+          "headerName" : {
+            "type" : "string"
+          },
+          "token" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "headerName", "token" ]
       }
     }
   }

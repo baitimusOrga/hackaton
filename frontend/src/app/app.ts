@@ -16,7 +16,9 @@ export class App {
   readonly busy = signal(false);
 
   constructor() {
-    void this.auth.restore().catch(() => this.errors.show('Cannot check your session. Please try signing in.'));
+    void this.auth
+      .restore()
+      .catch(() => this.errors.show('Cannot check your session. Please try signing in.'));
   }
 
   async logout(): Promise<void> {

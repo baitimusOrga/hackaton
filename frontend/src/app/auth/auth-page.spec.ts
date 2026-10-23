@@ -2,7 +2,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
-import { APP_CONFIG } from '../config';
+import { provideApiConfiguration } from '../api/api-configuration';
 import { AuthPage } from './auth-page';
 import { csrfInterceptor } from './auth';
 
@@ -11,16 +11,29 @@ describe('Account forms', () => {
     await TestBed.configureTestingModule({
       imports: [AuthPage],
       providers: [
-        provideRouter([]), provideHttpClient(withInterceptors([csrfInterceptor])), provideHttpClientTesting(),
-        { provide: APP_CONFIG, useValue: { apiUrl: '/api' } },
-        { provide: ActivatedRoute, useValue: { snapshot: {
-          data: { mode }, fragment, queryParamMap: new Map(),
-        } } },
+        provideRouter([]),
+        provideHttpClient(withInterceptors([csrfInterceptor])),
+        provideHttpClientTesting(),
+        provideApiConfiguration(''),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              data: { mode },
+              fragment,
+              queryParamMap: new Map(),
+            },
+          },
+        },
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(AuthPage);
     await fixture.whenStable();
-    return { fixture, component: fixture.componentInstance, http: TestBed.inject(HttpTestingController) };
+    return {
+      fixture,
+      component: fixture.componentInstance,
+      http: TestBed.inject(HttpTestingController),
+    };
   }
 
   it('rejects mismatched passwords before sending a registration request', async () => {
@@ -54,8 +67,10 @@ describe('Account forms', () => {
     const { fixture, component, http } = await setup('register');
     const element = fixture.nativeElement as HTMLElement;
     for (const [id, value] of [
-      ['display-name', 'Test user'], ['email', 'test@example.com'],
-      ['password', 'a long testing passphrase'], ['confirm-password', 'a long testing passphrase'],
+      ['display-name', 'Test user'],
+      ['email', 'test@example.com'],
+      ['password', 'a long testing passphrase'],
+      ['confirm-password', 'a long testing passphrase'],
     ]) {
       const input = element.querySelector<HTMLInputElement>(`#${id}`)!;
       input.value = value;
@@ -81,7 +96,9 @@ describe('Account forms', () => {
     component.email = 'missing@example.com';
     const result = component.submit();
     http.expectOne('/api/auth/csrf').flush({ headerName: 'X-CSRF-TOKEN', token: 'token' });
-    http.expectOne('/api/auth/forgot-password').flush(null, { status: 202, statusText: 'Accepted' });
+    http
+      .expectOne('/api/auth/forgot-password')
+      .flush(null, { status: 202, statusText: 'Accepted' });
     await result;
     await fixture.whenStable();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('If an account exists');

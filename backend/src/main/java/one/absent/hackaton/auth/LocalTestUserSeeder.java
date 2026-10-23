@@ -1,6 +1,5 @@
 package one.absent.hackaton.auth;
 
-import java.time.Instant;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -36,8 +35,10 @@ public class LocalTestUserSeeder implements ApplicationRunner {
                 "jdbc:postgresql://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:[0-9]+)?/[a-zA-Z0-9_-]+")) {
             throw new IllegalStateException("The local test user requires app.env=dev and a loopback Postgres database URL.");
         }
-        if (accounts.byEmail(EMAIL).isPresent()) return;
-        accounts.create(EMAIL, encoder.encode(PASSWORD), "Local Test User", Instant.now());
-        accounts.updateProfile(EMAIL, "Local Test User", "Luzern", "LU", "IN_APP");
+        if (accounts.findByEmail(EMAIL).isPresent()) return;
+        var account = new Account(EMAIL, encoder.encode(PASSWORD), "Local Test User");
+        account.setLocation("Luzern");
+        account.setCanton("LU");
+        accounts.save(account);
     }
 }
