@@ -14,7 +14,7 @@ Both run on one hostname each: `/api/*` and `/actuator/*` go to the backend, eve
 
 | Path | Contents |
 |---|---|
-| `backend/` | Java 21, Spring Boot 4.1, Maven. Postgres via Spring Data JPA, Flyway migrations, Spring Security with JWT |
+| `backend/` | Java 21, Spring Boot 4.1, Maven. Postgres via Spring Data JPA, Flyway migrations |
 | `frontend/` | Angular 22, served by nginx. Reads `/config.json` at start, so one image runs in every environment |
 | `docker-compose.yml` | Postgres for local development |
 | `.github/workflows/ci.yml` | every pull request: `mvn verify`, `ng lint`, `ng test`, `ng build` |
@@ -23,16 +23,13 @@ Both run on one hostname each: `/api/*` and `/actuator/*` go to the backend, eve
 
 API:
 
-| Endpoint | Auth | |
-|---|---|---|
-| `POST /api/auth/register` | — | `{email, password, displayName}` → `{token, user}` |
-| `POST /api/auth/login` | — | `{email, password}` → `{token, user}` |
-| `GET /api/auth/me` | token | the logged-in user |
-| `GET /api/info` | — | environment, release, commit |
-| `GET /actuator/health` | — | health check |
-| `/api/docs` | — | OpenAPI UI |
+| Endpoint | |
+|---|---|
+| `GET /api/info` | environment, release, commit |
+| `GET /actuator/health` | health check |
+| `/api/docs` | OpenAPI UI |
 
-Every other `/api` route requires `Authorization: Bearer <token>` by default (`config/SecurityConfig.java`). The frontend stores the token after login and adds the header to its API calls (`auth.ts`); `authGuard` protects routes.
+There is no login: every endpoint is public. New controllers go under `/api/...` so they reach the backend.
 
 ## Run it locally
 
@@ -65,7 +62,6 @@ Staging and prod get their environment from this repo's *Settings → Secrets an
 | Name | Used for |
 |---|---|
 | `STAGING_POSTGRES_PASSWORD`, `PROD_POSTGRES_PASSWORD` | database |
-| `STAGING_JWT_SECRET`, `PROD_JWT_SECRET` | signing login tokens |
 
 Add or change one (the value is read from the terminal):
 

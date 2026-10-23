@@ -1,5 +1,5 @@
 # Every value can be overridden by an environment variable (Spring relaxed binding):
-# app.jwt.secret -> APP_JWT_SECRET, spring.datasource.url -> SPRING_DATASOURCE_URL, ...
+# app.env -> APP_ENV, spring.datasource.url -> SPRING_DATASOURCE_URL, ...
 # Defaults below are for local development against docker-compose.yml.
 spring:
   application:
@@ -14,7 +14,7 @@ spring:
       ddl-auto: validate          # the schema belongs to Flyway (src/main/resources/db/migration)
   web:
     error:
-      include-message: always           # the frontend shows ResponseStatusException reasons
+      include-message: always           # error responses carry the exception message
 
 server:
   port: 8080
@@ -40,7 +40,3 @@ app:
   env: ${APP_ENV:dev}
   release: ${APP_RELEASE:dev}
   revision: ${APP_REVISION:}
-  jwt:
-    # >= 32 bytes. Dev default only; staging/prod get JWT_SECRET from the .env (env-sync).
-    secret: ${JWT_SECRET:dev-only-secret-change-me-dev-only-secret}
-    ttl: 7d

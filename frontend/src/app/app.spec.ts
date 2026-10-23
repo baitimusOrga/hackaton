@@ -1,17 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
-import { App } from './app';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Home } from './pages/home';
 import { APP_CONFIG } from './config';
 
-describe('App', () => {
+describe('Home', () => {
   beforeEach(async () => {
-    localStorage.clear();
     await TestBed.configureTestingModule({
-      imports: [App],
+      imports: [Home],
       providers: [
-        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: APP_CONFIG, useValue: { apiUrl: '/api', env: 'staging', release: 'v0.0.0' } },
@@ -19,17 +16,12 @@ describe('App', () => {
     }).compileComponents();
   });
 
-  it('shows the environment banner outside prod', async () => {
-    const fixture = TestBed.createComponent(App);
+  it('shows the running release from /api/info', async () => {
+    const fixture = TestBed.createComponent(Home);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/info')
+      .flush({ env: 'staging', release: 'v0.3.0', revision: 'abc123' });
     await fixture.whenStable();
-    const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('.env-banner')?.textContent).toContain('staging');
-  });
-
-  it('offers login when nobody is logged in', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('nav')?.textContent).toContain('Log in');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('v0.3.0');
   });
 });
