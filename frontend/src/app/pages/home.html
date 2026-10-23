@@ -1,0 +1,117 @@
+<section class="zw-container zw-hero" aria-labelledby="hero-label">
+  <label id="hero-label" for="hero-q" class="zw-hero__title">Was suchst du?</label>
+  <p class="zw-hero__lead">
+    Schreib es in deinen Worten. Wir suchen nur auf Zweit, in deiner Nähe und schweizweit.
+  </p>
+  <form #heroForm class="zw-hero__form" role="search" (ngSubmit)="search()">
+    <input
+      id="hero-q"
+      name="q"
+      class="zw-input"
+      type="search"
+      placeholder="z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich"
+      [ngModel]="query()"
+      (ngModelChange)="query.set($event)"
+    />
+    <button appButton variant="primary" type="submit">
+      <app-icon name="search" />
+      <span>Suchen</span>
+    </button>
+  </form>
+  <div class="zw-hero__chips" role="group" aria-label="Schnellfilter">
+    @for (filter of quickFilters; track filter) {
+      <app-chip>{{ filter }}</app-chip>
+    }
+  </div>
+  <p class="zw-hero__hint">Oder speichere die Suche und wir melden uns, sobald etwas passt.</p>
+  <nav class="zw-cats" aria-label="Kategorien">
+    @for (category of categories; track category.label) {
+      <a class="zw-cat" routerLink="/find">
+        <app-icon [name]="category.icon" [size]="28" />
+        <span>{{ category.label }}</span>
+      </a>
+    }
+  </nav>
+</section>
+
+<section class="zw-container zw-section" aria-labelledby="h-auction">
+  <app-section-heading
+    headingId="h-auction"
+    heading="Endet bald"
+    linkText="Alle Auktionen"
+    link="/find"
+  />
+  <div class="zw-grid">
+    @for (auction of auctions; track auction.title) {
+      <app-listing-card
+        mode="auction"
+        link="/"
+        [title]="auction.title"
+        [price]="auction.bid"
+        [bids]="auction.bids"
+        [endsAt]="auction.endsAt"
+        [meta]="auction.meta"
+      />
+    }
+  </div>
+</section>
+
+<section class="zw-container zw-section zw-section--last" aria-labelledby="h-near">
+  <app-section-heading
+    headingId="h-near"
+    heading="Neu in deiner Nähe"
+    linkText="Alles in 25 km"
+    link="/find"
+  />
+  @if (nearby(); as items) {
+    @if (items.length) {
+      <div class="zw-grid">
+        @for (item of items; track item.id) {
+          <app-listing-card
+            [link]="['/listings', item.id]"
+            [title]="item.title ?? ''"
+            [price]="item.priceChf ?? 0"
+            [image]="item.imageUrl ?? ''"
+            [meta]="item.meta"
+          />
+        }
+      </div>
+    } @else {
+      <p class="zw-muted">Noch keine Inserate in deiner Nähe.</p>
+    }
+  } @else {
+    <div class="zw-grid" aria-hidden="true">
+      @for (i of placeholders; track i) {
+        <div class="zw-card__media"></div>
+      }
+    </div>
+  }
+</section>
+
+<section class="zw-biz" aria-labelledby="h-biz">
+  <div class="zw-container zw-biz__inner">
+    <div class="zw-biz__intro">
+      <span class="zw-caption">Für Firmen</span>
+      <h2 id="h-biz">Büro, Lager oder Werkstatt räumen?</h2>
+      <p>
+        Zeig uns, was weg muss, nenn uns den Termin und wähl, wie viel Arbeit wir übernehmen. Ein
+        Projekt, eine Abrechnung.
+      </p>
+      <div><a appButton routerLink="/business">Projekt starten</a></div>
+    </div>
+    <div>
+      <div class="zw-row zw-biz__row">
+        <span>Selbst verkaufen</span>
+        <span>Du behältst die Kontrolle. Keine Gebühren, keine Provision.</span>
+      </div>
+      <div class="zw-row zw-biz__row">
+        <span>Wir verkaufen</span>
+        <span>Bewertung, Inserate und Abholung durch uns. Pauschale vorab vereinbart.</span>
+      </div>
+      <div class="zw-row zw-biz__row">
+        <span>Wir kaufen</span>
+        <span>Festes Angebot nach Besichtigung. Wir holen ab, du bist fertig.</span>
+      </div>
+    </div>
+  </div>
+</section>
