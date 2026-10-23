@@ -1,7 +1,7 @@
-import { CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PriceEstimate } from '../api/models';
+import { chf, ChfPipe } from '../ui/chf';
 
 type EvidenceItem = NonNullable<PriceEstimate['evidence']>[number];
 
@@ -14,172 +14,287 @@ const FACTORS: Record<string, number> = {
   DEFECTIVE: 0.4,
 };
 const CONDITIONS: Record<string, string> = {
-  NEW: 'New',
-  LIKE_NEW: 'Like new',
-  GOOD: 'Good',
-  USED: 'Used',
-  DEFECTIVE: 'Defective',
+  NEW: 'Neu',
+  LIKE_NEW: 'Wie neu',
+  GOOD: 'Gut',
+  USED: 'Gebraucht',
+  DEFECTIVE: 'Defekt',
 };
 const SIMILARITY: Record<string, string> = {
-  SAME_MODEL: 'Same model',
-  SAME_BRAND: 'Same brand',
-  SIMILAR_TITLE: 'Similar title',
+  SAME_MODEL: 'Gleiches Modell',
+  SAME_BRAND: 'Gleiche Marke',
+  SIMILAR_TITLE: 'Ähnlicher Titel',
 };
 const STRATEGIES = [
-  { label: 'Sell faster', key: 'lowChf', hint: 'cheaper than 3 in 4 comparables' },
-  { label: 'Balanced', key: 'midChf', hint: 'middle of the evidence' },
-  { label: 'Higher, less certain', key: 'highChf', hint: 'may take longer' },
+  { label: 'Schnell', key: 'lowChf', hint: 'Unter dem Schnitt, mehr Anfragen.' },
+  { label: 'Ausgewogen', key: 'midChf', hint: 'In der Mitte der Vergleiche.' },
+  { label: 'Hoch', key: 'highChf', hint: 'Oberer Rand, dauert eher länger.' },
 ] as const;
+const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW: 'tief' };
 
-const EMPTY = {
-  noEstimate: false,
-  explanation: '',
-  provisional: false,
-  confidence: undefined as PriceEstimate['confidence'],
-  strategies: [] as { label: string; hint: string; amount: number }[],
-  lowText: '',
-  highText: '',
-  bandLeft: 0,
-  bandWidth: 0,
-  items: [] as ReturnType<PricePanel['row']>[],
-};
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+const since = (days: number) =>
+  days <= 0 ? 'heute' : days === 1 ? 'seit gestern' : `letzte ${days} Tage`;
 
+/** Price step (Sell4): evidence range in one sentence, 3 suggested prices + own price, sale mode. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-price-panel',
-  imports: [CurrencyPipe, RouterLink],
+  imports: [ChfPipe, RouterLink],
+  styles: `
+    :host {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+    .opts {
+      border: 0;
+      padding: 0;
+      margin: 0;
+    }
+    .opt {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      min-height: 56px;
+      padding: var(--space-2) 0;
+      border-bottom: var(--border-1) solid var(--line-soft);
+      cursor: pointer;
+    }
+    .opt:last-child {
+      border-bottom: 0;
+    }
+    .opt > input {
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      accent-color: var(--blue);
+      flex: none;
+    }
+    .opt__t {
+      font-weight: 600;
+    }
+    .opt__d {
+      display: block;
+    }
+    .list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .opt__d,
+    .sub {
+      margin: 0;
+      font-size: 14px;
+      line-height: 20px;
+      color: var(--ink-muted);
+    }
+    .opt__p {
+      margin-left: auto;
+      font-size: 20px;
+      line-height: 24px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .own {
+      margin-left: auto;
+      width: 160px;
+    }
+    .sub strong {
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+    summary {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .modes {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+    .zw-chip:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  `,
   template: `
     @if (view(); as v) {
       @if (v.noEstimate) {
-        <div class="rounded-md bg-gray-100 p-3 text-gray-900">
-          <p class="font-semibold">No estimate</p>
-          <p class="text-sm">{{ v.explanation }}</p>
-        </div>
+        <p class="sub"><strong>Keine Schätzung.</strong> {{ v.explanation }}</p>
       } @else {
-        @if (v.provisional) {
-          <div class="rounded-md bg-amber-100 p-3 text-amber-900">
-            <p class="font-semibold">Provisional estimate</p>
-            <p class="text-sm">Not enough comparable evidence for a firm range.</p>
-          </div>
-        } @else {
-          <p>
-            <span
-              class="rounded-full px-2 py-0.5 text-sm font-semibold"
-              [class]="
-                v.confidence === 'HIGH'
-                  ? 'bg-emerald-100 text-emerald-900'
-                  : 'bg-sky-100 text-sky-900'
-              "
-              >{{ v.confidence === 'HIGH' ? 'High confidence' : 'Medium confidence' }}</span
-            >
+        <div>
+          <p class="sub">
+            Ähnliche Artikel auf Zweit: <strong>{{ v.rangeText }}</strong
+            >. {{ v.evidenceText }}
+            @if (v.provisional) {
+              <strong>Vorläufig:</strong> zu wenig Vergleiche für eine feste Spanne.
+            } @else {
+              Sicherheit {{ v.confidenceText }}.
+            }
           </p>
-        }
-        <div class="flex flex-wrap gap-2">
-          @for (s of v.strategies; track s.label) {
-            <button
-              type="button"
-              class="secondary"
-              [attr.aria-pressed]="price() === s.amount"
-              (click)="price.set(s.amount)"
-            >
-              {{ s.label }} {{ s.amount | currency: 'CHF' }}
-              <span class="block text-xs font-normal">{{ s.hint }}</span>
-            </button>
+          @if (v.items.length) {
+            <details>
+              <summary>Vergleiche ansehen</summary>
+              <ul class="list">
+                @for (item of v.items; track item.listingId) {
+                  <li class="zw-row">
+                    <span>
+                      <a [routerLink]="['/listings', item.listingId]">{{ item.title }}</a>
+                      <span class="opt__d">
+                        {{ item.similarityLabel }} {{ item.similarityPercent }} % ·
+                        {{ item.sold ? 'Verkauft' : 'Angebot' }} · {{ item.conditionLabel }} ·
+                        {{ item.age }}
+                      </span>
+                    </span>
+                    <span class="opt__p">
+                      {{ item.priceChf | chf }}
+                      @if (item.showAdjusted) {
+                        <span class="opt__d">≈ {{ item.adjusted | chf }}</span>
+                      }
+                    </span>
+                  </li>
+                }
+              </ul>
+            </details>
           }
         </div>
-        <div
-          class="relative h-6"
-          role="img"
-          [attr.aria-label]="
-            'Price range from ' +
-            v.lowText +
-            ' to ' +
-            v.highText +
-            ' across ' +
-            v.items.length +
-            ' comparables'
-          "
-        >
-          <div
-            class="absolute top-2.5 h-1 rounded bg-gray-300"
-            [style.left.%]="v.bandLeft"
-            [style.width.%]="v.bandWidth"
-          ></div>
-          @for (item of v.items; track item.listingId) {
-            <span
-              class="absolute top-1 size-4 -translate-x-1/2 rounded-full border-2 border-gray-800"
-              [class.bg-gray-800]="item.sold"
-              [class.bg-white]="!item.sold"
-              [style.left.%]="item.position"
-              [attr.title]="item.title"
-            ></span>
-          }
-        </div>
-      }
-      <p class="text-sm">{{ v.explanation }}</p>
-      @if (v.items.length) {
-        <ul class="grid gap-1 text-sm">
-          @for (item of v.items; track item.listingId) {
-            <li>
-              <a class="underline" [routerLink]="['/listings', item.listingId]">{{ item.title }}</a>
-              ·
-              <span class="rounded bg-gray-100 px-1"
-                >{{ item.similarityLabel }} {{ item.similarityPercent }} %</span
-              >
-              · {{ item.sold ? 'Sold' : 'Asking' }} · {{ item.conditionLabel }} · {{ item.age }} ·
-              {{ item.priceChf | currency: 'CHF' }}
-              @if (item.showAdjusted) {
-                (≈ {{ item.adjusted | currency: 'CHF' }})
-              }
-            </li>
-          }
-        </ul>
       }
     }
+
+    <fieldset class="opts">
+      <legend class="zw-sr-only">Preis</legend>
+      @for (s of strategies(); track s.label) {
+        <label class="opt">
+          <input
+            type="radio"
+            name="price-choice"
+            required
+            [checked]="!own() && price() === s.amount"
+            (change)="choose(s.amount)"
+          />
+          <span>
+            <span class="opt__t">{{ s.label }}</span>
+            <span class="opt__d">{{ s.hint }}</span>
+          </span>
+          <span class="opt__p">{{ s.amount | chf }}</span>
+        </label>
+      }
+      <label class="opt">
+        @if (strategies().length) {
+          <input
+            type="radio"
+            name="price-choice"
+            required
+            [checked]="own()"
+            (change)="own.set(true); price.set(ownValue())"
+          />
+        }
+        <span class="opt__t">Eigener Preis</span>
+        <span class="zw-affix own">
+          <span class="zw-affix__unit">CHF</span>
+          <input
+            class="zw-input zw-input--price"
+            name="price"
+            type="number"
+            inputmode="decimal"
+            min="0.01"
+            max="9999999999.99"
+            step="0.01"
+            placeholder="0.–"
+            aria-label="Eigener Preis in CHF"
+            [required]="own() || !strategies().length"
+            [value]="ownValue() ?? ''"
+            (input)="typeOwn($any($event.target).valueAsNumber)"
+          />
+        </span>
+      </label>
+    </fieldset>
+
+    <div class="zw-field">
+      <span class="zw-label" id="sale-mode">Wie verkaufen?</span>
+      <!-- TODO: the backend only publishes fixed-price listings; Preisvorschlag, Auktion (with a secret seller-set reserve) and Verschenken need sale modes in CreateListingRequest. -->
+      <div class="modes" role="group" aria-labelledby="sale-mode">
+        <button type="button" class="zw-chip" aria-pressed="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
+          <span>Festpreis</span>
+        </button>
+        @for (mode of laterModes; track mode) {
+          <button type="button" class="zw-chip" aria-pressed="false" disabled>
+            <span>{{ mode }}</span>
+          </button>
+        }
+      </div>
+    </div>
   `,
 })
 export class PricePanel {
   readonly estimate = input<PriceEstimate | null | undefined>();
   readonly condition = input<string | null | undefined>();
   readonly price = model<number | null>(null);
+  protected readonly laterModes = ['Preisvorschlag', 'Auktion', 'Verschenken'];
+  protected readonly own = signal(false);
+  protected readonly ownValue = signal<number | null>(null);
 
   protected readonly view = computed(() => {
     const est = this.estimate();
     if (!est) return null;
     const explanation = est.explanation ?? '';
     const items = est.evidence ?? [];
-    if (est.midChf == null) {
-      return { ...EMPTY, noEstimate: true, explanation };
-    }
+    if (est.midChf == null) return { noEstimate: true as const, explanation };
+    return this.estimateView(est, items);
+  });
 
+  protected readonly strategies = computed(() => {
+    const v = this.view();
+    return v && !v.noEstimate ? v.strategies : [];
+  });
+
+  private estimateView(est: PriceEstimate, items: EvidenceItem[]) {
     const from = FACTORS[est.condition ?? 'GOOD'] ?? 1;
     const ratio = (FACTORS[this.condition() || (est.condition ?? 'GOOD')] ?? from) / from;
     const scale = (value: number) => Math.round(value * ratio);
-    const [low, mid, high] = [est.lowChf ?? est.midChf, est.midChf, est.highChf ?? est.midChf].map(
-      scale,
-    );
-
-    const adjusted = items.map((item) => (item.adjustedPriceChf ?? item.priceChf ?? 0) * ratio);
-    const min = Math.min(low, ...adjusted);
-    const span = Math.max(high, ...adjusted) - min;
-    const position = (value: number) => (span > 0 ? ((value - min) / span) * 100 : 50);
+    const [low, mid, high] = [
+      est.lowChf ?? est.midChf!,
+      est.midChf!,
+      est.highChf ?? est.midChf!,
+    ].map(scale);
     const amounts = { lowChf: low, midChf: mid, highChf: high };
+    const sold = items.filter((i) => i.sold).length;
+    const oldest = Math.max(0, ...items.map((i) => i.ageDays ?? 0));
 
     return {
-      noEstimate: false,
-      explanation,
+      noEstimate: false as const,
       provisional: est.provisional || est.confidence === 'LOW',
-      confidence: est.confidence,
+      confidenceText: CONFIDENCE[est.confidence ?? ''] ?? '',
+      rangeText: `${chf(low)} bis ${chf(high).slice(4)}`,
+      evidenceText: items.length
+        ? `${count(sold, 'Verkauf', 'Verkäufe')} und ${count(items.length - sold, 'Angebot', 'Angebote')}, ${since(oldest)}.`
+        : '',
       strategies: STRATEGIES.map((s) => ({ ...s, amount: amounts[s.key] })),
-      lowText: `CHF ${low}`,
-      highText: `CHF ${high}`,
-      bandLeft: position(low),
-      bandWidth: position(high) - position(low),
-      items: items.map((item, i) => this.row(item, adjusted[i], position(adjusted[i]))),
+      items: items.map((item) =>
+        this.row(item, (item.adjustedPriceChf ?? item.priceChf ?? 0) * ratio),
+      ),
     };
-  });
+  }
 
-  row(item: EvidenceItem, adjusted: number, position: number) {
+  protected choose(amount: number): void {
+    this.own.set(false);
+    this.price.set(amount);
+  }
+
+  protected typeOwn(value: number): void {
+    const amount = Number.isNaN(value) ? null : value;
+    this.own.set(true);
+    this.ownValue.set(amount);
+    this.price.set(amount);
+  }
+
+  row(item: EvidenceItem, adjusted: number) {
     const days = item.ageDays ?? 0;
     const price = item.priceChf ?? 0;
     return {
@@ -190,10 +305,9 @@ export class PricePanel {
       similarityPercent: item.similarityPercent,
       similarityLabel: SIMILARITY[item.similarity ?? ''] ?? '',
       conditionLabel: CONDITIONS[item.condition ?? ''] ?? '',
-      age: days <= 0 ? 'today' : days === 1 ? '1 day ago' : `${days} days ago`,
+      age: days <= 0 ? 'heute' : days === 1 ? 'vor 1 Tag' : `vor ${days} Tagen`,
       adjusted,
       showAdjusted: Math.abs(adjusted - price) >= 0.005,
-      position: Math.min(100, Math.max(0, position)),
     };
   }
 }
