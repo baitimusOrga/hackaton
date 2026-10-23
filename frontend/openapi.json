@@ -632,6 +632,14 @@
           "estimatedUnitChf" : {
             "type" : "number"
           },
+          "unitPriceChf" : {
+            "type" : "number",
+            "description" : "Price per piece used at publishing: the company's price, else the estimate"
+          },
+          "priceConfirmed" : {
+            "type" : "boolean",
+            "description" : "Whether the company set the unit price itself"
+          },
           "estimatedTotalChf" : {
             "type" : "number"
           },
@@ -779,6 +787,11 @@
             "type" : "string",
             "maxLength" : 1000,
             "minLength" : 0
+          },
+          "unitPriceChf" : {
+            "type" : [ "number", "null" ],
+            "description" : "Price per piece the company sets; null keeps the estimate unconfirmed",
+            "exclusiveMinimum" : 0
           }
         },
         "required" : [ "category", "condition", "name" ]
