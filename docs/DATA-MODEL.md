@@ -10,11 +10,7 @@ Rules:
 
 ## Tables
 
-| Table | Entity | Columns |
-|---|---|---|
-| `app_user` | `user/User.java` | `id` (identity), `email` (unique, stored lower-case), `password_hash` (bcrypt, never returned by the API), `display_name`, `created_at` |
-
-`user` is a reserved word in Postgres, hence `app_user`.
+None yet: the schema is empty (apart from Flyway's own `flyway_schema_history`). Add the first table as `V4__<what>.sql`.
 
 ## Migrations so far
 
@@ -22,6 +18,7 @@ Rules:
 |---|---|
 | V1 | `app_user`, plus an example table `listing` |
 | V2 | drops `listing` again |
+| V3 | drops `app_user` (login removed) |
 
 ## Backups
 
