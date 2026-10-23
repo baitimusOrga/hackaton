@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.MatchResult;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityManager;
@@ -69,7 +71,7 @@ public class SearchService {
     private static final String PARSE_SYSTEM = """
             You turn a buyer's wish for a secondhand item on a Swiss marketplace into search requirements.
             - Requirement attributes ONLY from: %s. Must-have = clearly required; nice-to-have = wished but optional.
-            - Never invent requirements the text does not state. Keep values short, as the buyer wrote them.
+            - Never invent requirements the text does not state. Keep values short and normalized like the listings: English, inches as 27\" (never "Zoll"/"inch"), memory and storage as "16 GB", years as 2017.
             - category ONLY one of: %s; null if unclear.
             - maxBudgetChf: the stated maximum price in CHF, else null.
             - postcode: for an obvious Swiss place a 4-digit postcode (Zürich 8001, Bern 3011, Luzern 6003,
@@ -187,14 +189,21 @@ public class SearchService {
                 limit(alternatives));
     }
 
+    private static final Pattern NUMBER = Pattern.compile("\\d+(?:[.,]\\d+)?");
+
     /** A must-have is stated when the listing has the attribute containing the value, or the title contains it. */
     static boolean states(ListingDetail listing, Requirement requirement) {
         // the condition is always stated on a listing (its own field), the AI judges whether it fits
         if (requirement.attribute().equalsIgnoreCase("Condition")) return true;
         String value = requirement.value().toLowerCase(Locale.ROOT);
-        if (listing.title().toLowerCase(Locale.ROOT).contains(value)) return true;
-        return listing.attributes().entrySet().stream().anyMatch(a -> a.getKey().equalsIgnoreCase(requirement.attribute())
-                && a.getValue().toLowerCase(Locale.ROOT).contains(value));
+        String stated = (listing.title() + " " + listing.attributes().entrySet().stream()
+                .filter(a -> a.getKey().equalsIgnoreCase(requirement.attribute()))
+                .map(Map.Entry::getValue).collect(Collectors.joining(" "))).toLowerCase(Locale.ROOT);
+        if (stated.contains(value)) return true;
+        // numbers decide when units are written differently ("27 Zoll" vs "27\"", "16GB" vs "16 GB")
+        List<String> numbers = NUMBER.matcher(value).results().map(MatchResult::group).toList();
+        List<String> statedNumbers = NUMBER.matcher(stated).results().map(MatchResult::group).toList();
+        return !numbers.isEmpty() && statedNumbers.containsAll(numbers);
     }
 
     List<ListingDetail> candidates(SearchRequirements req, boolean withKeywords) {
