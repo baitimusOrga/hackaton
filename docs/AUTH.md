@@ -56,7 +56,7 @@ API authentication is stateless. Reads stay public; publishing a listing require
 
 ## Staging rollout (HAC-34)
 
-The auth deploy job builds `hackaton-auth:staging` on main pushes only. Auth CI runs the build and integration suite against an isolated Postgres service. Production auth promotion is a separate rollout.
+The auth deploy job builds `hackaton-auth:staging` on main pushes and, like backend and frontend, promotes the same image to `:prod` on a `v*` tag or a manual promote. Auth CI runs the build and integration suite against an isolated Postgres service.
 
 Merge the auth service and deployment workflow first, wait for the auth image, then sync staging environment secrets and merge deployments PR #2. `STAGING_BETTER_AUTH_SECRET` is configured in the application repository; its value must remain stable after rollout. The shared environment sync removes the `STAGING_` prefix. Compose requires `BETTER_AUTH_SECRET` and routes `/api/auth` to auth at priority 200, ahead of Spring's `/api` route at 100. Spring reads JWKS internally from `http://auth:3000/api/auth/jwks` and validates the public staging origin as issuer.
 

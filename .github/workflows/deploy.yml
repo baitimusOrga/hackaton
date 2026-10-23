@@ -23,13 +23,13 @@ on:
 
 jobs:
   auth:
-    # HAC-34 covers staging only. Add production promotion with the production rollout.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'workflow_dispatch' || inputs.promote != ''
     uses: baitimusOrga/platform/.github/workflows/docker-app.yml@v1
     with:
       image: hackaton-auth
       context: auth
       dockerfile: auth/Dockerfile
+      promote: ${{ inputs.promote || '' }}
     secrets: inherit
 
   backend:
