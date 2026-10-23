@@ -21,6 +21,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
 import one.absent.hackaton.ai.AiClient;
+import one.absent.hackaton.geo.Coordinates;
+import one.absent.hackaton.geo.GeoClient;
 import one.absent.hackaton.listing.Categories;
 import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.listing.Listing;
@@ -119,8 +121,11 @@ public class SearchService {
     private final EntityManager em;
     private final TransactionTemplate tx;
     private final String model;
+    private final GeoClient geo;
 
-    SearchService(AiClient ai, EntityManager em, TransactionTemplate tx, @Value("${ai.search-model}") String model) {
+    SearchService(AiClient ai, EntityManager em, TransactionTemplate tx, @Value("${ai.search-model}") String model,
+                  GeoClient geo) {
+        this.geo = geo;
         this.ai = ai;
         this.em = em;
         this.tx = tx;
@@ -346,6 +351,18 @@ public class SearchService {
             jpql.append(" and lower(l.category) = :category");
             params.put("category", category.toLowerCase(Locale.ROOT));
         }
+        // a stated distance is a hard limit; without it (or without coordinates) the postcode only ranks, see outsideRegion
+        Coordinates origin = req.maxDistanceKm() == null || trim(req.postcode()) == null ? null
+                : geo.locate(trim(req.postcode())).orElse(null);
+        if (origin != null) {
+            jpql.append(" and l.latitude between :minLat and :maxLat and l.longitude between :minLon and :maxLon");
+            double latSpan = Coordinates.latitudeSpan(req.maxDistanceKm());
+            double lonSpan = origin.longitudeSpan(req.maxDistanceKm());
+            params.put("minLat", origin.latitude() - latSpan);
+            params.put("maxLat", origin.latitude() + latSpan);
+            params.put("minLon", origin.longitude() - lonSpan);
+            params.put("maxLon", origin.longitude() + lonSpan);
+        }
         List<String> keywords = req.keywords().stream().filter(Objects::nonNull).map(String::trim)
                 .filter(k -> !k.isEmpty()).toList();
         if (withKeywords && !keywords.isEmpty()) {
@@ -364,6 +381,8 @@ public class SearchService {
         });
         // exact fits first, then those stretching budget or region (stable: newest first within a tier)
         return fetched.stream()
+                .filter(l -> origin == null
+                        || origin.distanceKm(new Coordinates(l.latitude(), l.longitude())) <= req.maxDistanceKm())
                 .sorted(Comparator.comparingInt(l -> (overBudget(req, l) ? 1 : 0) + (outsideRegion(req, l) ? 1 : 0)))
                 .limit(MAX_CANDIDATES).toList();
     }

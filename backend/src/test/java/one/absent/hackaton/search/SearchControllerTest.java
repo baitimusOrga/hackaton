@@ -1,5 +1,6 @@
 package one.absent.hackaton.search;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -12,11 +13,15 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import jakarta.persistence.EntityManager;
 import one.absent.hackaton.ai.AiClient;
+import one.absent.hackaton.geo.Coordinates;
+import one.absent.hackaton.geo.GeoClient;
 import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.listing.Listing;
+import one.absent.hackaton.listing.ListingDetail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +50,12 @@ class SearchControllerTest {
 
     @MockitoBean
     AiClient ai;
+
+    @MockitoBean
+    GeoClient geo;
+
+    @Autowired
+    SearchService search;
 
     MockMvc mvc;
     Listing match;
@@ -189,6 +200,24 @@ class SearchControllerTest {
                         {"mustHave": [{"attribute": "Brand", "value": "technics"}, {"attribute": "Year", "value": "1995"}],
                          "niceToHave": [], "category": "audio", "keywords": ["turntable"],
                          "maxBudgetChf": 200, "postcode": "8001", "acceptUnknown": %s}""".formatted(acceptUnknown)));
+    }
+
+    @Test
+    void maxDistanceIsAHardLimitAroundThePostcode() {
+        when(geo.locate("8004")).thenReturn(Optional.of(new Coordinates(47.378, 8.5234)));
+        match.setLatitude(47.378);
+        match.setLongitude(8.5234);
+        Listing bern = listing("Bern turntable", "100", "Audio", "3011", Map.of());
+        bern.setLatitude(46.947);
+        bern.setLongitude(7.448);
+        em.flush();
+        var req = new SearchRequirements(List.of(), List.of(), "audio", List.of("turntable"), null, "8004", 30, true);
+
+        assertThat(search.candidates(req, true)).extracting(ListingDetail::id).containsExactly(match.getId());
+        // without a distance the postcode only ranks: the Bern listing stays a candidate
+        var anywhere = new SearchRequirements(List.of(), List.of(), "audio", List.of("turntable"), null, "8004", null,
+                true);
+        assertThat(search.candidates(anywhere, true)).extracting(ListingDetail::id).contains(bern.getId());
     }
 
     void rankingFails() {

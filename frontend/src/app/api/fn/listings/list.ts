@@ -14,6 +14,7 @@ export interface List$Params {
   category?: string;
   maxPrice?: number;
   postcode?: string;
+  radiusKm?: number;
 }
 
 export function list(http: HttpClient, rootUrl: string, params?: List$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<ListingSummary>>> {
@@ -23,6 +24,7 @@ export function list(http: HttpClient, rootUrl: string, params?: List$Params, co
     rb.query('category', params.category, {});
     rb.query('maxPrice', params.maxPrice, {});
     rb.query('postcode', params.postcode, {});
+    rb.query('radiusKm', params.radiusKm, {});
   }
 
   return http.request(

@@ -31,6 +31,9 @@ public class Listing {
     private String postcode;
     @Column(nullable = false, length = 120)
     private String locality;
+    // postcode centroid, null when the postcode could not be resolved
+    private Double latitude;
+    private Double longitude;
     @Column(length = 500)
     private String imageUrl;
     @Column(nullable = false)
@@ -47,6 +50,6 @@ public class Listing {
 
     public ListingDetail detail() {
         return new ListingDetail(id, title, priceChf, condition, category, postcode, locality,
-                imageUrl, description, Map.copyOf(attributes), createdAt, sellerName);
+                imageUrl, description, Map.copyOf(attributes), createdAt, sellerName, latitude, longitude);
     }
 }

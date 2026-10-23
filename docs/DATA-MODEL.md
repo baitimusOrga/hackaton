@@ -10,7 +10,7 @@ Rules:
 
 ## Tables
 
-- `listing`: listing content, CHF price, condition, postcode/locality and creation time. V4 persists the three public contract demos; new identities start at 4.
+- `listing`: listing content, CHF price, condition, postcode/locality, the postcode centroid (`latitude`/`longitude`, nullable) and creation time. V4 persists the three public contract demos; new identities start at 4.
 - `listing_attribute`: attribute names/values owned by a listing. Demo data uses only the canonical keys `Brand, Model, Year, Color, Size, Display, Resolution, CPU, RAM, Storage, Material, Dimensions`.
 - `listing.status`: `AVAILABLE` (default) or `SOLD`; `GET /api/listings` only returns `AVAILABLE`, newest first. V6 adds 20 fictional demo listings with ids 1001–1020.
 - Nullable `listing.seller_id` and `seller_name` store the verified Better Auth subject and a display-name snapshot at publication. Existing demos retain null sellers. Auth owns the separate `auth` schema, with no cross-schema user foreign key.
@@ -32,6 +32,7 @@ Rules:
 | V9 | `clearance_project`, `clearance_item` (business clearance); there is no V8 |
 | V10 | 11 SOLD demo sales for price evidence, ids 1101–1111 (Dell U2719D, iMac 18,3) |
 | V11 | nullable `brand`, `model` on `clearance_item` (used for price evidence and published listing attributes) |
+| V12 | nullable `latitude`, `longitude` on `listing` (postcode centroid from swisstopo, set when a listing is published; demo listings backfilled) |
 
 ## Backups
 

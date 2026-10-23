@@ -1,10 +1,13 @@
 package one.absent.hackaton.listing;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import one.absent.hackaton.geo.Coordinates;
+import one.absent.hackaton.geo.GeoClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,19 +25,39 @@ import org.springframework.transaction.annotation.Transactional;
 public class ListingController {
 
     private final ListingRepository listings;
+    private final GeoClient geo;
 
-    public ListingController(ListingRepository listings) {
+    public ListingController(ListingRepository listings, GeoClient geo) {
         this.listings = listings;
+        this.geo = geo;
     }
 
     @GetMapping
     public List<ListingSummary> list(@RequestParam(required = false) String q,
                                      @RequestParam(required = false) String category,
                                      @RequestParam(required = false) BigDecimal maxPrice,
-                                     @RequestParam(required = false) String postcode) {
-        return listings.search(contains(q), lower(category), maxPrice,
-                        postcode == null || postcode.isBlank() ? null : postcode.strip() + "%")
-                .stream().map(listing -> listing.detail().summary()).toList();
+                                     @RequestParam(required = false) String postcode,
+                                     @RequestParam(required = false) Double radiusKm) {
+        String code = postcode == null || postcode.isBlank() ? null : postcode.strip();
+        if (radiusKm == null || code == null) {
+            return listings.search(contains(q), lower(category), maxPrice, code == null ? null : code + "%",
+                    null, null, null, null).stream().map(listing -> listing.detail().summary()).toList();
+        }
+        if (radiusKm <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The radius must be more than 0 km.");
+        }
+        Coordinates origin = geo.locate(code).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Postcode " + code + " not found."));
+        double latSpan = Coordinates.latitudeSpan(radiusKm);
+        double lonSpan = origin.longitudeSpan(radiusKm);
+        return listings.search(contains(q), lower(category), maxPrice, null,
+                        origin.latitude() - latSpan, origin.latitude() + latSpan,
+                        origin.longitude() - lonSpan, origin.longitude() + lonSpan)
+                .stream().map(Listing::detail)
+                .filter(l -> origin.distanceKm(new Coordinates(l.latitude(), l.longitude())) <= radiusKm)
+                .sorted(Comparator.comparingDouble(
+                        l -> origin.distanceKm(new Coordinates(l.latitude(), l.longitude()))))
+                .map(ListingDetail::summary).toList();
     }
 
     private static String lower(String value) {

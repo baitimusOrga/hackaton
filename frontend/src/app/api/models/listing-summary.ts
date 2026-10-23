@@ -6,7 +6,9 @@ export interface ListingSummary {
   condition?: 'NEW' | 'LIKE_NEW' | 'GOOD' | 'USED' | 'DEFECTIVE';
   id?: number;
   imageUrl?: string;
+  latitude?: (number | null);
   locality?: string;
+  longitude?: (number | null);
   postcode?: string;
   priceChf?: number;
   title?: string;
