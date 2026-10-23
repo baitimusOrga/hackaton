@@ -1,18 +1,31 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { SellingService } from '../api/services';
-import { CreateListingRequest, ListingDraft } from '../api/models';
+import { ListingsService, SellingService } from '../api/services';
+import {
+  CreateListingRequest,
+  Detection,
+  DraftEvent,
+  Gap,
+  ListingDraft,
+  PrivacyMark,
+} from '../api/models';
 import { PricePanel } from '../components/price-panel';
-import { CATEGORIES } from '../categories';
+import { DraftStream } from '../draft-stream';
+import { ErrorBanner } from '../errors';
+import { CONDITION, GapCard, KnownFact, completeness, openGaps } from '../gaps';
 
-type Source = 'LABEL' | 'SELLER' | 'SUGGESTION' | 'WEB';
+type Source = KnownFact['source'];
 type Condition = CreateListingRequest['condition'];
 type Field = 'title' | 'category' | 'condition' | 'description';
-interface Fact {
-  name: string;
-  value: string;
-  source: Source;
+type Step = 'PHOTOS' | 'ANALYZING' | 'GAPS' | 'REVIEW';
+interface Fact extends KnownFact {
   sourceUrl?: string | null;
+}
+interface SellPhoto {
+  file: File;
+  url: string;
+  id?: number;
 }
 
 const MAX_PHOTOS = 5;
@@ -74,7 +87,7 @@ const MARKER_STYLES: Record<Source, string> = {
   template: `
     <h1 class="text-2xl font-semibold">Sell an item</h1>
 
-    @if (!draft()) {
+    @if (view() === 'PHOTOS') {
       <p class="mt-1">Add 1 to 5 photos. Include the type plate or model label if there is one.</p>
       <div class="mt-4 grid max-w-lg gap-3">
         <div class="flex flex-wrap gap-2">
@@ -122,246 +135,349 @@ const MARKER_STYLES: Record<Source, string> = {
           type="button"
           class="primary"
           [disabled]="!photos().length || busy()"
-          (click)="createDraft()"
+          (click)="analyse()"
         >
-          {{ busy() ? 'Creating draft…' : 'Create draft' }}
+          {{ busy() ? 'Uploading…' : 'Analyse' }}
         </button>
       </div>
     } @else {
-      <form class="mt-4 grid max-w-lg gap-4" (submit)="publish($event)">
-        <ul class="flex flex-wrap gap-2" aria-label="Photos">
-          @for (photo of photos(); track photo.url; let i = $index) {
-            <li>
-              <img
-                [src]="photo.url"
-                [alt]="'Photo ' + (i + 1) + (excluded().has(i) ? ' (left out)' : '')"
-                class="h-20 w-20 rounded object-cover"
-                [class]="excluded().has(i) ? 'opacity-40 ring-2 ring-rose-500' : ''"
-              />
-            </li>
-          }
-        </ul>
-
-        @if (draft()?.privacyWarnings?.length) {
-          <section class="rounded border border-rose-300 bg-rose-50 p-3" aria-label="Privacy check">
-            <h2 class="font-semibold">Check before publishing</h2>
-            @for (warning of draft()?.privacyWarnings; track $index) {
-              <div class="mt-2">
-                <p>Photo {{ warning.photo }}: {{ warning.text }}</p>
-                <label class="flex! items-center gap-1 font-normal!"
-                  ><input
-                    type="checkbox"
-                    [checked]="excluded().has(warning.photo! - 1)"
-                    (change)="toggleExcluded(warning.photo! - 1)"
-                  />
-                  Leave out photo {{ warning.photo }}</label
+      <section class="mt-4 grid max-w-lg gap-2" aria-label="Detections">
+        @if (photos()[shownPhoto()]; as photo) {
+          <div class="relative">
+            <img [src]="photo.url" [alt]="'Photo ' + (shownPhoto() + 1)" class="w-full rounded" />
+            @for (mark of marksOn(shownPhoto() + 1); track $index) {
+              <div
+                class="absolute border-2"
+                [class]="mark.privacy ? 'border-rose-500' : 'border-teal-500'"
+                [style.left.%]="mark.box[0] * 100"
+                [style.top.%]="mark.box[1] * 100"
+                [style.width.%]="mark.box[2] * 100"
+                [style.height.%]="mark.box[3] * 100"
+                [attr.data-testid]="mark.privacy ? 'privacy' : 'detection'"
+              >
+                <span
+                  class="absolute -top-6 left-0 rounded bg-white/90 px-1 text-sm whitespace-nowrap"
+                  >{{ mark.label }}</span
                 >
               </div>
             }
-          </section>
+          </div>
         }
-
-        <section class="rounded border border-amber-300 bg-amber-50 p-3" aria-label="Tips">
-          @if (draft()?.questions?.length) {
-            <h2 class="font-semibold">Tips to improve your listing</h2>
-            <ul class="list-disc pl-5">
-              @for (question of draft()?.questions; track $index) {
-                <li>{{ question }}</li>
-              }
-            </ul>
+        <ul class="flex flex-wrap gap-2" aria-label="Photos">
+          @for (photo of photos(); track photo.url; let i = $index) {
+            <li>
+              <button
+                type="button"
+                [attr.aria-pressed]="shownPhoto() === i"
+                (click)="shownPhoto.set(i)"
+              >
+                <img
+                  [src]="photo.url"
+                  [alt]="'Photo ' + (i + 1) + (excluded().has(i) ? ' (left out)' : '')"
+                  class="h-16 w-16 rounded object-cover"
+                  [class]="excluded().has(i) ? 'opacity-40 ring-2 ring-rose-500' : ''"
+                />
+              </button>
+            </li>
           }
-          @if (photos().length < maxPhotos) {
-            <label class="secondary mt-2 inline-block"
-              >{{ busy() ? 'Updating draft…' : 'Add photo and update draft' }}
+        </ul>
+        @if (view() === 'ANALYZING') {
+          @if (streamFailed()) {
+            <button type="button" class="primary" (click)="runStream()">Analyse again</button>
+          } @else {
+            <p aria-live="polite">Analysing… {{ detections().length }} found so far</p>
+          }
+        }
+      </section>
+
+      @if (view() === 'GAPS' && currentCard(); as card) {
+        <section
+          class="mt-4 grid max-w-lg gap-3 rounded border p-3"
+          data-testid="gap"
+          aria-live="polite"
+        >
+          <p class="text-sm">{{ answered() + 1 }} of {{ answered() + cards().length }}</p>
+          <h2 class="font-semibold">{{ card.prompt }}</h2>
+          @if (card.kind === 'CONFIRM' && !typing()) {
+            <div class="flex gap-2">
+              <button type="button" class="primary" (click)="answer(card, card.value ?? '')">
+                Correct
+              </button>
+              <button type="button" class="secondary" (click)="typing.set(true)">Change</button>
+            </div>
+          } @else if (card.kind === 'PHOTO' && !typing() && photos().length < maxPhotos) {
+            <label class="secondary w-fit"
+              >{{ busy() ? 'Uploading…' : 'Take photo' }}
               <input
                 type="file"
                 accept="image/*"
-                multiple
+                capture="environment"
                 class="sr-only"
                 [disabled]="busy()"
                 (change)="addPhotos($any($event.target), true)"
             /></label>
-          }
-        </section>
-
-        <label
-          >Title
-          <input
-            name="title"
-            required
-            maxlength="120"
-            [value]="fields().title"
-            (input)="setField('title', $any($event.target).value)"
-        /></label>
-        <label
-          >Category
-          <select
-            name="category"
-            required
-            (change)="setField('category', $any($event.target).value)"
-          >
-            @for (category of categories; track category) {
-              <option [value]="category" [selected]="category === fields().category">
-                {{ category }}
-              </option>
-            }
-          </select>
-        </label>
-        <label
-          >Condition
-          <select
-            name="condition"
-            required
-            (change)="setField('condition', $any($event.target).value)"
-          >
-            <option value="" disabled [selected]="!fields().condition">Choose condition</option>
-            @for (condition of conditions; track condition[0]) {
-              <option [value]="condition[0]" [selected]="condition[0] === fields().condition">
-                {{ condition[1] }}
-              </option>
-            }
-          </select>
-          @if (!draft()?.condition && !fields().condition) {
-            <span class="text-sm font-normal">
-              The photos don't show the condition — please choose it.
-            </span>
-          } @else if (draft()?.condition && draft()?.condition === fields().condition) {
-            <span class="text-sm font-normal">Suggested from the photos — please check.</span>
-          }
-        </label>
-        <label
-          >Description
-          <textarea
-            name="description"
-            required
-            maxlength="4000"
-            rows="5"
-            [value]="fields().description"
-            (input)="setField('description', $any($event.target).value)"
-          ></textarea>
-        </label>
-
-        <fieldset class="grid gap-2">
-          <legend class="font-semibold">Details</legend>
-          <p class="text-sm">Only details you confirm or that come from a label are published.</p>
-          @for (fact of facts(); track fact.name; let i = $index) {
-            <div class="grid grid-cols-[7rem_1fr] items-center gap-2" data-testid="fact">
-              <label [for]="'fact-' + i" class="font-normal!">{{ fact.name }}</label>
+            <button type="button" class="w-fit underline" (click)="typing.set(true)">
+              Type instead
+            </button>
+          } @else if (card.fact === conditionGap) {
+            <div class="flex flex-wrap gap-2">
+              @for (c of conditions; track c[0]) {
+                <button type="button" class="secondary" (click)="answer(card, c[0])">
+                  {{ c[1] }}
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="flex flex-wrap gap-2">
+              @for (option of card.options; track option) {
+                <button type="button" class="secondary" (click)="answer(card, option)">
+                  {{ option }}
+                </button>
+              }
+            </div>
+            <label
+              >{{ card.fact }}
               <input
-                [id]="'fact-' + i"
                 maxlength="500"
-                [value]="fact.value"
-                (input)="editFact(i, $any($event.target).value)"
-              />
-              <span
-                class="col-start-2 w-fit rounded px-2 text-sm {{ markerStyles[fact.source] }}"
-                data-testid="marker"
-                >{{ markers[fact.source] }}</span
-              >
-              <div class="col-start-2 flex gap-3 text-sm">
-                @if (fact.source === 'WEB' && fact.sourceUrl) {
-                  <a
-                    [href]="fact.sourceUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="underline"
-                    >Source</a
-                  >
-                }
-                @if (fact.source === 'SUGGESTION' || fact.source === 'WEB') {
+                [value]="draftAnswer()"
+                (input)="draftAnswer.set($any($event.target).value)"
+            /></label>
+            <button
+              type="button"
+              class="primary w-fit"
+              [disabled]="!draftAnswer().trim()"
+              (click)="answer(card, draftAnswer())"
+            >
+              Save
+            </button>
+          }
+          <div class="flex gap-4">
+            <button type="button" class="underline" (click)="skip(card)">Skip</button>
+            <button type="button" class="underline" (click)="step.set('REVIEW')">
+              To overview
+            </button>
+          </div>
+        </section>
+      }
+
+      @if (view() === 'REVIEW') {
+        <form class="mt-4 grid max-w-lg gap-4" (submit)="publish($event)">
+          <p>Listing {{ percentComplete() }} % complete</p>
+          @if (openNames()) {
+            <section
+              class="rounded border border-amber-300 bg-amber-50 p-3"
+              aria-label="Open points"
+            >
+              <p>Still open: {{ openNames() }}</p>
+              <button type="button" class="secondary mt-2" (click)="answerOpenPoints()">
+                Answer open points
+              </button>
+            </section>
+          }
+
+          @if (draft()?.privacyWarnings?.length) {
+            <section
+              class="rounded border border-rose-300 bg-rose-50 p-3"
+              aria-label="Privacy check"
+            >
+              <h2 class="font-semibold">Check before publishing</h2>
+              @for (warning of draft()?.privacyWarnings; track $index) {
+                <div class="mt-2">
+                  <p>Photo {{ warning.photo }}: {{ warning.text }}</p>
                   <label class="flex! items-center gap-1 font-normal!"
                     ><input
                       type="checkbox"
-                      [attr.aria-label]="fact.name + ' is correct'"
-                      (change)="confirmFact(i)"
+                      [checked]="excluded().has(warning.photo! - 1)"
+                      (change)="toggleExcluded(warning.photo! - 1)"
                     />
-                    This is correct</label
+                    Leave out photo {{ warning.photo }}</label
                   >
-                }
-                <button
-                  type="button"
-                  class="underline"
-                  [attr.aria-label]="'Remove ' + fact.name"
-                  (click)="removeFact(i)"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          } @empty {
-            <p class="text-sm">No details found in the photos.</p>
+                </div>
+              }
+            </section>
           }
-          <button
-            type="button"
-            class="secondary w-fit"
-            [disabled]="!canLookUp() || lookingUp()"
-            (click)="completeFacts()"
-          >
-            {{ lookingUp() ? 'Searching the web…' : 'Complete technical data' }}
-          </button>
-          @if (!canLookUp()) {
-            <p class="text-sm">Confirm the model first — we only look up what we know.</p>
-          }
-          @if (webNote()) {
-            <p class="text-sm">{{ webNote() }}</p>
-          }
-        </fieldset>
 
-        <fieldset class="grid gap-2">
-          <legend class="font-semibold">Price</legend>
-          <app-price-panel
-            [estimate]="draft()?.price"
-            [condition]="fields().condition"
-            [(price)]="price"
-          />
           <label
-            >Your price (CHF)
+            >Title
             <input
-              name="price"
-              type="number"
+              name="title"
               required
-              min="0.01"
-              max="9999999999.99"
-              step="0.01"
-              [value]="price() ?? ''"
-              (input)="price.set($any($event.target).valueAsNumber || null)"
+              maxlength="120"
+              [value]="fields().title"
+              (input)="setField('title', $any($event.target).value)"
           /></label>
-        </fieldset>
+          <label
+            >Category
+            <select
+              name="category"
+              required
+              (change)="setField('category', $any($event.target).value)"
+            >
+              @for (category of categories(); track category.name) {
+                <option [value]="category.name" [selected]="category.name === fields().category">
+                  {{ category.name }}
+                </option>
+              }
+            </select>
+          </label>
+          <label
+            >Condition
+            <select
+              name="condition"
+              required
+              (change)="setField('condition', $any($event.target).value)"
+            >
+              <option value="" disabled [selected]="!fields().condition">Choose condition</option>
+              @for (condition of conditions; track condition[0]) {
+                <option [value]="condition[0]" [selected]="condition[0] === fields().condition">
+                  {{ condition[1] }}
+                </option>
+              }
+            </select>
+            @if (!draft()?.condition && !fields().condition) {
+              <span class="text-sm font-normal">
+                The photos don't show the condition — please choose it.
+              </span>
+            } @else if (draft()?.condition && draft()?.condition === fields().condition) {
+              <span class="text-sm font-normal">Suggested from the photos — please check.</span>
+            }
+          </label>
+          <label
+            >Description
+            <textarea
+              name="description"
+              required
+              maxlength="4000"
+              rows="5"
+              [value]="fields().description"
+              (input)="setField('description', $any($event.target).value)"
+            ></textarea>
+          </label>
 
-        <label
-          >Postcode
-          <input
-            name="postcode"
-            required
-            pattern="[0-9]{4}"
-            inputmode="numeric"
-            [value]="postcode()"
-            (input)="postcode.set($any($event.target).value)"
-        /></label>
-        <label
-          >Locality
-          <input
-            name="locality"
-            required
-            maxlength="120"
-            [value]="locality()"
-            (input)="locality.set($any($event.target).value)"
-        /></label>
+          <fieldset class="grid gap-2">
+            <legend class="font-semibold">Details</legend>
+            <p class="text-sm">Only details you confirm or that come from a label are published.</p>
+            @for (fact of facts(); track fact.name; let i = $index) {
+              <div class="grid grid-cols-[7rem_1fr] items-center gap-2" data-testid="fact">
+                <label [for]="'fact-' + i" class="font-normal!">{{ fact.name }}</label>
+                <input
+                  [id]="'fact-' + i"
+                  maxlength="500"
+                  [value]="fact.value"
+                  (input)="editFact(i, $any($event.target).value)"
+                />
+                <span
+                  class="col-start-2 w-fit rounded px-2 text-sm {{ markerStyles[fact.source] }}"
+                  data-testid="marker"
+                  >{{ markers[fact.source] }}</span
+                >
+                <div class="col-start-2 flex gap-3 text-sm">
+                  @if (fact.source === 'WEB' && fact.sourceUrl) {
+                    <a
+                      [href]="fact.sourceUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="underline"
+                      >Source</a
+                    >
+                  }
+                  @if (fact.source === 'SUGGESTION' || fact.source === 'WEB') {
+                    <label class="flex! items-center gap-1 font-normal!"
+                      ><input
+                        type="checkbox"
+                        [attr.aria-label]="fact.name + ' is correct'"
+                        (change)="confirmFact(i)"
+                      />
+                      This is correct</label
+                    >
+                  }
+                  <button
+                    type="button"
+                    class="underline"
+                    [attr.aria-label]="'Remove ' + fact.name"
+                    (click)="removeFact(i)"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            } @empty {
+              <p class="text-sm">No details found in the photos.</p>
+            }
+            <button
+              type="button"
+              class="secondary w-fit"
+              [disabled]="!canLookUp() || lookingUp()"
+              (click)="completeFacts()"
+            >
+              {{ lookingUp() ? 'Searching the web…' : 'Complete technical data' }}
+            </button>
+            @if (!canLookUp()) {
+              <p class="text-sm">Confirm the model first — we only look up what we know.</p>
+            }
+            @if (webNote()) {
+              <p class="text-sm">{{ webNote() }}</p>
+            }
+          </fieldset>
 
-        <button type="submit" class="primary" [disabled]="busy()">
-          {{ busy() ? 'Please wait…' : 'Publish listing' }}
-        </button>
-      </form>
+          <fieldset class="grid gap-2">
+            <legend class="font-semibold">Price</legend>
+            <app-price-panel
+              [estimate]="draft()?.price"
+              [condition]="fields().condition"
+              [(price)]="price"
+            />
+            <label
+              >Your price (CHF)
+              <input
+                name="price"
+                type="number"
+                required
+                min="0.01"
+                max="9999999999.99"
+                step="0.01"
+                [value]="price() ?? ''"
+                (input)="price.set($any($event.target).valueAsNumber || null)"
+            /></label>
+          </fieldset>
+
+          <label
+            >Postcode
+            <input
+              name="postcode"
+              required
+              pattern="[0-9]{4}"
+              inputmode="numeric"
+              [value]="postcode()"
+              (input)="postcode.set($any($event.target).value)"
+          /></label>
+          <label
+            >Locality
+            <input
+              name="locality"
+              required
+              maxlength="120"
+              [value]="locality()"
+              (input)="locality.set($any($event.target).value)"
+          /></label>
+
+          <button type="submit" class="primary" [disabled]="busy()">
+            {{ busy() ? 'Please wait…' : 'Publish listing' }}
+          </button>
+        </form>
+      }
     }
   `,
 })
 export class Sell {
   private readonly api = inject(SellingService);
+  private readonly stream = inject(DraftStream);
+  private readonly banner = inject(ErrorBanner);
   private readonly router = inject(Router);
   protected readonly maxPhotos = MAX_PHOTOS;
   protected readonly markers = MARKERS;
   protected readonly markerStyles = MARKER_STYLES;
-  protected readonly categories = CATEGORIES;
+  protected readonly conditionGap = CONDITION;
   protected readonly conditions: [Condition, string][] = [
     ['NEW', 'New'],
     ['LIKE_NEW', 'Like new'],
@@ -369,8 +485,21 @@ export class Sell {
     ['USED', 'Used'],
     ['DEFECTIVE', 'Defective'],
   ];
-  protected readonly photos = signal<{ file: File; url: string }[]>([]);
+  protected readonly categories = toSignal(inject(ListingsService).categories(), {
+    initialValue: [],
+  });
+  protected readonly step = signal<Step>('PHOTOS');
+  protected readonly photos = signal<SellPhoto[]>([]);
+  protected readonly shownPhoto = signal(0);
   protected readonly busy = signal(false);
+  protected readonly streamFailed = signal(false);
+  protected readonly detections = signal<Detection[]>([]);
+  protected readonly privacyMarks = signal<PrivacyMark[]>([]);
+  protected readonly aiGaps = signal<Gap[]>([]);
+  protected readonly skipped = signal(new Set<string>());
+  protected readonly answered = signal(0);
+  protected readonly typing = signal(false);
+  protected readonly draftAnswer = signal('');
   protected readonly draft = signal<ListingDraft | null>(null);
   protected readonly fields = signal<Record<Field, string>>({
     title: '',
@@ -383,6 +512,23 @@ export class Sell {
   protected readonly webNote = signal('');
   // 0-based indexes of photos the seller leaves out of the listing
   protected readonly excluded = signal(new Set<number>());
+  protected readonly keyFacts = computed(
+    () => this.categories().find((c) => c.name === this.fields().category)?.keyFacts ?? [],
+  );
+  protected readonly cards = computed(() =>
+    openGaps(this.keyFacts(), this.facts(), this.fields().condition, this.aiGaps(), this.skipped()),
+  );
+  protected readonly currentCard = computed<GapCard | undefined>(() => this.cards()[0]);
+  // GAPS with nothing left to ask is the review
+  protected readonly view = computed<Step>(() =>
+    this.step() === 'GAPS' && !this.currentCard() ? 'REVIEW' : this.step(),
+  );
+  protected readonly percentComplete = computed(() =>
+    Math.round(completeness(this.keyFacts(), this.facts()) * 100),
+  );
+  protected readonly openNames = computed(() =>
+    [...new Set([...this.cards().map((c) => c.fact), ...this.skipped()])].join(', '),
+  );
   protected readonly photoIdsToPublish = computed(() =>
     (this.draft()?.photoIds ?? []).filter((_, i) => !this.excluded().has(i)),
   );
@@ -398,7 +544,18 @@ export class Sell {
   // fields the seller typed in keep their value when the draft is re-run
   private readonly sellerFields = new Set<Field>();
 
-  protected addPhotos(input: HTMLInputElement, redraft = false): void {
+  protected marksOn(photo: number): { box: number[]; label: string; privacy: boolean }[] {
+    return [
+      ...this.detections()
+        .filter((d) => d.photo === photo)
+        .map((d) => ({ box: d.box ?? [], label: d.label ?? '', privacy: false })),
+      ...this.privacyMarks()
+        .filter((p) => p.photo === photo)
+        .map((p) => ({ box: p.box ?? [], label: p.text ?? '', privacy: true })),
+    ];
+  }
+
+  protected addPhotos(input: HTMLInputElement, upload = false): void {
     const files = Array.from(input.files ?? []).slice(0, MAX_PHOTOS - this.photos().length);
     input.value = '';
     if (!files.length) return;
@@ -406,7 +563,7 @@ export class Sell {
       ...photos,
       ...files.map((file) => ({ file, url: URL.createObjectURL(file) })),
     ]);
-    if (redraft) this.createDraft();
+    if (upload) this.analyse();
   }
 
   protected removePhoto(index: number): void {
@@ -414,16 +571,85 @@ export class Sell {
     this.photos.update((photos) => photos.filter((_, i) => i !== index));
   }
 
-  protected createDraft(): void {
+  /** Uploads the photos that have no id yet, then streams the draft. */
+  protected analyse(): void {
     if (!this.photos().length || this.busy()) return;
+    const fresh = this.photos().filter((p) => p.id === undefined);
+    if (!fresh.length) {
+      void this.runStream();
+      return;
+    }
     this.busy.set(true);
-    this.api.createDraft({ body: { photos: this.photos().map((p) => p.file) } }).subscribe({
-      next: (draft) => {
-        this.applyDraft(draft);
+    this.api.uploadPhotos({ body: { photos: fresh.map((p) => p.file) } }).subscribe({
+      next: (ids) => {
+        let next = 0;
+        this.photos.update((photos) =>
+          photos.map((p) => (p.id === undefined ? { ...p, id: ids[next++] } : p)),
+        );
         this.busy.set(false);
+        void this.runStream();
       },
       error: () => this.busy.set(false),
     });
+  }
+
+  protected async runStream(): Promise<void> {
+    const hadDraft = !!this.draft();
+    const photoGap = this.currentCard();
+    this.step.set('ANALYZING');
+    this.streamFailed.set(false);
+    this.detections.set([]);
+    this.privacyMarks.set([]);
+    this.aiGaps.set([]);
+    let drafted = false;
+    try {
+      await this.stream.run(
+        {
+          photoIds: this.photos().map((p) => p.id!),
+          confirmedFacts: this.facts()
+            .filter((f) => f.source === 'SELLER' && f.value.trim())
+            .map((f) => ({ name: f.name, value: f.value.trim() })),
+        },
+        (event) => {
+          if (this.onEvent(event)) drafted = true;
+        },
+      );
+    } catch (error) {
+      this.banner.show(error instanceof Error ? error.message : 'The server is not reachable.');
+    }
+    if (drafted) {
+      this.step.set('GAPS');
+    } else if (hadDraft) {
+      // a failed re-run keeps the previous draft; the photo card counts as skipped
+      if (photoGap) this.skip(photoGap);
+      this.step.set('GAPS');
+    } else {
+      this.streamFailed.set(true);
+    }
+  }
+
+  /** Applies one stream event; true when it was the draft. */
+  private onEvent(event: DraftEvent): boolean {
+    switch (event.type) {
+      case 'DETECTION':
+        this.detections.update((all) => [...all, event.detection!]);
+        this.shownPhoto.set((event.detection!.photo ?? 1) - 1);
+        return false;
+      case 'PRIVACY':
+        this.privacyMarks.update((all) => [...all, event.privacy!]);
+        return false;
+      case 'GAP':
+        this.aiGaps.update((all) => [...all, event.gap!]);
+        return false;
+      case 'DRAFT':
+        this.applyDraft(event.draft!);
+        return true;
+      case 'ERROR':
+        this.banner.show(event.detail ?? 'The draft could not be created.');
+        return false;
+      default:
+        return false;
+    }
   }
 
   private applyDraft(draft: ListingDraft): void {
@@ -447,6 +673,37 @@ export class Sell {
         sourceUrl: f.sourceUrl,
       }));
     this.facts.set([...confirmed, ...fresh]);
+  }
+
+  protected answer(card: GapCard, value: string): void {
+    if (card.fact === CONDITION) {
+      this.setField('condition', value);
+    } else {
+      const fact: Fact = { name: card.fact, value: value.trim(), source: 'SELLER' };
+      this.facts.update((facts) =>
+        facts.some((f) => f.name === card.fact)
+          ? facts.map((f) => (f.name === card.fact ? fact : f))
+          : [fact, ...facts],
+      );
+    }
+    this.nextCard();
+  }
+
+  protected skip(card: GapCard): void {
+    this.skipped.update((set) => new Set(set).add(card.fact));
+    this.nextCard();
+  }
+
+  private nextCard(): void {
+    this.answered.update((n) => n + 1);
+    this.typing.set(false);
+    this.draftAnswer.set('');
+  }
+
+  protected answerOpenPoints(): void {
+    this.skipped.set(new Set());
+    this.answered.set(0);
+    this.step.set('GAPS');
   }
 
   protected setField(field: Field, value: string): void {

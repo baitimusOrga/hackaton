@@ -22,14 +22,16 @@ describe('DraftStream', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('sends the token and parses events split across chunks', async () => {
-    const fetch = vi.fn().mockResolvedValue(
-      new Response(
-        streamOf(
-          'data: {"type":"DETECTION","detection":{"photo":1,"box":[0,0,1,1],"label":"Dell"}}\n\ndata: {"ty',
-          'pe":"ERROR","detail":"x"}\n\n',
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          streamOf(
+            'data: {"type":"DETECTION","detection":{"photo":1,"box":[0,0,1,1],"label":"Dell"}}\n\ndata: {"ty',
+            'pe":"ERROR","detail":"x"}\n\n',
+          ),
         ),
-      ),
-    );
+      );
     vi.stubGlobal('fetch', fetch);
     const events: DraftEvent[] = [];
 
@@ -53,7 +55,7 @@ describe('DraftStream', () => {
     );
 
     await expect(
-      TestBed.inject(DraftStream).run({ photoIds: [1], confirmedFacts: [] }, () => {}),
+      TestBed.inject(DraftStream).run({ photoIds: [1], confirmedFacts: [] }, vi.fn()),
     ).rejects.toThrow('Unknown photo.');
   });
 });
