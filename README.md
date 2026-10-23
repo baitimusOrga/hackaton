@@ -62,6 +62,8 @@ Reset the local database: `docker compose down -v`.
 - Errors are Problem Details (`application/problem+json`), shown by a global banner in the frontend.
 - API client generated from OpenAPI: after an API change run `./mvnw verify` (backend) and `pnpm run api` (frontend), commit both.
 - CI also checks Prettier (`pnpm run format`) and that spec and client are current.
+- Root `pom.xml` so IntelliJ imports the backend as a Maven project.
+- Agents: [`AGENTS.md`](AGENTS.md). Once per clone: `git config core.hooksPath .githooks` (blocks pushes to `main`).
 
 ## Workflow
 
