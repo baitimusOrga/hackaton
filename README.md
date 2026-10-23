@@ -14,6 +14,18 @@ _To fill in at the hackathon._
 | Business model | _how it earns money or sustains itself_ |
 | Demo | https://hackaton-staging.absent.one |
 
+### Demo accounts
+
+For the demo and testing on staging and prod (`/login`). Demo data only — no real personal data, and
+change the password before the repository is shared beyond the team and jury.
+
+| Email | Display name | Password |
+|---|---|---|
+| janis@hackathon.ch | Janis | `SeedGenerator123!` |
+| ryan@hackathon.ch | Ryan | `SeedGenerator123!` |
+| levin@hackathon.ch | Levin | `SeedGenerator123!` |
+| cyrus@hackathon.ch | Cyrus | `SeedGenerator123!` |
+
 ### Progress during the hackathon
 
 Everything after the tag `hackathon-start` was built during the event: `git diff hackathon-start..main`.
