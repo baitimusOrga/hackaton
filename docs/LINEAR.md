@@ -32,7 +32,7 @@ following `.claude/skills/work-issue/SKILL.md`" (other agents). It stops at the 
 <what someone might expect but should not be built here>
 
 ## How to check
-<steps or the request to try>
+<steps or the request to try; diffs against origin/main, e.g. git diff origin/main...HEAD -- <file>>
 ```
 
 Rule of thumb: one issue = one PR = at most half a day. Two agents never work in the same

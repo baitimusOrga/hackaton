@@ -45,6 +45,9 @@ Use Linear's suggested branch name if the issue shows one. One issue, one branch
 
 ## 5. Verify
 
+Compare with `origin/main` (`git fetch && git diff origin/main...HEAD`), never with a local
+`main`: it can be stale, and resetting onto it throws away what others merged meanwhile.
+
 Run the checks from `AGENTS.md` for every side you touched and read the output. Then go
 through the acceptance criteria one by one and note how each is met (test name, request,
 or what the page shows). A criterion you could not verify is named as such in the PR.
