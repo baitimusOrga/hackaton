@@ -9,7 +9,9 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
@@ -134,5 +136,51 @@ class AiClientTest {
                     .isInstanceOfSatisfying(ResponseStatusException.class,
                             e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY));
         }
+    }
+
+    static String sse(Object... events) {
+        var mapper = JsonMapper.builder().build();
+        var body = new StringBuilder();
+        for (Object event : events) {
+            body.append("event: x\ndata: ").append(mapper.writeValueAsString(event)).append("\n\n");
+        }
+        return body.toString();
+    }
+
+    static Map<String, Object> text(String text) {
+        return Map.of("type", "content_block_delta", "delta", Map.of("type", "text_delta", "text", text));
+    }
+
+    static Map<String, Object> stop(String reason) {
+        return Map.of("type", "message_delta", "delta", Map.of("stop_reason", reason));
+    }
+
+    @Test
+    void streamsCompleteLinesAcrossChunks() {
+        server.expect(requestTo("https://ai.test/v1/messages"))
+                .andExpect(jsonPath("$.stream").value(true))
+                .andExpect(jsonPath("$.tools").doesNotExist())
+                .andExpect(jsonPath("$.output_config").doesNotExist())
+                .andRespond(withSuccess(sse(Map.of("type", "message_start"), text("{\"a\":1}\n{\"b\""),
+                        Map.of("type", "content_block_delta", "delta", Map.of("type", "thinking_delta", "thinking", "hm")),
+                        text(":2}"), stop("end_turn")), MediaType.TEXT_EVENT_STREAM));
+
+        List<String> lines = new ArrayList<>();
+        client("test-key").streamLines("s", "t", List.of(), lines::add);
+
+        assertThat(lines).containsExactly("{\"a\":1}", "{\"b\":2}");
+        server.verify();
+    }
+
+    @Test
+    void cutOffStreamFailsAfterTheLinesSoFar() {
+        server.expect(requestTo("https://ai.test/v1/messages"))
+                .andRespond(withSuccess(sse(text("{\"a\":1}\n{\"b\""), stop("max_tokens")), MediaType.TEXT_EVENT_STREAM));
+
+        List<String> lines = new ArrayList<>();
+        assertThatThrownBy(() -> client("test-key").streamLines("s", "t", List.of(), lines::add))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY));
+        assertThat(lines).containsExactly("{\"a\":1}");
     }
 }
