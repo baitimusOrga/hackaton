@@ -31,13 +31,13 @@ const SWITZERLAND = L.latLng(46.8, 8.2);
     #map
     role="region"
     [attr.aria-label]="label()"
-    class="isolate h-80 w-full rounded-xl border border-slate-300"
+    class="isolate h-80 w-full rounded-xl border border-(--line-soft)"
   ></div>`,
 })
 export class ListingMap {
   readonly items = input.required<MapItem[]>();
   readonly areaKm = input(5);
-  readonly label = input('Map of the listings');
+  readonly label = input('Karte der Inserate');
 
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('map');
   private readonly router = inject(Router);

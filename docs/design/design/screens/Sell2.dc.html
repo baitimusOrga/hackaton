@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Inserat – Schritt 2 Erkannt</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/zweit/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg-000:#fbfaf7;--bg-100:#edebe5;--bg-900:#1e1d1a;--ink:#1e1d1a;--ink-muted:#66625a;--ink-inverse:#fbfaf7;--line:#1e1d1a;--line-soft:#dcd9d1;--blue:#1f4fd6;--on-blue:#ffffff;--blue-text:#1a42b5;--green-text:#185e53;--focus:#1e1d1a;--danger:#a3101e;--overlay:#1e1d1ab3;--font-sans:"Inter",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--space-16:64px;--radius-0:0;--radius-1:2px;--border-1:1px;--border-2:2px}
+body{margin:0;background:#605f5c}
+a{color:#1e1d1a}a:hover{color:#1a42b5}
+.zw-dlg{width:100%;max-width:600px;background:#fbfaf7;border:1px solid #dcd9d1;border-radius:2px;box-sizing:border-box;padding:32px 40px 40px;display:flex;flex-direction:column;gap:32px}
+.zw-dlg__top{display:flex;align-items:center;gap:16px;font-size:12px;line-height:16px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:#66625a}
+.zw-dlg__top a{margin-left:auto;text-transform:none;letter-spacing:0;font-size:14px;font-weight:600;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.zw-x{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:0;background:none;cursor:pointer;color:#1e1d1a;margin-right:-12px}
+.zw-x svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5}
+.zw-q{margin:0;font-size:32px;line-height:36px;font-weight:700;letter-spacing:-.005em}
+.zw-sub{margin:0;font-size:16px;line-height:26px;color:#66625a}
+.zw-foot{display:flex;align-items:center;gap:16px}
+.zw-back{min-height:44px;display:inline-flex;align-items:center;font-size:15px;font-weight:600;text-decoration:none}
+</style>
+</helmet>
+<div class="zw" style="min-height: 100%; background: #605f5c; color: #1e1d1a; font-family: Inter, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; padding: 48px 16px; box-sizing: border-box;">
+  <div class="zw-dlg" role="dialog" aria-labelledby="q2">
+    <div class="zw-dlg__top">
+      <span>Verkaufen · 2 von 5</span>
+      <a href="SellFull.dc.html" class="zw-btn zw-btn--sm" style="text-transform: none; letter-spacing: 0;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16"/></svg><span>Alles auf einer Seite</span></a>
+      <a href="Main.dc.html" class="zw-x" aria-label="Schliessen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></a>
+    </div>
+    <div style="display: flex; gap: 20px; align-items: center;">
+      <div style="width: 96px; height: 96px; background: #edebe5; flex: none;"></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <h1 id="q2" class="zw-q" style="font-size: 24px; line-height: 28px;">Apple iMac 27" Retina 5K, 2017</h1>
+        <p class="zw-sub" style="font-size: 14px; line-height: 20px;">Vom Typenschild gelesen: A1419, EMC 3070</p>
+        <a href="#" style="font-size: 14px; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center;">Stimmt nicht, ändern</a>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <p style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 600;">Welche Ausstattung hat er?</p>
+      <p class="zw-sub" style="font-size: 14px; line-height: 20px;">Steht unter Apple-Menü › Über diesen Mac. Wenn du es nicht weisst, schreiben wir «nicht bestätigt».</p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="zw-chip" aria-pressed="false" style="max-width: none;"><span>i5 3.4 GHz · 8 GB</span></button>
+        <button type="button" class="zw-chip" aria-pressed="true" style="max-width: none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>i5 3.5 GHz · 8 GB</span></button>
+        <button type="button" class="zw-chip" aria-pressed="false" style="max-width: none;"><span>i5 3.8 GHz · 8 GB</span></button>
+        <button type="button" class="zw-chip" aria-pressed="false" style="max-width: none;"><span>i7 4.2 GHz</span></button>
+        <button type="button" class="zw-chip" aria-pressed="false" style="max-width: none;"><span>Weiss ich nicht</span></button>
+      </div>
+    </div>
+    <div class="zw-foot">
+      <a href="Sell1.dc.html" class="zw-back">Zurück</a>
+      <a href="Sell3.dc.html" class="zw-btn zw-btn--primary" style="margin-left: auto;"><span>Weiter</span></a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

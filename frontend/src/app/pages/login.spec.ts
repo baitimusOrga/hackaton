@@ -27,13 +27,13 @@ describe('Login and registration forms', () => {
     await fixture.whenStable();
     return { fixture, auth, navigate, element: fixture.nativeElement as HTMLElement };
   }
-  it('explains invalid registration fields when Create account is clicked', async () => {
+  it('explains invalid registration fields when Konto erstellen is clicked', async () => {
     const { fixture, auth, element } = await setup(true);
     expect(element.querySelector<HTMLButtonElement>('button')!.disabled).toBe(false);
     element.querySelector<HTMLButtonElement>('button')!.click();
     await fixture.whenStable();
-    expect(element.textContent).toContain('Enter a valid email address.');
-    expect(element.textContent).toContain('Use at least 12 characters.');
+    expect(element.textContent).toContain('Gib eine gültige E-Mail-Adresse ein.');
+    expect(element.textContent).toContain('Mindestens 12 Zeichen.');
     expect(auth.register).not.toHaveBeenCalled();
   });
   it('returns to the requested page after login', async () => {

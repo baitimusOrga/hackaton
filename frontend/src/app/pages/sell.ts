@@ -1,12 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { NgTemplateOutlet } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
 import { SellingService } from '../api/services';
 import { CreateListingRequest, ListingDraft } from '../api/models';
 import { PricePanel } from '../components/price-panel';
 import { CATEGORIES } from '../categories';
+import { Condition, CONDITION_LABELS } from '../conditions';
+import { Button } from '../ui/button';
+import { ChfPipe } from '../ui/chf';
+import { Icon } from '../ui/icon';
 
 type Source = 'LABEL' | 'SELLER' | 'SUGGESTION' | 'WEB';
-type Condition = CreateListingRequest['condition'];
 type Field = 'title' | 'category' | 'condition' | 'description';
 interface Fact {
   name: string;
@@ -16,342 +20,217 @@ interface Fact {
 }
 
 const MAX_PHOTOS = 5;
+const STEPS = 5;
 const MARKERS: Record<Source, string> = {
-  LABEL: 'From label',
-  SUGGESTION: 'Suggested — please check',
-  SELLER: 'Confirmed by you',
-  WEB: 'From the web — please check',
+  LABEL: 'Vom Etikett gelesen',
+  SUGGESTION: 'Vorschlag, bitte prüfen',
+  SELLER: 'Von dir bestätigt',
+  WEB: 'Aus dem Web, bitte prüfen',
 };
-const MARKER_STYLES: Record<Source, string> = {
-  LABEL: 'bg-sky-100 text-sky-900',
-  SUGGESTION: 'bg-amber-100 text-amber-900',
-  SELLER: 'bg-emerald-100 text-emerald-900',
-  WEB: 'bg-violet-100 text-violet-900',
+// TODO: the design's "Sehr gut" has no backend condition; CreateListingRequest knows only these five.
+const HINTS: Record<Condition, string> = {
+  NEW: 'Unbenutzt, originalverpackt.',
+  LIKE_NEW: 'Keine Gebrauchsspuren.',
+  GOOD: 'Funktioniert einwandfrei, sichtbare Spuren.',
+  USED: 'Deutliche Spuren, funktioniert.',
+  DEFECTIVE: 'Für Bastler oder Ersatzteile.',
 };
+const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
+  value,
+  label: CONDITION_LABELS[value],
+  hint: HINTS[value],
+}));
 
+/** Sell wizard (Sell1–Sell5) and the one-page form (SellFull); both views share the same signals. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-sell',
-  imports: [PricePanel],
+  imports: [NgTemplateOutlet, RouterLink, PricePanel, Button, ChfPipe, Icon],
+  templateUrl: './sell.html',
   styles: `
-    label {
-      display: grid;
-      gap: 0.25rem;
+    .dlg {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: var(--space-8) var(--space-6) var(--space-8);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-8);
+      background: var(--bg-000);
+      border: var(--border-1) solid var(--line-soft);
+      border-radius: var(--radius-1);
+    }
+    .dlg--full {
+      max-width: 760px;
+      gap: 0;
+    }
+    @media (min-width: 720px) {
+      .dlg {
+        padding: var(--space-8) 40px 40px;
+      }
+    }
+    .top {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+    .top .zw-btn {
+      margin-left: auto;
+    }
+    .close {
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: -12px;
+      color: var(--ink);
+    }
+    .q--sm {
+      font-size: 24px;
+      line-height: 28px;
+    }
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    .strong {
+      font-size: 18px;
+      line-height: 24px;
       font-weight: 600;
     }
-    input:not([type='checkbox']):not([type='file']),
-    textarea,
-    select {
-      border: 1px solid #94a3b8;
-      border-radius: 0.375rem;
-      padding: 0.75rem;
-      font-weight: 400;
-      background: white;
+    .foot {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      flex-wrap: wrap;
     }
-    .primary {
-      background: #115e59;
-      color: white;
-      padding: 0.75rem;
-      border-radius: 0.375rem;
+    .foot > :first-child + * {
+      margin-left: auto;
+    }
+    .link--muted {
+      color: var(--ink-muted);
+    }
+    .drop {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-12) var(--space-6);
+      background: var(--bg-100);
+      border-radius: var(--radius-1);
+      text-align: center;
       cursor: pointer;
     }
-    .secondary {
-      border: 1px solid #115e59;
-      color: #115e59;
-      padding: 0.5rem 0.75rem;
-      border-radius: 0.375rem;
+    .drop:focus-within,
+    .add:focus-within,
+    .file:focus-within {
+      outline: var(--border-2) solid var(--focus);
+      outline-offset: 2px;
+    }
+    .shots {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-2);
+    }
+    @media (min-width: 480px) {
+      .shots {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+      }
+    }
+    .shot {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      background: var(--bg-100);
+    }
+    .shot--out {
+      opacity: 0.4;
+    }
+    .add {
+      aspect-ratio: 1 / 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1);
+      border: var(--border-1) solid var(--line);
+      border-radius: var(--radius-1);
+      font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
     }
-    .secondary[aria-pressed='true'] {
-      background: #115e59;
-      color: white;
+    .thumb {
+      width: 96px;
+      height: 96px;
+      flex: none;
+      object-fit: cover;
+      background: var(--bg-100);
     }
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
+    .head {
+      display: flex;
+      gap: 20px;
+      align-items: center;
     }
-  `,
-  template: `
-    <h1 class="text-2xl font-semibold">Sell an item</h1>
-
-    @if (!draft()) {
-      <p class="mt-1">Add 1 to 5 photos. Include the type plate or model label if there is one.</p>
-      <div class="mt-4 grid max-w-lg gap-3">
-        <div class="flex flex-wrap gap-2">
-          <label class="secondary"
-            >Take photo
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              class="sr-only"
-              [disabled]="photos().length >= maxPhotos"
-              (change)="addPhotos($any($event.target))"
-          /></label>
-          <label class="secondary"
-            >Choose photos
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              class="sr-only"
-              [disabled]="photos().length >= maxPhotos"
-              (change)="addPhotos($any($event.target))"
-          /></label>
-        </div>
-        <ul class="flex flex-wrap gap-2" aria-label="Selected photos">
-          @for (photo of photos(); track photo.url; let i = $index) {
-            <li class="relative">
-              <img
-                [src]="photo.url"
-                [alt]="'Photo ' + (i + 1)"
-                class="h-24 w-24 rounded object-cover"
-              />
-              <button
-                type="button"
-                class="absolute top-1 right-1 rounded bg-white/90 px-1 text-sm"
-                [attr.aria-label]="'Remove photo ' + (i + 1)"
-                (click)="removePhoto(i)"
-              >
-                ✕
-              </button>
-            </li>
-          }
-        </ul>
-        <button
-          type="button"
-          class="primary"
-          [disabled]="!photos().length || busy()"
-          (click)="createDraft()"
-        >
-          {{ busy() ? 'Creating draft…' : 'Create draft' }}
-        </button>
-      </div>
-    } @else {
-      <form class="mt-4 grid max-w-lg gap-4" (submit)="publish($event)">
-        <ul class="flex flex-wrap gap-2" aria-label="Photos">
-          @for (photo of photos(); track photo.url; let i = $index) {
-            <li>
-              <img
-                [src]="photo.url"
-                [alt]="'Photo ' + (i + 1) + (excluded().has(i) ? ' (left out)' : '')"
-                class="h-20 w-20 rounded object-cover"
-                [class]="excluded().has(i) ? 'opacity-40 ring-2 ring-rose-500' : ''"
-              />
-            </li>
-          }
-        </ul>
-
-        @if (draft()?.privacyWarnings?.length) {
-          <section class="rounded border border-rose-300 bg-rose-50 p-3" aria-label="Privacy check">
-            <h2 class="font-semibold">Check before publishing</h2>
-            @for (warning of draft()?.privacyWarnings; track $index) {
-              <div class="mt-2">
-                <p>Photo {{ warning.photo }}: {{ warning.text }}</p>
-                <label class="flex! items-center gap-1 font-normal!"
-                  ><input
-                    type="checkbox"
-                    [checked]="excluded().has(warning.photo! - 1)"
-                    (change)="toggleExcluded(warning.photo! - 1)"
-                  />
-                  Leave out photo {{ warning.photo }}</label
-                >
-              </div>
-            }
-          </section>
-        }
-
-        <section class="rounded border border-amber-300 bg-amber-50 p-3" aria-label="Tips">
-          @if (draft()?.questions?.length) {
-            <h2 class="font-semibold">Tips to improve your listing</h2>
-            <ul class="list-disc pl-5">
-              @for (question of draft()?.questions; track $index) {
-                <li>{{ question }}</li>
-              }
-            </ul>
-          }
-          @if (photos().length < maxPhotos) {
-            <label class="secondary mt-2 inline-block"
-              >{{ busy() ? 'Updating draft…' : 'Add photo and update draft' }}
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                class="sr-only"
-                [disabled]="busy()"
-                (change)="addPhotos($any($event.target), true)"
-            /></label>
-          }
-        </section>
-
-        <label
-          >Title
-          <input
-            name="title"
-            required
-            maxlength="120"
-            [value]="fields().title"
-            (input)="setField('title', $any($event.target).value)"
-        /></label>
-        <label
-          >Category
-          <select
-            name="category"
-            required
-            (change)="setField('category', $any($event.target).value)"
-          >
-            @for (category of categories; track category) {
-              <option [value]="category" [selected]="category === fields().category">
-                {{ category }}
-              </option>
-            }
-          </select>
-        </label>
-        <label
-          >Condition
-          <select
-            name="condition"
-            required
-            (change)="setField('condition', $any($event.target).value)"
-          >
-            <option value="" disabled [selected]="!fields().condition">Choose condition</option>
-            @for (condition of conditions; track condition[0]) {
-              <option [value]="condition[0]" [selected]="condition[0] === fields().condition">
-                {{ condition[1] }}
-              </option>
-            }
-          </select>
-          @if (!draft()?.condition && !fields().condition) {
-            <span class="text-sm font-normal">
-              The photos don't show the condition — please choose it.
-            </span>
-          } @else if (draft()?.condition && draft()?.condition === fields().condition) {
-            <span class="text-sm font-normal">Suggested from the photos — please check.</span>
-          }
-        </label>
-        <label
-          >Description
-          <textarea
-            name="description"
-            required
-            maxlength="4000"
-            rows="5"
-            [value]="fields().description"
-            (input)="setField('description', $any($event.target).value)"
-          ></textarea>
-        </label>
-
-        <fieldset class="grid gap-2">
-          <legend class="font-semibold">Details</legend>
-          <p class="text-sm">Only details you confirm or that come from a label are published.</p>
-          @for (fact of facts(); track fact.name; let i = $index) {
-            <div class="grid grid-cols-[7rem_1fr] items-center gap-2" data-testid="fact">
-              <label [for]="'fact-' + i" class="font-normal!">{{ fact.name }}</label>
-              <input
-                [id]="'fact-' + i"
-                maxlength="500"
-                [value]="fact.value"
-                (input)="editFact(i, $any($event.target).value)"
-              />
-              <span
-                class="col-start-2 w-fit rounded px-2 text-sm {{ markerStyles[fact.source] }}"
-                data-testid="marker"
-                >{{ markers[fact.source] }}</span
-              >
-              <div class="col-start-2 flex gap-3 text-sm">
-                @if (fact.source === 'WEB' && fact.sourceUrl) {
-                  <a
-                    [href]="fact.sourceUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="underline"
-                    >Source</a
-                  >
-                }
-                @if (fact.source === 'SUGGESTION' || fact.source === 'WEB') {
-                  <label class="flex! items-center gap-1 font-normal!"
-                    ><input
-                      type="checkbox"
-                      [attr.aria-label]="fact.name + ' is correct'"
-                      (change)="confirmFact(i)"
-                    />
-                    This is correct</label
-                  >
-                }
-                <button
-                  type="button"
-                  class="underline"
-                  [attr.aria-label]="'Remove ' + fact.name"
-                  (click)="removeFact(i)"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          } @empty {
-            <p class="text-sm">No details found in the photos.</p>
-          }
-          <button
-            type="button"
-            class="secondary w-fit"
-            [disabled]="!canLookUp() || lookingUp()"
-            (click)="completeFacts()"
-          >
-            {{ lookingUp() ? 'Searching the web…' : 'Complete technical data' }}
-          </button>
-          @if (!canLookUp()) {
-            <p class="text-sm">Confirm the model first — we only look up what we know.</p>
-          }
-          @if (webNote()) {
-            <p class="text-sm">{{ webNote() }}</p>
-          }
-        </fieldset>
-
-        <fieldset class="grid gap-2">
-          <legend class="font-semibold">Price</legend>
-          <app-price-panel
-            [estimate]="draft()?.price"
-            [condition]="fields().condition"
-            [(price)]="price"
-          />
-          <label
-            >Your price (CHF)
-            <input
-              name="price"
-              type="number"
-              required
-              min="0.01"
-              max="9999999999.99"
-              step="0.01"
-              [value]="price() ?? ''"
-              (input)="price.set($any($event.target).valueAsNumber || null)"
-          /></label>
-        </fieldset>
-
-        <label
-          >Postcode
-          <input
-            name="postcode"
-            required
-            pattern="[0-9]{4}"
-            inputmode="numeric"
-            [value]="postcode()"
-            (input)="postcode.set($any($event.target).value)"
-        /></label>
-        <label
-          >Locality
-          <input
-            name="locality"
-            required
-            maxlength="120"
-            [value]="locality()"
-            (input)="locality.set($any($event.target).value)"
-        /></label>
-
-        <button type="submit" class="primary" [disabled]="busy()">
-          {{ busy() ? 'Please wait…' : 'Publish listing' }}
-        </button>
-      </form>
+    .fact {
+      display: grid;
+      grid-template-columns: minmax(0, 8rem) minmax(0, 1fr);
+      gap: var(--space-1) var(--space-3);
+      align-items: center;
+      padding: var(--space-2) 0;
+      border-bottom: var(--border-1) solid var(--line-soft);
+    }
+    .fact > :nth-child(n + 3) {
+      grid-column: 2;
+    }
+    .fact__acts {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+      font-size: 14px;
+    }
+    .two {
+      display: grid;
+      gap: var(--space-4);
+    }
+    @media (min-width: 480px) {
+      .two {
+        grid-template-columns: 8rem minmax(0, 1fr);
+      }
+    }
+    .preview {
+      display: flex;
+      gap: var(--space-4);
+      align-items: center;
+      padding: var(--space-4);
+      background: var(--bg-100);
+    }
+    .preview img {
+      width: 72px;
+      height: 72px;
+      flex: none;
+      object-fit: cover;
+    }
+    .preview__text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .ellipsis {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sec {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      padding: var(--space-8) 0;
+      border-bottom: var(--border-1) solid var(--line-soft);
     }
   `,
 })
@@ -359,16 +238,14 @@ export class Sell {
   private readonly api = inject(SellingService);
   private readonly router = inject(Router);
   protected readonly maxPhotos = MAX_PHOTOS;
+  protected readonly steps = STEPS;
   protected readonly markers = MARKERS;
-  protected readonly markerStyles = MARKER_STYLES;
   protected readonly categories = CATEGORIES;
-  protected readonly conditions: [Condition, string][] = [
-    ['NEW', 'New'],
-    ['LIKE_NEW', 'Like new'],
-    ['GOOD', 'Good'],
-    ['USED', 'Used'],
-    ['DEFECTIVE', 'Defective'],
-  ];
+  protected readonly conditions = CONDITIONS;
+  protected readonly view = signal<'steps' | 'full'>('steps');
+  protected readonly step = signal(1);
+  // Sell1b: the draft came back without anything read from a label
+  protected readonly askForPhotos = signal(false);
   protected readonly photos = signal<{ file: File; url: string }[]>([]);
   protected readonly busy = signal(false);
   protected readonly draft = signal<ListingDraft | null>(null);
@@ -379,12 +256,21 @@ export class Sell {
     description: '',
   });
   protected readonly facts = signal<Fact[]>([]);
+  protected readonly labelFacts = computed(() =>
+    this.facts().filter((f) => f.source === 'LABEL' && f.value.trim()),
+  );
   protected readonly lookingUp = signal(false);
   protected readonly webNote = signal('');
   // 0-based indexes of photos the seller leaves out of the listing
   protected readonly excluded = signal(new Set<number>());
   protected readonly photoIdsToPublish = computed(() =>
     (this.draft()?.photoIds ?? []).filter((_, i) => !this.excluded().has(i)),
+  );
+  protected readonly previewPhoto = computed(
+    () => this.photos().find((_, i) => !this.excluded().has(i))?.url,
+  );
+  protected readonly conditionLabel = computed(
+    () => CONDITIONS.find((c) => c.value === this.fields().condition)?.label ?? '',
   );
   protected readonly canLookUp = computed(() =>
     this.facts().some(
@@ -395,8 +281,31 @@ export class Sell {
   protected readonly price = signal<number | null>(null);
   protected readonly postcode = signal('');
   protected readonly locality = signal('');
+  protected readonly canContinue = computed(() => {
+    switch (this.step()) {
+      case 1:
+        return this.photos().length > 0 && !this.busy();
+      case 3:
+        return !!this.fields().condition;
+      case 4:
+        return this.price() !== null && this.price()! > 0;
+      default:
+        return true;
+    }
+  });
   // fields the seller typed in keep their value when the draft is re-run
   private readonly sellerFields = new Set<Field>();
+
+  protected next(): void {
+    if (!this.canContinue()) return;
+    if (this.step() === 1) this.createDraft();
+    else this.step.update((s) => Math.min(STEPS, s + 1));
+  }
+
+  protected back(): void {
+    if (this.step() === 1) this.askForPhotos.set(false);
+    else this.step.update((s) => s - 1);
+  }
 
   protected addPhotos(input: HTMLInputElement, redraft = false): void {
     const files = Array.from(input.files ?? []).slice(0, MAX_PHOTOS - this.photos().length);
@@ -421,6 +330,11 @@ export class Sell {
       next: (draft) => {
         this.applyDraft(draft);
         this.busy.set(false);
+        if (this.view() === 'steps') {
+          const recognised = this.labelFacts().length > 0;
+          this.askForPhotos.set(!recognised);
+          if (recognised) this.step.set(2);
+        }
       },
       error: () => this.busy.set(false),
     });
@@ -491,7 +405,8 @@ export class Sell {
             sourceUrl: f.sourceUrl,
           }));
         this.facts.update((all) => [...all, ...fresh]);
-        if (!fresh.length) this.webNote.set('Nothing reliable found on the web for this model.');
+        if (!fresh.length)
+          this.webNote.set('Im Web nichts Verlässliches zu diesem Modell gefunden.');
         this.lookingUp.set(false);
       },
       error: () => this.lookingUp.set(false),
@@ -504,6 +419,8 @@ export class Sell {
 
   protected publish(event: Event): void {
     event.preventDefault();
+    // Enter inside a wizard step means "Weiter", never publish
+    if (this.view() === 'steps' && this.step() < STEPS) return this.next();
     const draft = this.draft();
     const price = this.price();
     const fields = this.fields();

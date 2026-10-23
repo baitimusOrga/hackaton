@@ -1,212 +1,129 @@
-import { CurrencyPipe, TitleCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  computed,
+  Component,
+  DestroyRef,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
-import { map, switchMap } from 'rxjs';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { catchError, of } from 'rxjs';
 import { ListingsService } from '../api/services';
-import { CATEGORIES } from '../categories';
+import { HeroSearch } from '../shell/hero-search';
 import { ListingMap } from '../components/listing-map';
+import { Button } from '../ui/button';
+import { Chip } from '../ui/chip';
+import { Icon } from '../ui/icon';
+import { IconName } from '../ui/icons';
+import { ListingCard } from '../ui/listing-card';
+import { SectionHeading } from '../ui/section-heading';
+import { SummaryCard } from '../ui/summary-card';
 
-type FilterName = 'q' | 'category' | 'maxPrice' | 'postcode' | 'radiusKm';
+const QUICK_FILTERS = ['Nur Auktionen', 'Unter CHF 50', 'Abholung', 'Endet heute', 'Grüne Wahl'];
 
-const RADII = [5, 10, 25, 50, 100];
+const CATEGORIES: { label: string; icon: IconName }[] = [
+  { label: 'Elektronik', icon: 'electronics' },
+  { label: 'Büro & Möbel', icon: 'furniture' },
+  { label: 'Velo & E-Bike', icon: 'bike' },
+  { label: 'Haushalt', icon: 'household' },
+  { label: 'Kleidung', icon: 'clothing' },
+  { label: 'Kinder', icon: 'kids' },
+  { label: 'Garten', icon: 'garden' },
+  { label: 'Maschinen', icon: 'machines' },
+  { label: 'Alle Kategorien', icon: 'menu' },
+];
 
-function filtersOf(params: ParamMap) {
-  const maxPrice = Number(params.get('maxPrice') || NaN);
-  const postcode = params.get('postcode') || undefined;
-  const radiusKm = Number(params.get('radiusKm') || NaN);
-  const lat = params.get('lat') ? Number(params.get('lat')) : undefined;
-  const lon = params.get('lon') ? Number(params.get('lon')) : undefined;
-  return {
-    q: params.get('q') || undefined,
-    category: params.get('category') || undefined,
-    maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
-    postcode,
-    // a radius needs a full postcode or the buyer's position to measure from
-    radiusKm:
-      RADII.includes(radiusKm) && (/^\d{4}$/.test(postcode ?? '') || lat !== undefined)
-        ? radiusKm
-        : undefined,
-    lat,
-    lon,
-  };
-}
+const MINUTE = 60 * 1000;
+// shortcut: the backend has no auctions yet, so "Endet bald" shows the design's sample; load them once the API serves auctions.
+const SAMPLE_AUCTIONS = [
+  {
+    title: 'iMac 27" 2017, 5K Retina, 32 GB RAM',
+    bid: 420,
+    bids: 7,
+    endsIn: 8,
+    meta: 'Gut · Zürich-Oerlikon · Abholung',
+  },
+  {
+    title: 'Herman Miller Aeron, Grösse B',
+    bid: 310,
+    bids: 12,
+    endsIn: 134,
+    meta: 'Sehr gut · Winterthur · Abholung oder Versand',
+  },
+  {
+    title: 'Canyon Grail CF SL 8, Rahmen M',
+    bid: 1250,
+    bids: 4,
+    endsIn: 340,
+    meta: 'Gut · Bern · Abholung',
+  },
+  {
+    title: 'Bosch Akku-Bohrschrauber GSR 18V, 2 Akkus',
+    bid: 65,
+    bids: 9,
+    endsIn: 662,
+    meta: 'Gebraucht · Baden · Versand CHF 9.–',
+  },
+];
 
+/** Landing page: hero search, quick filters, categories, ending auctions, new listings, business band. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    FormsModule,
+    RouterLink,
+    Button,
+    Chip,
+    Icon,
+    ListingCard,
+    ListingMap,
+    SectionHeading,
+    SummaryCard,
+  ],
   selector: 'app-home',
-  imports: [CurrencyPipe, ListingMap, RouterLink, TitleCasePipe],
-  template: `
-    <h1 class="mb-4 text-2xl font-semibold">Discover</h1>
-    <form
-      class="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
-      role="search"
-      (submit)="$event.preventDefault()"
-    >
-      <label class="grid gap-1 text-sm font-semibold">
-        Search
-        <input
-          #q
-          name="q"
-          type="search"
-          placeholder="e.g. iMac"
-          class="rounded-md border border-slate-400 p-2 font-normal"
-          [value]="filters().q ?? ''"
-          (change)="set('q', q.value)"
-        />
-      </label>
-      <label class="grid gap-1 text-sm font-semibold">
-        Category
-        <select
-          #category
-          name="category"
-          class="rounded-md border border-slate-400 p-2 font-normal"
-          (change)="set('category', category.value)"
-        >
-          <option value="">All categories</option>
-          @for (c of categories; track c) {
-            <option [value]="c" [selected]="c === filters().category">{{ c }}</option>
-          }
-        </select>
-      </label>
-      <label class="grid gap-1 text-sm font-semibold">
-        Max price (CHF)
-        <input
-          #maxPrice
-          name="maxPrice"
-          type="number"
-          min="0"
-          class="rounded-md border border-slate-400 p-2 font-normal"
-          [value]="filters().maxPrice ?? ''"
-          (change)="set('maxPrice', maxPrice.value)"
-        />
-      </label>
-      <label class="grid gap-1 text-sm font-semibold">
-        Postcode
-        <input
-          #postcode
-          name="postcode"
-          inputmode="numeric"
-          maxlength="4"
-          placeholder="e.g. 80"
-          class="rounded-md border border-slate-400 p-2 font-normal"
-          [value]="filters().postcode ?? ''"
-          (change)="set('postcode', postcode.value)"
-        />
-      </label>
-      <label class="grid gap-1 text-sm font-semibold">
-        Range around my location
-        <select
-          #radiusKm
-          name="radiusKm"
-          class="rounded-md border border-slate-400 p-2 font-normal"
-          (change)="nearMe(radiusKm.value)"
-        >
-          <option value="" [selected]="!filters().radiusKm">Any distance</option>
-          @for (km of radii; track km) {
-            <option [value]="km" [selected]="filters().radiusKm === km">{{ km }} km</option>
-          }
-        </select>
-      </label>
-    </form>
-    @if (locationError()) {
-      <p role="alert" class="mb-4 text-red-700">{{ locationError() }}</p>
-    }
-
-    @if (listings(); as items) {
-      @if (items.length === 0) {
-        <p class="text-slate-600">No listings match your filters.</p>
-      } @else {
-        <div class="mb-4 flex gap-2" role="group" aria-label="View">
-          @for (mode of ['list', 'map']; track mode) {
-            <button
-              type="button"
-              class="rounded-md border border-slate-400 px-3 py-1 text-sm capitalize aria-pressed:bg-slate-800 aria-pressed:text-white"
-              [attr.aria-pressed]="view() === mode"
-              (click)="view.set($any(mode))"
-            >
-              {{ mode }}
-            </button>
-          }
-        </div>
-      }
-      @if (items.length > 0 && view() === 'map') {
-        <app-listing-map [items]="items" label="Map of the matching listings" />
-      } @else if (items.length > 0) {
-        <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          @for (item of items; track item.id) {
-            <li>
-              <a
-                [routerLink]="['/listings', item.id]"
-                class="block h-full overflow-hidden rounded-xl border border-slate-200 bg-white hover:border-slate-400"
-              >
-                @if (item.imageUrl) {
-                  <img [src]="item.imageUrl" alt="" class="aspect-4/3 w-full object-cover" />
-                } @else {
-                  <div
-                    class="grid aspect-4/3 w-full place-items-center bg-slate-100 text-sm text-slate-400"
-                  >
-                    No photo
-                  </div>
-                }
-                <div class="grid gap-1 p-3">
-                  <h2 class="font-semibold">{{ item.title }}</h2>
-                  <p class="text-lg font-semibold">{{ item.priceChf | currency: 'CHF' }}</p>
-                  <p class="text-sm text-slate-600">
-                    {{ item.condition?.replace('_', ' ') | titlecase }} · {{ item.postcode }}
-                    {{ item.locality }}
-                  </p>
-                </div>
-              </a>
-            </li>
-          }
-        </ul>
-      }
-    } @else {
-      <p class="text-slate-600">Loading listings…</p>
-    }
-  `,
+  host: { class: 'zw-bleed' },
+  templateUrl: './home.html',
 })
 export class Home {
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
-  private readonly api = inject(ListingsService);
+  protected readonly hero = inject(HeroSearch);
+  private readonly heroForm = viewChild.required<ElementRef<HTMLElement>>('heroForm');
+  protected readonly quickFilters = QUICK_FILTERS;
   protected readonly categories = CATEGORIES;
-  protected readonly radii = RADII;
-  protected readonly view = signal<'list' | 'map'>('list');
-  protected readonly locationError = signal('');
-  protected readonly filters = toSignal(this.route.queryParamMap.pipe(map(filtersOf)), {
-    initialValue: filtersOf(this.route.snapshot.queryParamMap),
-  });
+  protected readonly placeholders = Array.from({ length: 8 }, (_, i) => i);
+  protected readonly query = signal('');
+  protected readonly auctions = SAMPLE_AUCTIONS.map((a) => ({
+    ...a,
+    endsAt: Date.now() + a.endsIn * MINUTE,
+  }));
   protected readonly listings = toSignal(
-    this.route.queryParamMap.pipe(switchMap((params) => this.api.list(filtersOf(params)))),
+    inject(ListingsService)
+      .list({})
+      .pipe(catchError(() => of([]))),
   );
+  protected readonly nearby = computed(() => this.listings()?.slice(0, 8));
 
-  protected set(name: FilterName, value: string) {
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { [name]: value.trim() || null },
-      queryParamsHandling: 'merge',
-    });
-  }
-
-  /** Asks the browser for the position once and keeps it, rounded to ~100 m, in the URL with the range. */
-  protected nearMe(radiusKm: string) {
-    this.locationError.set('');
-    const go = (queryParams: Record<string, string | null>) =>
-      void this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams,
-        queryParamsHandling: 'merge',
+  constructor() {
+    const hero = this.hero;
+    hero.active.set(true);
+    hero.visible.set(true);
+    let observer: IntersectionObserver | undefined;
+    afterNextRender(() => {
+      if (typeof IntersectionObserver === 'undefined') return;
+      // Dock the header search once the hero search has scrolled under the 72px header.
+      observer = new IntersectionObserver(([entry]) => hero.visible.set(entry.isIntersecting), {
+        rootMargin: '-72px 0px 0px 0px',
       });
-    if (!radiusKm) return go({ radiusKm: null, lat: null, lon: null });
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) =>
-        go({ radiusKm, lat: coords.latitude.toFixed(3), lon: coords.longitude.toFixed(3) }),
-      () => {
-        this.locationError.set('Could not get your location. Allow location access and try again.');
-        go({ radiusKm: null, lat: null, lon: null });
-      },
-    );
+      observer.observe(this.heroForm().nativeElement);
+    });
+    inject(DestroyRef).onDestroy(() => {
+      observer?.disconnect();
+      hero.active.set(false);
+      hero.visible.set(false);
+    });
   }
 }

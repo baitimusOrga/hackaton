@@ -172,7 +172,10 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.possible.length()").value(1))
                 .andExpect(jsonPath("$.possible[0].listing.id").value(noYear.getId().intValue()))
                 .andExpect(jsonPath("$.possible[0].missingDetails[0]").value("Year: 1995"))
-                .andExpect(jsonPath("$.alternatives.length()").value(0));
+                // only the listings the model left out, kept by code with their code-decided differences
+                .andExpect(jsonPath("$.alternatives[*].reason",
+                        org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(SearchService.NOT_ASSESSED))))
+                .andExpect(jsonPath("$.alternatives[?(@.listing.id == 999999)]").doesNotExist());
     }
 
     @Test

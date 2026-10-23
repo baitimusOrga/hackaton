@@ -1,0 +1,90 @@
+<!-- TODO: not designed yet, replace with the Firmen-Projekt design -->
+<header class="bz-head">
+  <span class="zw-caption">Für Firmen</span>
+  <h1>Räumungsprojekte</h1>
+  <p class="zw-muted">
+    Ein Projekt pro Räumung: Inventar erfassen, drei Wege vergleichen, Inserate veröffentlichen.
+  </p>
+</header>
+
+<section class="zw-section" aria-labelledby="h-projects">
+  <h2 id="h-projects">Deine Projekte</h2>
+  <ul class="zw-list bz-list">
+    @for (project of projects(); track project.id) {
+      <li class="zw-row">
+        <a class="bz-name" [routerLink]="['/business', project.id]">{{ project.companyName }}</a>
+        <span class="zw-muted">
+          {{ project.locality }} · Termin {{ project.deadline | date: 'dd.MM.yyyy' }} ·
+          {{ project.itemLines }} Positionen
+        </span>
+      </li>
+    } @empty {
+      <li class="zw-muted">Noch keine Projekte.</li>
+    }
+  </ul>
+</section>
+
+<section class="zw-section zw-section--last bz-new" aria-labelledby="h-new">
+  <h2 id="h-new">Neues Projekt</h2>
+  <form class="bz-form" (submit)="create($event)">
+    <div class="zw-field">
+      <label class="zw-label" for="bz-company">Firma</label>
+      <input
+        id="bz-company"
+        class="zw-input"
+        name="companyName"
+        required
+        maxlength="120"
+        autocomplete="organization"
+        [value]="companyName()"
+        (input)="companyName.set($any($event.target).value)"
+      />
+    </div>
+    <div class="zw-field">
+      <label class="zw-label" for="bz-postcode">PLZ</label>
+      <input
+        id="bz-postcode"
+        class="zw-input"
+        name="postcode"
+        required
+        pattern="[0-9]{4}"
+        inputmode="numeric"
+        autocomplete="postal-code"
+        [value]="postcode()"
+        (input)="postcode.set($any($event.target).value)"
+      />
+    </div>
+    <div class="zw-field">
+      <label class="zw-label" for="bz-locality">Ort</label>
+      <input
+        id="bz-locality"
+        class="zw-input"
+        name="locality"
+        required
+        maxlength="120"
+        autocomplete="address-level2"
+        [value]="locality()"
+        (input)="locality.set($any($event.target).value)"
+      />
+    </div>
+    <div class="zw-field">
+      <label class="zw-label" for="bz-deadline">Räumungstermin</label>
+      <input
+        id="bz-deadline"
+        class="zw-input"
+        name="deadline"
+        type="date"
+        required
+        [min]="today"
+        [value]="deadline()"
+        (input)="deadline.set($any($event.target).value)"
+      />
+      <p class="zw-help">Bis dann muss alles weg sein.</p>
+    </div>
+    <div>
+      <button appButton variant="primary" type="submit" [disabled]="busy()">
+        {{ busy() ? 'Wird angelegt …' : 'Projekt starten' }}
+      </button>
+    </div>
+  </form>
+</section>

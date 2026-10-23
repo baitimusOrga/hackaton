@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Inserat – Nicht erkannt, mehr Fotos</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/zweit/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg-000:#fbfaf7;--bg-100:#edebe5;--bg-900:#1e1d1a;--ink:#1e1d1a;--ink-muted:#66625a;--ink-inverse:#fbfaf7;--line:#1e1d1a;--line-soft:#dcd9d1;--blue:#1f4fd6;--on-blue:#ffffff;--blue-text:#1a42b5;--green-text:#185e53;--focus:#1e1d1a;--danger:#a3101e;--overlay:#1e1d1ab3;--font-sans:"Inter",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--space-16:64px;--radius-0:0;--radius-1:2px;--border-1:1px;--border-2:2px}
+body{margin:0;background:#605f5c}
+a{color:#1e1d1a}a:hover{color:#1a42b5}
+.zw-dlg{width:100%;max-width:600px;background:#fbfaf7;border:1px solid #dcd9d1;border-radius:2px;box-sizing:border-box;padding:32px 40px 40px;display:flex;flex-direction:column;gap:28px}
+.zw-dlg__top{display:flex;align-items:center;gap:12px;font-size:12px;line-height:16px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:#66625a}
+.zw-x{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;color:#1e1d1a;margin-right:-12px}
+.zw-x svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5}
+.zw-q{margin:0;font-size:32px;line-height:36px;font-weight:700;letter-spacing:-.005em}
+.zw-sub{margin:0;font-size:16px;line-height:26px;color:#66625a}
+.zw-tip{display:grid;grid-template-columns:24px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid #dcd9d1;font-size:16px;line-height:24px}
+.zw-tip:last-child{border-bottom:0}
+.zw-tip svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.5}
+.zw-tip small{display:block;font-size:14px;line-height:20px;color:#66625a}
+.zw-shot{aspect-ratio:1/1;background:#edebe5}
+.zw-add{aspect-ratio:1/1;border:1px solid #1e1d1a;border-radius:2px;background:#fbfaf7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;color:#1e1d1a}
+.zw-add svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.5}
+.zw-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+</style>
+</helmet>
+<div class="zw" style="min-height: 100%; background: #605f5c; color: #1e1d1a; font-family: Inter, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; padding: 48px 16px; box-sizing: border-box;">
+  <div class="zw-dlg" role="dialog" aria-labelledby="q1b">
+    <div class="zw-dlg__top">
+      <span>Verkaufen · 1 von 5</span>
+      <a href="SellFull.dc.html" class="zw-btn zw-btn--sm" style="margin-left: auto; text-transform: none; letter-spacing: 0;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16"/></svg><span>Alles auf einer Seite</span></a>
+      <a href="Main.dc.html" class="zw-x" aria-label="Schliessen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></a>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <h1 id="q1b" class="zw-q">Das konnten wir nicht erkennen.</h1>
+      <p class="zw-sub">Zwei Fotos, aber kein Etikett und kein Modellname. Ein, zwei Fotos mehr, und wir füllen den Rest aus.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px;">
+      <div class="zw-shot"></div>
+      <div class="zw-shot"></div>
+      <button type="button" class="zw-add"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Foto</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column;">
+      <div class="zw-tip">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14"/><path d="M8 9h8M8 13h5"/></svg>
+        <span>Etikett oder Typenschild, scharf<small>Meist unten, hinten oder im Batteriefach. Modell- und Seriennummer reichen uns.</small></span>
+      </div>
+      <div class="zw-tip">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12"/><path d="M8 20h8M12 16v4"/></svg>
+        <span>Der ganze Artikel von vorne<small>Nicht angeschnitten, bei Tageslicht, ohne andere Dinge im Bild.</small></span>
+      </div>
+      <div class="zw-tip">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4zM4 7l2-3h12l2 3"/></svg>
+        <span>Verpackung, Rechnung oder Anleitung<small>Falls vorhanden. Der Produktname darauf genügt.</small></span>
+      </div>
+    </div>
+
+    <p class="zw-sub" style="font-size: 14px; line-height: 20px;">Kein Etikett? Dann schreib uns einfach, was es ist – Marke und Modell reichen – und wir machen weiter.</p>
+
+    <div class="zw-foot">
+      <a href="Sell1.dc.html" style="font-size: 15px; font-weight: 600; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center;">Zurück</a>
+      <a href="Sell2.dc.html" class="zw-btn" style="margin-left: auto;"><span>Ohne Erkennung weiter</span></a>
+      <a href="#" class="zw-btn zw-btn--primary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Fotos hinzufügen</span></a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

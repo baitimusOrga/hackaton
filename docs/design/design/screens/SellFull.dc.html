@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Inserat – Alles auf einer Seite</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/zweit/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg-000:#fbfaf7;--bg-100:#edebe5;--bg-900:#1e1d1a;--ink:#1e1d1a;--ink-muted:#66625a;--ink-inverse:#fbfaf7;--line:#1e1d1a;--line-soft:#dcd9d1;--blue:#1f4fd6;--on-blue:#ffffff;--blue-text:#1a42b5;--green-text:#185e53;--focus:#1e1d1a;--danger:#a3101e;--overlay:#1e1d1ab3;--font-sans:"Inter",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--space-16:64px;--radius-0:0;--radius-1:2px;--border-1:1px;--border-2:2px}
+body{margin:0;background:#fbfaf7}
+a{color:#1e1d1a}a:hover{color:#1a42b5}
+.zw-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:15px;font-weight:600;text-decoration:none}
+.zw-link svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5}
+.zw-link:hover{text-decoration:underline;text-underline-offset:3px}
+.zw-sec{display:flex;flex-direction:column;gap:16px;padding:32px 0;border-bottom:1px solid #dcd9d1}
+.zw-sec:last-of-type{border-bottom:0}
+.zw-h{margin:0;font-size:24px;line-height:28px;font-weight:700}
+.zw-sub{margin:0;font-size:14px;line-height:20px;color:#66625a}
+.zw-opt{display:flex;align-items:center;gap:16px;min-height:48px;padding:4px 0;cursor:pointer;font-size:16px;line-height:24px}
+.zw-opt input{width:20px;height:20px;margin:0;accent-color:#1f4fd6;flex:none}
+.zw-opt__p{margin-left:auto;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+.zw-shot{aspect-ratio:1/1;background:#edebe5}
+.zw-add{aspect-ratio:1/1;border:1px solid #1e1d1a;border-radius:2px;background:#fbfaf7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;color:#1e1d1a}
+.zw-add svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.5}
+.zw-textarea{min-height:120px;padding:10px 12px;line-height:24px;resize:vertical}
+</style>
+</helmet>
+<div class="zw" style="min-height: 100%; background: #fbfaf7; color: #1e1d1a; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column;">
+
+  <header style="border-bottom: 1px solid #dcd9d1;">
+    <div style="display: flex; align-items: center; gap: 24px; max-width: 760px; width: 100%; margin: 0 auto; box-sizing: border-box; padding: 12px 24px; min-height: 72px;">
+      <a href="Main.dc.html" style="text-decoration: none; color: #1e1d1a; font-size: 28px; line-height: 32px; font-weight: 800; letter-spacing: -0.02em;">Zweit.</a>
+      <span style="font-size: 18px; line-height: 24px; font-weight: 600;">Verkaufen</span>
+      <a href="Sell1.dc.html" class="zw-link" style="margin-left: auto;">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        Schritt für Schritt
+      </a>
+    </div>
+  </header>
+
+  <form action="#" style="max-width: 760px; width: 100%; margin: 0 auto; box-sizing: border-box; padding: 16px 24px 48px; display: flex; flex-direction: column;">
+
+    <section class="zw-sec">
+      <h2 class="zw-h">Fotos</h2>
+      <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px;">
+        <div class="zw-shot"></div>
+        <div class="zw-shot"></div>
+        <div class="zw-shot"></div>
+        <div class="zw-shot"></div>
+        <div class="zw-shot"></div>
+        <button type="button" class="zw-add"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Foto</button>
+      </div>
+      <p class="zw-sub">Erkannt: Apple iMac 27" Retina 5K, 2017 (A1419). Seriennummer auf Foto 3 ist für die Öffentlichkeit abgedeckt.</p>
+    </section>
+
+    <section class="zw-sec">
+      <h2 class="zw-h">Artikel</h2>
+      <div class="zw-field">
+        <label class="zw-label" for="t">Titel</label>
+        <input class="zw-input" id="t" type="text" value="iMac 27" Retina 5K 2017, i5 3.5 GHz, 8 GB">
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+        <div class="zw-field">
+          <label class="zw-label" for="k">Kategorie</label>
+          <input class="zw-input" id="k" type="text" value="Elektronik › Computer">
+        </div>
+        <div class="zw-field">
+          <label class="zw-label" for="v">Ausstattung</label>
+          <input class="zw-input" id="v" type="text" value="i5 3.5 GHz · 8 GB · 1 TB Fusion">
+        </div>
+      </div>
+      <div class="zw-field">
+        <label class="zw-label" for="b">Beschreibung</label>
+        <textarea class="zw-input zw-textarea" id="b">iMac 27" mit Retina-5K-Display aus 2017. Funktioniert einwandfrei, wurde im Homeoffice genutzt. Kratzer am Standfuss links unten, sonst keine Schäden. Magic Keyboard, Magic Mouse 2 und Netzkabel sind dabei. Wird vor der Übergabe zurückgesetzt.</textarea>
+        <p class="zw-help">Aus deinen Fotos und Angaben geschrieben. Ändere, was nicht stimmt.</p>
+      </div>
+    </section>
+
+    <section class="zw-sec">
+      <h2 class="zw-h">Zustand</h2>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="zw-chip" aria-pressed="false"><span>Wie neu</span></button>
+        <button type="button" class="zw-chip" aria-pressed="false"><span>Sehr gut</span></button>
+        <button type="button" class="zw-chip" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>Gut</span></button>
+        <button type="button" class="zw-chip" aria-pressed="false"><span>Gebraucht</span></button>
+        <button type="button" class="zw-chip" aria-pressed="false"><span>Defekt</span></button>
+      </div>
+      <div class="zw-field">
+        <label class="zw-label" for="m">Mängel</label>
+        <input class="zw-input" id="m" type="text" value="Kratzer am Standfuss links unten, ca. 2 cm">
+      </div>
+    </section>
+
+    <section class="zw-sec">
+      <h2 class="zw-h">Preis</h2>
+      <p class="zw-sub">Ähnliche iMacs gingen zuletzt für CHF 380.– bis 520.– weg. 4 Verkäufe, letzte 90 Tage. <a href="#" style="font-weight: 600;">Vergleiche ansehen</a></p>
+      <div style="display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: start;">
+        <div class="zw-field">
+          <label class="zw-label" for="p">Preis</label>
+          <div class="zw-affix"><span class="zw-affix__unit">CHF</span><input class="zw-input zw-input--price" id="p" type="text" inputmode="decimal" value="450.–"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span class="zw-label">Wie verkaufen?</span>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; min-height: 44px; align-items: center;">
+            <button type="button" class="zw-chip" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>Festpreis</span></button>
+            <button type="button" class="zw-chip" aria-pressed="false"><span>Preisvorschlag</span></button>
+            <button type="button" class="zw-chip" aria-pressed="false"><span>Auktion</span></button>
+            <button type="button" class="zw-chip" aria-pressed="false"><span>Verschenken</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="zw-sec">
+      <h2 class="zw-h">Übergabe</h2>
+      <label class="zw-opt"><input type="checkbox" checked>Abholung in 8001 Zürich<a href="#" style="margin-left: auto; font-size: 14px; font-weight: 600;">Ändern</a></label>
+      <label class="zw-opt"><input type="checkbox" checked>Versand<span class="zw-opt__p">Käufer zahlt CHF 35.–</span></label>
+    </section>
+
+    <div style="display: flex; align-items: center; gap: 16px; padding-top: 24px;">
+      <span class="zw-sub">Inserieren ist gratis. Keine Provision.</span>
+      <a href="Main.dc.html" class="zw-btn" style="margin-left: auto;"><span>Entwurf speichern</span></a>
+      <a href="Main.dc.html" class="zw-btn zw-btn--primary"><span>Veröffentlichen</span></a>
+    </div>
+  </form>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
