@@ -1,4 +1,5 @@
 @AGENTS.md
+@docs/LEAN-CODE.md
 
 ## Claude Code specifics
 
