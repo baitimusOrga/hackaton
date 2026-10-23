@@ -14,7 +14,7 @@ Both run on one hostname each: `/api/*` and `/actuator/*` go to the backend, eve
 
 | Path | Contents |
 |---|---|
-| `backend/` | Java 21, Spring Boot 4.1, Maven. Postgres via Spring Data JPA, Flyway migrations |
+| `backend/` | Java 25, Spring Boot 4.1, Maven. Postgres via Spring Data JPA, Flyway migrations |
 | `frontend/` | Angular 22, served by nginx. Reads `/config.json` at start, so one image runs in every environment |
 | `docker-compose.yml` | Postgres for local development, started by the backend on `spring-boot:run` |
 | `.github/workflows/ci.yml` | every pull request: `mvn verify`, `ng lint`, `ng test`, `ng build` |
@@ -33,7 +33,7 @@ There is no login: every endpoint is public. New controllers go under `/api/...`
 
 ## Run it locally
 
-Needs JDK 21, Node 24.15+ (or 22.22.3+) and Docker.
+Needs JDK 25, Node 24.15+ (or 22.22.3+) and Docker.
 
 ```bash
 cd backend && ./mvnw spring-boot:run       # API on :8080, starts Postgres from docker-compose.yml
@@ -44,7 +44,7 @@ cd frontend && pnpm install && pnpm start         # http://localhost:4200, /api 
 
 `.run/` holds shared run configurations: `backend` (Maven `spring-boot:run`), `frontend` (`pnpm start`) and `dev` (both at once). They contain no machine-specific paths, so each developer sets these once in their own IDE (`.idea/` isn't committed):
 
-- **Project SDK**: *File → Project Structure → Project → SDK* = a JDK 21. Without it `backend` fails with "Project JDK is not specified".
+- **Project SDK**: *File → Project Structure → Project → SDK* = a JDK 25. Without it `backend` fails with "Project JDK is not specified".
 - **Node interpreter**: *Settings → Languages & Frameworks → Node.js* = Node 24.15+ (or 22.22.3+). `frontend` uses the project's interpreter.
 - **Docker** must be running: the backend starts Postgres from `docker-compose.yml` on boot.
 - Optional: right-click `backend/pom.xml` → *Add as Maven Project* for Java code completion.
