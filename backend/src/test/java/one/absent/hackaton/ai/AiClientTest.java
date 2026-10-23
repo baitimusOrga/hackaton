@@ -98,14 +98,38 @@ class AiClientTest {
     }
 
     @Test
+    void webSearchSendsToolWithoutSchemaAndReadsJsonAcrossTextBlocks() {
+        String response = JsonMapper.builder().build().writeValueAsString(java.util.Map.of("stop_reason", "end_turn",
+                "content", List.of(
+                        java.util.Map.of("type", "text", "text", "I'll look it up."),
+                        java.util.Map.of("type", "server_tool_use", "name", "web_search"),
+                        java.util.Map.of("type", "web_search_tool_result", "content", List.of()),
+                        java.util.Map.of("type", "text", "text", "```json\n{\"title\":"),
+                        java.util.Map.of("type", "text", "text", "\"Desk\"}\n```"))));
+        server.expect(requestTo("https://ai.test/v1/messages"))
+                .andExpect(jsonPath("$.tools[0].type").value("web_search_20260209"))
+                .andExpect(jsonPath("$.tools[0].max_uses").value(3))
+                .andExpect(jsonPath("$.output_config.format").doesNotExist())
+                .andExpect(jsonPath("$.output_config.effort").value("low"))
+                .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+
+        Answer answer = client("test-key").askWithWebSearch("s", "t", Answer.class);
+
+        assertThat(answer.title()).isEqualTo("Desk");
+        server.verify();
+    }
+
+    @Test
     void refusalOrBrokenJsonIs502() {
         server.expect(requestTo("https://ai.test/v1/messages"))
                 .andRespond(withSuccess(message("refusal", ""), MediaType.APPLICATION_JSON));
         server.expect(requestTo("https://ai.test/v1/messages"))
                 .andRespond(withSuccess(message("end_turn", "not json"), MediaType.APPLICATION_JSON));
+        server.expect(requestTo("https://ai.test/v1/messages"))
+                .andRespond(withSuccess(message("pause_turn", "{\"title\": \"Desk\"}"), MediaType.APPLICATION_JSON));
         AiClient client = client("test-key");
 
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             assertThatThrownBy(() -> client.ask("s", "t", List.of(), SCHEMA, Answer.class))
                     .isInstanceOfSatisfying(ResponseStatusException.class,
                             e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY));
