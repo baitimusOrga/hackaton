@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { SellingService } from '../api/services';
 import { CreateListingRequest, ListingDraft } from '../api/models';
 import { PricePanel } from '../components/price-panel';
+import { CATEGORIES } from '../categories';
 
 type Source = 'LABEL' | 'SELLER' | 'SUGGESTION' | 'WEB';
 type Condition = CreateListingRequest['condition'];
@@ -359,18 +360,7 @@ export class Sell {
   protected readonly maxPhotos = MAX_PHOTOS;
   protected readonly markers = MARKERS;
   protected readonly markerStyles = MARKER_STYLES;
-  protected readonly categories = [
-    'Computers',
-    'Laptops',
-    'Monitors',
-    'Phones',
-    'Tablets',
-    'Office furniture',
-    'Audio',
-    'Cameras',
-    'Household',
-    'Bikes',
-  ];
+  protected readonly categories = CATEGORIES;
   protected readonly conditions: [Condition, string][] = [
     ['NEW', 'New'],
     ['LIKE_NEW', 'Like new'],

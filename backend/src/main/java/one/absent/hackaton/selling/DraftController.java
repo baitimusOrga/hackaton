@@ -9,6 +9,7 @@ import java.util.Set;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import one.absent.hackaton.ai.AiClient;
+import one.absent.hackaton.listing.Categories;
 import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.selling.ListingDraft.DraftFact;
 import one.absent.hackaton.selling.ListingDraft.PrivacyWarning;
@@ -62,8 +63,7 @@ public class DraftController {
              "required": ["category", "title", "description", "condition", "facts", "questions",
                           "privacyWarnings"],
              "properties": {
-               "category": {"type": "string", "enum": ["Computers", "Laptops", "Monitors", "Phones", "Tablets",
-                 "Office furniture", "Audio", "Cameras", "Household", "Bikes"]},
+               "category": {"type": "string", "enum": %s},
                "title": {"type": "string"},
                "description": {"type": "string"},
                "condition": {"anyOf": [{"type": "string", "enum": ["NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE"]},
@@ -79,7 +79,7 @@ public class DraftController {
                "privacyWarnings": {"type": "array", "items": {"type": "object", "additionalProperties": false,
                  "required": ["photo", "text"],
                  "properties": {"photo": {"type": "integer"}, "text": {"type": "string"}}}}}}
-            """;
+            """.formatted(Categories.JSON);
 
     record AiDraft(String category, String title, String description, Condition condition,
                    List<DraftFact> facts, List<String> questions, List<PrivacyWarning> privacyWarnings) {}

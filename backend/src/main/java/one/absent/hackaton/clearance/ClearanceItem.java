@@ -29,6 +29,10 @@ public class ClearanceItem {
     private Condition condition;
     @Column(length = 1000)
     private String notes;
+    @Column(length = 80)
+    private String brand;
+    @Column(length = 80)
+    private String model;
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal estimatedUnitChf;
     private Long listingId;

@@ -21,6 +21,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
 import one.absent.hackaton.ai.AiClient;
+import one.absent.hackaton.listing.Categories;
 import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.listing.Listing;
 import one.absent.hackaton.listing.ListingDetail;
@@ -38,8 +39,7 @@ public class SearchService {
 
     static final List<String> ATTRIBUTES = List.of("Brand", "Model", "Year", "Color", "Size", "Display",
             "Resolution", "CPU", "RAM", "Storage", "Material", "Dimensions", "Condition");
-    static final List<String> CATEGORIES = List.of("Computers", "Laptops", "Monitors", "Phones", "Tablets",
-            "Office furniture", "Audio", "Cameras", "Household", "Bikes");
+    static final List<String> CATEGORIES = Categories.ALL;
     static final BigDecimal BUDGET_STRETCH = new BigDecimal("1.25");
     static final int MAX_FETCH = 60;
     static final int MAX_CANDIDATES = 30;
@@ -199,13 +199,14 @@ public class SearchService {
             } else if (!diffs.isEmpty()) {
                 alternatives.add(new SearchMatch(listing.summary(), item.reason(), List.of(), diffs));
             } else if (aiGroup == AiGroup.ALTERNATIVES) {
-                alternatives.add(match(listing, item, List.of()));
+                // no must-have differs, so the AI's reason for calling it a substitute is the only difference
+                alternatives.add(match(listing, item, List.of(), orEmpty(item.differences())));
             } else if (!missing.isEmpty()) {
-                possible.add(match(listing, item, missing));
+                possible.add(match(listing, item, missing, List.of()));
             } else if (hasMustHave || aiGroup == AiGroup.CONFIRMED) {
-                confirmed.add(match(listing, item, List.of()));
+                confirmed.add(match(listing, item, List.of(), List.of()));
             } else {
-                possible.add(match(listing, item, orEmpty(item.missingDetails())));
+                possible.add(match(listing, item, orEmpty(item.missingDetails()), List.of()));
             }
         }
         return new SearchResults(limit(confirmed), req.acceptUnknown() ? limit(possible) : List.of(),
@@ -410,8 +411,9 @@ public class SearchService {
         return List.copyOf(result.values());
     }
 
-    private static SearchMatch match(ListingDetail listing, Item item, List<String> missing) {
-        return new SearchMatch(listing.summary(), item.reason(), missing, orEmpty(item.differences()));
+    /** Missing details and differences come from code wherever must-haves decide; the AI adds only the reason. */
+    private static SearchMatch match(ListingDetail listing, Item item, List<String> missing, List<String> differences) {
+        return new SearchMatch(listing.summary(), item.reason(), missing, differences);
     }
 
     private static String list(List<Requirement> requirements, String extra) {

@@ -64,8 +64,8 @@ class ClearanceControllerTest {
     private String extract(long id) throws Exception {
         when(ai.ask(anyString(), anyString(), anyList(), anyString(), eq(AiInventory.class)))
                 .thenReturn(new AiInventory(List.of(
-                        new AiItem("Dell P2419H 24\" monitors", "Monitors", 12, Condition.GOOD, "with stands"),
-                        new AiItem("Height-adjustable desks", "Office furniture", 6, Condition.USED, " "))));
+                        new AiItem("Dell P2419H 24\" monitors", "Dell", "P2419H", "Monitors", 12, Condition.GOOD, "with stands"),
+                        new AiItem("Height-adjustable desks", null, null, "Office furniture", 6, Condition.USED, " "))));
         return mvc.perform(multipart(BASE + "/" + id + "/items/extract").file(text("12;Dell P2419H;good"))
                         .with(owner()))
                 .andExpect(status().isOk())
@@ -104,6 +104,20 @@ class ClearanceControllerTest {
                 .andExpect(jsonPath("$.totals.units").value(18))
                 .andExpect(jsonPath("$.routes.length()").value(3))
                 .andExpect(jsonPath("$.recommendedRoute").value("MANAGED"));
+    }
+
+    @Test void brandAndModelPriceFromSameModelAndUnknownCategoryIsReplaced() throws Exception {
+        long id = createProject(30);
+        when(ai.ask(anyString(), anyString(), anyList(), anyString(), eq(AiInventory.class)))
+                .thenReturn(new AiInventory(List.of(
+                        new AiItem("Herman Miller Aeron Bürostuhl", "Herman Miller", "Aeron", "Office furniture", 20,
+                                Condition.USED, null),
+                        new AiItem("HP LaserJet Pro M404dn", "HP", "M404dn", "Printers", 3, Condition.USED, null))));
+        mvc.perform(multipart(BASE + "/" + id + "/items/extract").file(text("20 Aeron; 3 HP printers")).with(owner()))
+                .andExpect(status().isOk())
+                // the V4 demo Aeron (USED) asks CHF 380, instead of the CHF 150 × 0.8 category fallback
+                .andExpect(jsonPath("$.items[0].estimatedUnitChf").value(380))
+                .andExpect(jsonPath("$.items[1].category").value("Household"));
     }
 
     @Test void extractWithoutTextOrPhotosIsBadRequest() throws Exception {

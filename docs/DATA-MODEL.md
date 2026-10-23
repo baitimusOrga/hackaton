@@ -31,6 +31,7 @@ Rules:
 | V7 | `photo` (listing photos, optional link to a listing) |
 | V9 | `clearance_project`, `clearance_item` (business clearance); there is no V8 |
 | V10 | 11 SOLD demo sales for price evidence, ids 1101–1111 (Dell U2719D, iMac 18,3) |
+| V11 | nullable `brand`, `model` on `clearance_item` (used for price evidence and published listing attributes) |
 
 ## Backups
 
