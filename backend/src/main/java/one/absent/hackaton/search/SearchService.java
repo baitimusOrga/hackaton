@@ -1,17 +1,19 @@
 package one.absent.hackaton.search;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -19,6 +21,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
 import one.absent.hackaton.ai.AiClient;
+import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.listing.Listing;
 import one.absent.hackaton.listing.ListingDetail;
 import one.absent.hackaton.listing.ListingStatus;
@@ -37,9 +40,15 @@ public class SearchService {
             "Resolution", "CPU", "RAM", "Storage", "Material", "Dimensions", "Condition");
     static final List<String> CATEGORIES = List.of("Computers", "Laptops", "Monitors", "Phones", "Tablets",
             "Office furniture", "Audio", "Cameras", "Household", "Bikes");
+    static final BigDecimal BUDGET_STRETCH = new BigDecimal("1.25");
+    static final int MAX_FETCH = 60;
     static final int MAX_CANDIDATES = 30;
     static final int MAX_PER_GROUP = 10;
     static final String NO_AI_REASON = "Ranked without AI right now.";
+
+    enum Evidence { STATED, MISSING, DIFFERENT }
+
+    private enum AiGroup { CONFIRMED, POSSIBLE, ALTERNATIVES, NONE }
 
     record Parsed(List<Requirement> mustHave, List<Requirement> niceToHave, String category,
                   List<String> keywords, BigDecimal maxBudgetChf, String postcode) {
@@ -53,8 +62,9 @@ public class SearchService {
 
     private static final String REQUIREMENT_SCHEMA = """
             {"type": "object", "additionalProperties": false,
-             "properties": {"attribute": {"type": "string", "enum": %s}, "value": {"type": "string"}},
-             "required": ["attribute", "value"]}""".formatted(json(ATTRIBUTES));
+             "properties": {"attribute": {"type": "string", "enum": %s}, "value": {"type": "string"},
+               "comparison": {"type": "string", "enum": ["AT_LEAST", "EXACT", "AT_MOST"]}},
+             "required": ["attribute", "value", "comparison"]}""".formatted(json(ATTRIBUTES));
 
     private static final String PARSE_SCHEMA = """
             {"type": "object", "additionalProperties": false,
@@ -72,6 +82,9 @@ public class SearchService {
             You turn a buyer's wish for a secondhand item on a Swiss marketplace into search requirements.
             - Requirement attributes ONLY from: %s. Must-have = clearly required; nice-to-have = wished but optional.
             - Never invent requirements the text does not state. Keep values short and normalized like the listings: English, inches as 27\" (never "Zoll"/"inch"), memory and storage as "16 GB", years as 2017.
+            - comparison: AT_LEAST for "at least / mindestens / min. / ab / or newer", AT_MOST for "at most / höchstens / max. / or older", else EXACT; only numeric values (RAM, Storage, Year, Display, Size).
+            - Condition only when the buyer states it: "working" when they want it to work (funktionierend, works, intakt), else one of New, Like new, Good, Used.
+            - Model: the product line only ("iMac", "MacBook Pro"); sizes go into Display or Size.
             - category ONLY one of: %s; null if unclear.
             - maxBudgetChf: the stated maximum price in CHF, else null.
             - postcode: for an obvious Swiss place a 4-digit postcode (Zürich 8001, Bern 3011, Luzern 6003,
@@ -95,12 +108,11 @@ public class SearchService {
              "required": ["confirmed", "possible", "alternatives"]}""".formatted(ITEM_SCHEMA);
 
     private static final String RANK_SYSTEM = """
-            You sort secondhand listings for a buyer. Put each fitting listing in exactly one group:
-            - confirmed: the listing states every must-have and fits budget and place.
-            - possible: looks right, but a must-have is not stated; list what to ask the seller in missingDetails.
-            - alternatives: a must-have or the budget clearly differs, but it is a reasonable substitute;
-              say how in differences (e.g. "CHF 720 instead of at most CHF 600").
-            Leave out listings that don't fit at all. reason: one short sentence for the buyer.
+            You sort secondhand listings for a buyer. The app re-checks price, place, condition and stated
+            attributes. Your job: leave out listings that don't fit at all, write one short reason, put what to
+            ask the seller in missingDetails and other differences in differences. Never ask about the condition.
+            Put each kept listing in one group: confirmed (states every must-have), possible (a must-have is not
+            stated), alternatives (a reasonable substitute that differs).
             Use only listing ids from the list.""";
 
     private final AiClient ai;
@@ -145,65 +157,179 @@ public class SearchService {
             candidates = candidates(req, false);
         }
         if (candidates.isEmpty()) {
-            return new SearchResults(List.of(), List.of(), List.of());
+            return new SearchResults(List.of(), List.of(), List.of(), 0);
         }
         Ranked ranked;
         try {
             ranked = ai.ask(model, RANK_SYSTEM, rankPrompt(req, candidates), List.of(), RANK_SCHEMA, Ranked.class);
         } catch (ResponseStatusException e) {
             log.warn("Search ranking without AI: {}", e.getReason());
-            return new SearchResults(List.of(), candidates.stream().limit(MAX_PER_GROUP)
-                    .map(l -> new SearchMatch(l.summary(), NO_AI_REASON, List.of(), List.of())).toList(), List.of());
+            ranked = new Ranked(List.of(), candidates.stream()
+                    .map(l -> new Item(l.id(), NO_AI_REASON, List.of(), List.of())).toList(), List.of());
         }
         return validate(req, candidates, ranked);
     }
 
-    /** Drops unknown/duplicate ids, downgrades unproven "confirmed" items, applies acceptUnknown and the group size. */
+    /** The app decides the group from the listing data; the AI's group only breaks ties. */
     SearchResults validate(SearchRequirements req, List<ListingDetail> candidates, Ranked ranked) {
         Map<Long, ListingDetail> byId = candidates.stream()
                 .collect(Collectors.toMap(ListingDetail::id, Function.identity()));
-        Set<Long> seen = new HashSet<>();
+        Map<Long, Item> items = new LinkedHashMap<>();
+        Map<Long, AiGroup> groups = new HashMap<>();
+        collect(ranked == null ? null : ranked.confirmed(), AiGroup.CONFIRMED, byId, items, groups);
+        collect(ranked == null ? null : ranked.possible(), AiGroup.POSSIBLE, byId, items, groups);
+        collect(ranked == null ? null : ranked.alternatives(), AiGroup.ALTERNATIVES, byId, items, groups);
+        List<Long> order = new ArrayList<>(items.keySet());
+        candidates.stream().map(ListingDetail::id).filter(id -> !items.containsKey(id)).forEach(order::add);
         List<SearchMatch> confirmed = new ArrayList<>();
         List<SearchMatch> possible = new ArrayList<>();
         List<SearchMatch> alternatives = new ArrayList<>();
-        for (Item item : orEmpty(ranked == null ? null : ranked.confirmed())) {
-            ListingDetail listing = byId.get(item.listingId());
-            if (listing == null || !seen.add(item.listingId())) continue;
-            List<String> missing = req.mustHave().stream().filter(r -> !states(listing, r))
-                    .map(r -> r.attribute() + ": " + r.value()).toList();
-            if (missing.isEmpty()) {
+        boolean hasMustHave = !req.mustHave().isEmpty();
+        for (long id : order) {
+            ListingDetail listing = byId.get(id);
+            AiGroup aiGroup = groups.getOrDefault(id, AiGroup.NONE);
+            Item item = items.get(id);
+            List<String> diffs = differences(req, listing);
+            List<String> missing = missing(req, listing);
+            if (aiGroup == AiGroup.NONE) {
+                if (hasMustHave && diffs.isEmpty() && missing.isEmpty()) {
+                    confirmed.add(new SearchMatch(listing.summary(), "Listing states every must-have.", List.of(),
+                            List.of()));
+                }
+            } else if (!diffs.isEmpty()) {
+                alternatives.add(new SearchMatch(listing.summary(), item.reason(), List.of(), diffs));
+            } else if (aiGroup == AiGroup.ALTERNATIVES) {
+                alternatives.add(match(listing, item, List.of()));
+            } else if (!missing.isEmpty()) {
+                possible.add(match(listing, item, missing));
+            } else if (hasMustHave || aiGroup == AiGroup.CONFIRMED) {
                 confirmed.add(match(listing, item, List.of()));
             } else {
-                possible.add(match(listing, item, missing));
+                possible.add(match(listing, item, orEmpty(item.missingDetails())));
             }
         }
-        for (Item item : orEmpty(ranked == null ? null : ranked.possible())) {
-            ListingDetail listing = byId.get(item.listingId());
-            if (listing != null && seen.add(item.listingId())) possible.add(match(listing, item, orEmpty(item.missingDetails())));
-        }
-        for (Item item : orEmpty(ranked == null ? null : ranked.alternatives())) {
-            ListingDetail listing = byId.get(item.listingId());
-            if (listing != null && seen.add(item.listingId())) alternatives.add(match(listing, item, List.of()));
-        }
         return new SearchResults(limit(confirmed), req.acceptUnknown() ? limit(possible) : List.of(),
-                limit(alternatives));
+                limit(alternatives), candidates.size());
+    }
+
+    /** First group wins; unknown and duplicate ids are dropped. */
+    private static void collect(List<Item> list, AiGroup group, Map<Long, ListingDetail> byId, Map<Long, Item> items,
+                                Map<Long, AiGroup> groups) {
+        for (Item item : orEmpty(list)) {
+            if (byId.containsKey(item.listingId()) && items.putIfAbsent(item.listingId(), item) == null) {
+                groups.put(item.listingId(), group);
+            }
+        }
     }
 
     private static final Pattern NUMBER = Pattern.compile("\\d+(?:[.,]\\d+)?");
+    private static final List<String> WORKING = List.of("work", "funktion", "intakt", "intact");
 
-    /** A must-have is stated when the listing has the attribute containing the value, or the title contains it. */
-    static boolean states(ListingDetail listing, Requirement requirement) {
-        // the condition is always stated on a listing (its own field), the AI judges whether it fits
-        if (requirement.attribute().equalsIgnoreCase("Condition")) return true;
-        String value = requirement.value().toLowerCase(Locale.ROOT);
-        String stated = (listing.title() + " " + listing.attributes().entrySet().stream()
-                .filter(a -> a.getKey().equalsIgnoreCase(requirement.attribute()))
-                .map(Map.Entry::getValue).collect(Collectors.joining(" "))).toLowerCase(Locale.ROOT);
-        if (stated.contains(value)) return true;
+    /** What the listing says about one must-have: stated, absent (ask the seller) or different. */
+    static Evidence check(ListingDetail listing, Requirement requirement) {
+        String value = requirement.value().toLowerCase(Locale.ROOT).replace('_', ' ').trim();
+        if (requirement.attribute().equalsIgnoreCase("Condition")) {
+            return checkCondition(listing.condition(), value);
+        }
+        String attribute = attribute(listing, requirement.attribute());
+        Requirement.Comparison comparison = requirement.comparison();
+        Double wanted = number(value);
+        if (comparison != null && comparison != Requirement.Comparison.EXACT && wanted != null) {
+            // only the attribute counts here, a number in the title is too easy to misread
+            Double actual = attribute == null ? null : number(attribute);
+            if (actual == null) return Evidence.MISSING;
+            boolean ok = comparison == Requirement.Comparison.AT_LEAST ? actual >= wanted : actual <= wanted;
+            return ok ? Evidence.STATED : Evidence.DIFFERENT;
+        }
+        String stated = (listing.title() + " " + (attribute == null ? "" : attribute)).toLowerCase(Locale.ROOT);
+        if (stated.contains(value)) return Evidence.STATED;
         // numbers decide when units are written differently ("27 Zoll" vs "27\"", "16GB" vs "16 GB")
         List<String> numbers = NUMBER.matcher(value).results().map(MatchResult::group).toList();
         List<String> statedNumbers = NUMBER.matcher(stated).results().map(MatchResult::group).toList();
-        return !numbers.isEmpty() && statedNumbers.containsAll(numbers);
+        if (!numbers.isEmpty() && statedNumbers.containsAll(numbers)) return Evidence.STATED;
+        return attribute == null ? Evidence.MISSING : Evidence.DIFFERENT;
+    }
+
+    /** The seller-chosen condition field is the evidence; the description is context for the AI only. */
+    private static Evidence checkCondition(Condition actual, String value) {
+        Condition required = Arrays.stream(Condition.values()).filter(c -> conditionName(c).equals(value)).findFirst()
+                .orElse(null);
+        if (required != null && WORKING.stream().noneMatch(value::contains)) {
+            return actual.ordinal() <= required.ordinal() ? Evidence.STATED : Evidence.DIFFERENT;
+        }
+        return actual != Condition.DEFECTIVE ? Evidence.STATED : Evidence.DIFFERENT;
+    }
+
+    private static String conditionName(Condition c) {
+        return c.name().toLowerCase(Locale.ROOT).replace('_', ' ');
+    }
+
+    private static String conditionLabel(Condition c) {
+        String name = conditionName(c);
+        return Character.toUpperCase(name.charAt(0)) + name.substring(1);
+    }
+
+    private static String attribute(ListingDetail listing, String key) {
+        return listing.attributes().entrySet().stream().filter(a -> a.getKey().equalsIgnoreCase(key))
+                .map(Map.Entry::getValue).findFirst().orElse(null);
+    }
+
+    /** First number of the text; shortcut: only TB→GB, add units when a demo needs them. */
+    private static Double number(String text) {
+        Matcher m = NUMBER.matcher(text);
+        if (!m.find()) return null;
+        double n = Double.parseDouble(m.group().replace(',', '.'));
+        return text.toLowerCase(Locale.ROOT).contains("tb") ? n * 1000 : n;
+    }
+
+    private static String phrase(Requirement r) {
+        String prefix = r.comparison() == Requirement.Comparison.AT_LEAST ? "at least "
+                : r.comparison() == Requirement.Comparison.AT_MOST ? "at most " : "";
+        return prefix + r.value();
+    }
+
+    private static String label(Requirement r) {
+        return r.attribute() + ": " + phrase(r);
+    }
+
+    /** Where the listing breaks budget, region or a stated must-have, in this order. */
+    static List<String> differences(SearchRequirements req, ListingDetail l) {
+        List<String> diffs = new ArrayList<>();
+        if (overBudget(req, l)) {
+            diffs.add("CHF " + money(l.priceChf()) + " instead of at most CHF " + money(req.maxBudgetChf()));
+        }
+        if (outsideRegion(req, l)) {
+            diffs.add("In " + l.locality() + " (" + l.postcode() + "), outside the "
+                    + req.postcode().trim().substring(0, 2) + "xx area");
+        }
+        for (Requirement r : req.mustHave()) {
+            if (check(l, r) == Evidence.DIFFERENT) {
+                String actual = r.attribute().equalsIgnoreCase("Condition") ? conditionLabel(l.condition())
+                        : attribute(l, r.attribute());
+                diffs.add(r.attribute() + ": " + actual + " instead of " + phrase(r));
+            }
+        }
+        return diffs;
+    }
+
+    static List<String> missing(SearchRequirements req, ListingDetail l) {
+        return req.mustHave().stream().filter(r -> check(l, r) == Evidence.MISSING).map(SearchService::label)
+                .toList();
+    }
+
+    private static boolean overBudget(SearchRequirements req, ListingDetail l) {
+        return req.maxBudgetChf() != null && l.priceChf().compareTo(req.maxBudgetChf()) > 0;
+    }
+
+    private static boolean outsideRegion(SearchRequirements req, ListingDetail l) {
+        String postcode = trim(req.postcode());
+        return postcode != null && postcode.length() >= 2 && !l.postcode().startsWith(postcode.substring(0, 2));
+    }
+
+    /** Whole francs without decimals, else 2 decimals. */
+    private static String money(BigDecimal chf) {
+        return chf.stripTrailingZeros().scale() <= 0 ? chf.setScale(0, RoundingMode.UNNECESSARY).toPlainString()
+                : chf.setScale(2, RoundingMode.HALF_UP).toPlainString();
     }
 
     List<ListingDetail> candidates(SearchRequirements req, boolean withKeywords) {
@@ -211,13 +337,8 @@ public class SearchService {
         Map<String, Object> params = new HashMap<>();
         params.put("available", ListingStatus.AVAILABLE);
         if (req.maxBudgetChf() != null) {
-            jpql.append(" and l.priceChf <= :budget");
-            params.put("budget", req.maxBudgetChf());
-        }
-        String postcode = trim(req.postcode());
-        if (postcode != null && postcode.length() >= 2) {
-            jpql.append(" and l.postcode like :region");
-            params.put("region", postcode.substring(0, 2) + "%");
+            jpql.append(" and l.priceChf <= :ceiling");
+            params.put("ceiling", req.maxBudgetChf().multiply(BUDGET_STRETCH));
         }
         String category = trim(req.category());
         if (category != null) {
@@ -235,27 +356,42 @@ public class SearchService {
             jpql.append(" and (").append(String.join(" or ", ors)).append(")");
         }
         jpql.append(" order by l.createdAt desc");
-        return tx.execute(status -> {
-            TypedQuery<Listing> query = em.createQuery(jpql.toString(), Listing.class).setMaxResults(MAX_CANDIDATES);
+        List<ListingDetail> fetched = tx.execute(status -> {
+            TypedQuery<Listing> query = em.createQuery(jpql.toString(), Listing.class).setMaxResults(MAX_FETCH);
             params.forEach(query::setParameter);
             return query.getResultList().stream().map(Listing::detail).toList();
         });
+        // exact fits first, then those stretching budget or region (stable: newest first within a tier)
+        return fetched.stream()
+                .sorted(Comparator.comparingInt(l -> (overBudget(req, l) ? 1 : 0) + (outsideRegion(req, l) ? 1 : 0)))
+                .limit(MAX_CANDIDATES).toList();
     }
 
     private static String rankPrompt(SearchRequirements req, List<ListingDetail> candidates) {
         StringBuilder text = new StringBuilder("Buyer wants:\n");
-        text.append("Must have: ").append(list(req.mustHave())).append('\n');
-        text.append("Nice to have: ").append(list(req.niceToHave())).append('\n');
+        List<Requirement> mustHave = req.mustHave().stream().filter(r -> !r.attribute().equals("Condition")).toList();
+        boolean conditionChecked = mustHave.size() < req.mustHave().size();
+        text.append("Must have: ").append(list(mustHave, conditionChecked ? "Condition: checked by the app." : null))
+                .append('\n');
+        text.append("Nice to have: ").append(list(req.niceToHave(), null)).append('\n');
         if (req.category() != null) text.append("Category: ").append(req.category()).append('\n');
-        if (req.maxBudgetChf() != null) text.append("Budget: at most CHF ").append(req.maxBudgetChf()).append('\n');
-        if (req.postcode() != null) text.append("Near postcode: ").append(req.postcode()).append('\n');
-        text.append("\nListings (id | title | price | category | place | condition | attributes):\n");
+        if (req.maxBudgetChf() != null) {
+            text.append("Budget: at most CHF ").append(money(req.maxBudgetChf())).append(" (listings up to CHF ")
+                    .append(money(req.maxBudgetChf().multiply(BUDGET_STRETCH).setScale(2, RoundingMode.HALF_UP)))
+                    .append(" are shown as alternatives)\n");
+        }
+        if (req.postcode() != null) {
+            text.append("Near postcode ").append(req.postcode()).append(" (other regions only as alternatives)\n");
+        }
+        text.append("\nListings (id | title | price | category | place | condition | attributes | description):\n");
         for (ListingDetail l : candidates) {
+            String description = l.description() == null ? "" : l.description();
             text.append(l.id()).append(" | ").append(l.title()).append(" | CHF ").append(l.priceChf())
                     .append(" | ").append(l.category()).append(" | ").append(l.postcode()).append(' ')
                     .append(l.locality()).append(" | ").append(l.condition()).append(" | ")
                     .append(l.attributes().entrySet().stream().map(a -> a.getKey() + "=" + a.getValue())
                             .collect(Collectors.joining("; ")))
+                    .append(" | ").append(description.substring(0, Math.min(160, description.length())))
                     .append('\n');
         }
         return text.toString();
@@ -265,8 +401,11 @@ public class SearchService {
         Map<String, Requirement> result = new LinkedHashMap<>();
         for (Requirement r : requirements) {
             if (r == null || trim(r.value()) == null) continue;
+            String value = r.value().trim();
+            Requirement.Comparison comparison = r.comparison() == null || !value.matches(".*\\d.*")
+                    ? Requirement.Comparison.EXACT : r.comparison();
             ATTRIBUTES.stream().filter(a -> a.equalsIgnoreCase(trim(r.attribute()))).findFirst()
-                    .ifPresent(a -> result.putIfAbsent(a, new Requirement(a, r.value().trim())));
+                    .ifPresent(a -> result.putIfAbsent(a, new Requirement(a, value, comparison)));
         }
         return List.copyOf(result.values());
     }
@@ -275,9 +414,10 @@ public class SearchService {
         return new SearchMatch(listing.summary(), item.reason(), missing, orEmpty(item.differences()));
     }
 
-    private static String list(List<Requirement> requirements) {
-        return requirements.isEmpty() ? "-" : requirements.stream().map(r -> r.attribute() + ": " + r.value())
-                .collect(Collectors.joining(", "));
+    private static String list(List<Requirement> requirements, String extra) {
+        List<String> parts = new ArrayList<>(requirements.stream().map(SearchService::label).toList());
+        if (extra != null) parts.add(extra);
+        return parts.isEmpty() ? "-" : String.join(", ", parts);
     }
 
     private static <T> List<T> orEmpty(List<T> list) {

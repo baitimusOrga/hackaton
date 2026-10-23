@@ -3,5 +3,6 @@
 
 export interface Requirement {
   attribute: string;
+  comparison?: ('AT_LEAST' | 'EXACT' | 'AT_MOST' | null);
   value: string;
 }

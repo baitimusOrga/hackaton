@@ -1,6 +1,6 @@
 package one.absent.hackaton.search;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -81,8 +81,9 @@ class SearchControllerTest {
     void textBecomesCanonicalRequirements() throws Exception {
         when(ai.ask(anyString(), anyString(), anyString(), anyList(), anyString(), eq(SearchService.Parsed.class)))
                 .thenReturn(new SearchService.Parsed(
-                        List.of(new Requirement("model", "iMac 27"), new Requirement("Accessories", "mouse")),
-                        List.of(new Requirement("Year", "2017")), "computers", List.of(" iMac ", "Apple"),
+                        List.of(new Requirement("model", "iMac", Requirement.Comparison.AT_LEAST),
+                                new Requirement("Accessories", "mouse", null)),
+                        List.of(new Requirement("Year", "2017", Requirement.Comparison.AT_LEAST)), "computers", List.of(" iMac ", "Apple"),
                         new BigDecimal("600"), "8001"));
 
         mvc.perform(post("/api/searches").contentType(MediaType.APPLICATION_JSON)
@@ -90,6 +91,8 @@ class SearchControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.mustHave.length()").value(1))
                 .andExpect(jsonPath("$.mustHave[0].attribute").value("Model"))
+                .andExpect(jsonPath("$.mustHave[0].comparison").value("EXACT"))
+                .andExpect(jsonPath("$.niceToHave[0].comparison").value("AT_LEAST"))
                 .andExpect(jsonPath("$.niceToHave[0].value").value("2017"))
                 .andExpect(jsonPath("$.category").value("Computers"))
                 .andExpect(jsonPath("$.keywords[0]").value("imac"))
@@ -122,10 +125,29 @@ class SearchControllerTest {
 
         matches(true)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.confirmed.length()").value(0))
-                .andExpect(jsonPath("$.possible[*].listing.id")
-                        .value(containsInAnyOrder(match.getId().intValue(), noYear.getId().intValue())))
-                .andExpect(jsonPath("$.possible[0].reason").value("Ranked without AI right now."));
+                .andExpect(jsonPath("$.confirmed.length()").value(1))
+                .andExpect(jsonPath("$.confirmed[0].listing.id").value(match.getId().intValue()))
+                .andExpect(jsonPath("$.possible.length()").value(1))
+                .andExpect(jsonPath("$.possible[0].listing.id").value(noYear.getId().intValue()))
+                .andExpect(jsonPath("$.possible[0].reason").value("Ranked without AI right now."))
+                .andExpect(jsonPath("$.alternatives[?(@.listing.title == 'Dual turntable')].differences[0]")
+                        .value("In Somewhere (3011), outside the 80xx area"));
+    }
+
+    @Test
+    void overBudgetUpTo125PercentIsAlternativeWithDifference() throws Exception {
+        Listing technics = listing("Technics turntable SL-1100", "240", "Audio", "8004",
+                Map.of("Brand", "Technics", "Year", "1995"));
+        listing("Technics turntable SL-1000", "260", "Audio", "8004", Map.of("Brand", "Technics", "Year", "1995"));
+        em.flush();
+        rankingFails();
+
+        matches(true)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alternatives[?(@.listing.id == " + technics.getId() + ")].differences[0]")
+                        .value("CHF 240 instead of at most CHF 200"))
+                .andExpect(jsonPath("$.alternatives[?(@.listing.title == 'Technics turntable SL-1000')]").isEmpty())
+                .andExpect(jsonPath("$.compared", greaterThanOrEqualTo(4)));
     }
 
     @Test

@@ -304,6 +304,10 @@
           "value" : {
             "type" : "string",
             "minLength" : 1
+          },
+          "comparison" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "AT_LEAST", "EXACT", "AT_MOST" ]
           }
         },
         "required" : [ "attribute", "value" ]
@@ -422,6 +426,10 @@
             "items" : {
               "$ref" : "#/components/schemas/SearchMatch"
             }
+          },
+          "compared" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },
