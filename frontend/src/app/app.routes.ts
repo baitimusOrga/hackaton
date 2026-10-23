@@ -8,6 +8,11 @@ export const routes: Routes = [
     path: 'listings/:id',
     loadComponent: () => import('./pages/listing').then((m) => m.ListingPage),
   },
+  {
+    path: 'messages',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/messages').then((m) => m.Messages),
+  },
   { path: 'login', loadComponent: () => import('./pages/login').then((m) => m.Login) },
   {
     path: 'register',
