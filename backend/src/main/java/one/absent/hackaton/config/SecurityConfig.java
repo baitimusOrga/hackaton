@@ -34,7 +34,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .requestCache(cache -> cache.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/api/listings", "/api/listing-drafts", "/api/photos").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/listings", "/api/photos").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/listing-drafts/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/photos/**").permitAll()
                 .requestMatchers("/api/clearance/**").authenticated()

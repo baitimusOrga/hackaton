@@ -1,51 +1,73 @@
 package one.absent.hackaton.selling;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.time.Duration;
-import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.extern.slf4j.Slf4j;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.listing.Categories;
-import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.photo.PhotoStorage;
-import one.absent.hackaton.selling.ListingDraft.DraftFact;
-import one.absent.hackaton.selling.ListingDraft.PrivacyWarning;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import software.amazon.awssdk.core.exception.SdkException;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import tools.jackson.databind.json.JsonMapper;
 
-/** Turns seller photos into a listing draft and serves stored photos. */
-@Slf4j
+/** Streams a listing draft from the seller's uploaded photos as server-sent events. */
 @Tag(name = "Selling")
 @RestController
 public class DraftController {
-    // the image types the Anthropic API accepts
-    private static final Set<String> IMAGE_TYPES = Set.of("image/jpeg", "image/png", "image/gif", "image/webp");
-    private static final long MAX_BYTES = 5L * 1024 * 1024;
 
     static final String SYSTEM = """
             You prepare a listing draft for a Swiss secondhand marketplace from the seller's photos.
+            Answer only with JSON lines: one complete JSON object per line, no other text, no code fences.
+            Write the lines in this order:
+            1. One "detection" line per thing you recognise, most telling first, e.g.
+               {"type":"detection","photo":1,"box":[0.12,0.40,0.30,0.08],"label":"Brand: Trek","fact":{"name":"Brand","value":"Trek","source":"LABEL"}}
+               photo is the 1-based photo position. box is x, y (top-left corner), width, height as fractions
+               from 0 to 1 of the image. fact only when the detection gives one.
+            2. One "privacy" line per area that shows a serial number, IMEI, MAC address, a person's name, address,
+               phone number, a document, an employee or asset tag, or a screen with personal content, e.g.
+               {"type":"privacy","photo":2,"box":[0.5,0.6,0.2,0.05],"text":"Shows a serial number. Leave this photo out or cover it."}
+               Never repeat the value.
+            3. One "gap" line per key fact of the category that is not readable on a label and not confirmed by the
+               seller, and one named "Condition" when condition is null, e.g.
+               {"type":"gap","name":"Frame size","kind":"ASK","prompt":"What is the frame size?","options":["S","M","L","XL"]}
+               kind: PHOTO when a photo would show it (the prompt says exactly what to photograph, e.g.
+               "Please photograph the type plate on the back"), CONFIRM when you suggested a value, otherwise ASK.
+               options: 2 to 6 short typical answers for this very item, or [] when free text fits better.
+               Identity first: Brand and Model, then Condition, then the rest.
+            4. Last, exactly one "draft" line:
+               {"type":"draft","category":"Bikes","title":"...","description":"...","condition":null,"facts":[...]}
             Rules:
             - facts: only text you can read on a label, type plate, screen or datasheet gets source LABEL.
               Everything you infer from appearance gets source SUGGESTION. Never use any other source.
             - Never invent internal specs (CPU, RAM, storage, ...) unless they are readable on a label or screen.
               Never claim working condition, ownership or included accessories.
             - Fact names only from the allowed list; values short and normalized (e.g. 27", 16 GB, 2560x1440).
-              One fact per name at most; leave out what you cannot see.
+              One fact per name at most; leave out what you cannot see. Facts the seller confirmed are final.
             - title: at most 60 characters, brand + model + one distinguishing variant (size or year).
               No CPU, RAM, storage or part numbers in the title; those belong in facts.
             - description: written as the seller, first person, 2 to 3 sentences: what it is, known model
@@ -54,100 +76,83 @@ public class DraftController {
             - condition: null unless the photos clearly show the outside of the whole item. Label close-ups,
               partial views and blurry photos give null. Absence of visible wear in a partial view is not evidence.
               Otherwise NEW, LIKE_NEW, GOOD, USED or DEFECTIVE from visible wear.
-            - questions: at most 3, short. First the one missing photo that would identify the exact model or
-              variant, e.g. "Please photograph the type plate on the back".
-            - privacyWarnings: one entry per photo (photo = its 1-based position) that shows a serial number,
-              IMEI, MAC address, a person's name, address, phone number, a document, an employee or asset tag,
-              or a screen with personal content. Text e.g. "Shows a serial number. Leave this photo out or cover it."
-              Never repeat the value.
-            - Never copy serial numbers or personal data into title, description, facts or questions.
+            - Never copy serial numbers or personal data into any line.
             - category: the best fit from the allowed list.
-            """;
+            Allowed categories: %s
+            Allowed fact names: %s
+            Key facts per category:
+            %s
+            """.formatted(Categories.JSON, String.join(", ", Categories.FACT_NAMES),
+            Categories.ALL.stream().map(c -> c + ": " + String.join(", ", Categories.KEY_FACTS.get(c)))
+                    .collect(Collectors.joining("\n")));
 
-    static final String SCHEMA = """
-            {"type": "object", "additionalProperties": false,
-             "required": ["category", "title", "description", "condition", "facts", "questions",
-                          "privacyWarnings"],
-             "properties": {
-               "category": {"type": "string", "enum": %s},
-               "title": {"type": "string"},
-               "description": {"type": "string"},
-               "condition": {"anyOf": [{"type": "string", "enum": ["NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE"]},
-                 {"type": "null"}]},
-               "facts": {"type": "array", "items": {"type": "object", "additionalProperties": false,
-                 "required": ["name", "value", "source"],
-                 "properties": {
-                   "name": {"type": "string", "enum": ["Brand", "Model", "Year", "Color", "Size", "Display",
-                     "Resolution", "CPU", "RAM", "Storage", "Material", "Dimensions"]},
-                   "value": {"type": "string"},
-                   "source": {"type": "string", "enum": ["LABEL", "SUGGESTION"]}}}},
-               "questions": {"type": "array", "items": {"type": "string"}},
-               "privacyWarnings": {"type": "array", "items": {"type": "object", "additionalProperties": false,
-                 "required": ["photo", "text"],
-                 "properties": {"photo": {"type": "integer"}, "text": {"type": "string"}}}}}}
-            """.formatted(Categories.JSON);
+    public record ConfirmedFact(@NotBlank @Size(max = 100) String name, @NotBlank @Size(max = 500) String value) {}
 
-    record AiDraft(String category, String title, String description, Condition condition,
-                   List<DraftFact> facts, List<String> questions, List<PrivacyWarning> privacyWarnings) {}
+    /** {@code confirmedFacts} are the seller's own facts; the AI keeps them and does not ask again. */
+    public record DraftRequest(@NotNull @Size(min = 1, max = 5) List<Long> photoIds,
+                               @NotNull List<@Valid ConfirmedFact> confirmedFacts) {}
 
     private final PhotoRepository photos;
     private final PhotoStorage storage;
-    private final boolean useS3;
     private final AiClient ai;
     private final PriceEstimator prices;
+    private final JsonMapper json;
 
-    public DraftController(PhotoRepository photos, PhotoStorage storage, @Value("${s3.access-key}") String s3AccessKey,
-                           AiClient ai, PriceEstimator prices) {
+    public DraftController(PhotoRepository photos, PhotoStorage storage, AiClient ai, PriceEstimator prices,
+                           JsonMapper json) {
         this.photos = photos;
         this.storage = storage;
-        // without real S3 credentials (local dev, tests) photos stay in the database
-        this.useS3 = !"local".equals(s3AccessKey);
         this.ai = ai;
         this.prices = prices;
+        this.json = json;
     }
 
-    @PostMapping(value = "/api/listing-drafts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ListingDraft createDraft(@RequestPart("photos") List<MultipartFile> files,
-                                    @AuthenticationPrincipal Jwt seller) {
-        if (files.isEmpty() || files.size() > 5) {
-            throw badRequest("Please add between 1 and 5 photos.");
-        }
-        files.forEach(
-                file -> {
-                    if (!IMAGE_TYPES.contains(file.getContentType())) {
-                        throw badRequest("Photos must be JPEG, PNG, GIF or WebP images.");
-                    }
-                    if (file.isEmpty() || file.getSize() > MAX_BYTES) {
-                        throw badRequest("Each photo must be at most 5 MB.");
-                    }
-                }
-        );
-
-        List<AiClient.Image> images = files.stream().map(f -> new AiClient.Image(bytes(f), f.getContentType())).toList();
-        List<Photo> stored = images.stream().map(image -> photos.save(photo(image, seller.getSubject()))).toList();
-        AiDraft draft = ai.ask(SYSTEM, "Create the listing draft for the item in these photos.", images, SCHEMA,
-                AiDraft.class);
-        return new ListingDraft(stored.stream().map(Photo::getId).toList(), draft.category(), shortTitle(draft.title()),
-                draft.description(), draft.condition(), draft.facts(), draft.questions(),
-                prices.estimate(draft.category(), draft.title(), draft.facts(), draft.condition()),
-                draft.privacyWarnings());
+    @Operation(responses = @ApiResponse(responseCode = "200", description = "One `data:` line per DraftEvent",
+            content = @Content(mediaType = MediaType.TEXT_EVENT_STREAM_VALUE,
+                    schema = @Schema(implementation = DraftEvent.class))))
+    @PostMapping(value = "/api/listing-drafts/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public ResponseEntity<StreamingResponseBody> streamDraft(@Valid @RequestBody DraftRequest request,
+                                                             @AuthenticationPrincipal Jwt seller) {
+        List<AiClient.Image> images = imagesOf(request.photoIds(), seller.getSubject());
+        String text = "Create the listing draft for the item in these photos." + (request.confirmedFacts().isEmpty()
+                ? "" : "\nThe seller confirmed:\n" + request.confirmedFacts().stream()
+                        .map(f -> f.name() + ": " + f.value()).collect(Collectors.joining("\n")));
+        StreamingResponseBody body = out -> {
+            Consumer<DraftEvent> emit = event -> write(out, event);
+            try {
+                var lines = new DraftLines(json, images.size(), emit);
+                ai.streamLines(SYSTEM, text, images, lines);
+                lines.finish(request.photoIds(), prices);
+            } catch (ResponseStatusException e) {
+                emit.accept(DraftEvent.error(e.getReason()));
+            }
+        };
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache())
+                // keeps a reverse proxy from buffering the stream
+                .header("X-Accel-Buffering", "no")
+                .contentType(MediaType.TEXT_EVENT_STREAM)
+                .body(body);
     }
 
-    /** The new object key, or null when S3 fails, so the upload still works with the bytes in the database. */
-    private String putInS3(AiClient.Image image) {
-        String key = "photos/" + UUID.randomUUID();
+    /** The images of the seller's unpublished photos, in request order. */
+    private List<AiClient.Image> imagesOf(List<Long> ids, String sellerId) {
+        Map<Long, Photo> found = photos.findAllById(ids).stream()
+                .collect(Collectors.toMap(Photo::getId, Function.identity()));
+        return ids.stream().map(id -> {
+            Photo photo = found.get(id);
+            if (photo == null || !photo.getSellerId().equals(sellerId) || photo.getListingId() != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown photo.");
+            }
+            byte[] data = photo.getStorageKey() == null ? photo.getData() : storage.get(photo.getStorageKey()).bytes();
+            return new AiClient.Image(data, photo.getContentType());
+        }).toList();
+    }
+
+    private void write(OutputStream out, DraftEvent event) {
         try {
-            storage.put(key, image.data(), image.mediaType());
-            return key;
-        } catch (SdkException e) {
-            log.warn("S3 upload failed, keeping the photo in the database: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    private static byte[] bytes(MultipartFile file) {
-        try {
-            return file.getBytes();
+            out.write(("data: " + json.writeValueAsString(event) + "\n\n").getBytes(StandardCharsets.UTF_8));
+            out.flush();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -160,21 +165,5 @@ public class DraftController {
         }
         int space = title.lastIndexOf(' ', 60);
         return title.substring(0, space > 0 ? space : 60).strip();
-    }
-
-    private Photo photo(AiClient.Image image, String sellerId) {
-        var photo = new Photo();
-        photo.setContentType(image.mediaType());
-        photo.setStorageKey(useS3 ? putInS3(image) : null);
-        if (photo.getStorageKey() == null) {
-            photo.setData(image.data());
-        }
-        photo.setSellerId(sellerId);
-        photo.setCreatedAt(Instant.now());
-        return photo;
-    }
-
-    private static ResponseStatusException badRequest(String reason) {
-        return new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
     }
 }

@@ -2,6 +2,10 @@
 # app.env -> APP_ENV, spring.datasource.url -> SPRING_DATASOURCE_URL, ...
 # Defaults below are for local development against docker-compose.yml.
 spring:
+  mvc:
+    async:
+      # an AI draft stream can take longer than the 30 s container default
+      request-timeout: 150s
   security:
     oauth2:
       resourceserver:
