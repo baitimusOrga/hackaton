@@ -78,7 +78,7 @@ the listing states (`label(r)`, must-haves first, then nice-to-haves), for the "
 | Nice-to-haves | 15 | Share of nice-to-haves STATED; none → 15 |
 | Keywords | 15 | Share of keywords found in title, description or attribute values (case-insensitive); none → 15 |
 | Price | 10 | No budget or price ≤ budget → 10; linear down to 0 at budget × 1.25 |
-| Place | 10 | No postcode → 10; within `maxDistanceKm`, or without a distance in the same 2-digit region → 10; else 0 |
+| Place | 10 | No postcode → 10; a distance is set (SQL already filtered by it) → 10; else same 2-digit region → 10, other region → 0 |
 
 Fit, decided by code only (existing `differences` / `missing`): any difference → `ALTERNATIVE`;
 else any missing must-have → `NEEDS_DETAILS`; else `MATCH`.
@@ -95,8 +95,9 @@ Final score:
 - AI assessed the listing: `round(0.6 × code + 0.4 × relevance)`, relevance clamped to 0–100.
 - AI left the listing out, gave an unknown id, or the call failed: the code score alone, reason
   `NOT_ASSESSED` (left out) or `NO_AI_REASON` (call failed). Leaving a listing out never removes it.
-- Caps by fit: `ALTERNATIVE` at most 69, `NEEDS_DETAILS` at most 89, so a full match always ranks
-  above a cheaper deviation. Duplicate ids: the first one counts.
+- Caps by fit: `ALTERNATIVE` at most 69, `NEEDS_DETAILS` at most 89, so neither a deviation nor a
+  listing with missing details reaches the top band, whatever the AI says. Duplicate ids: the first
+  one counts.
 - Listings below 30 are dropped, at most 20 are returned. Listings beyond the top 30 keep their
   code score with reason `NOT_ASSESSED` and compete for the 20 places the same way.
 
