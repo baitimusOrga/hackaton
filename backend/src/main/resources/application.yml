@@ -2,6 +2,11 @@
 # app.env -> APP_ENV, spring.datasource.url -> SPRING_DATASOURCE_URL, ...
 # Defaults below are for local development against docker-compose.yml.
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:3000/api/auth/jwks}
   application:
     name: hackaton
   config:
@@ -51,6 +56,8 @@ ai:
   base-url: https://api.anthropic.com
 
 app:
+  auth:
+    issuer: ${AUTH_ISSUER:http://localhost:4200}
   env: ${APP_ENV:dev}
   release: ${APP_RELEASE:dev}
   revision: ${APP_REVISION:}

@@ -1,6 +1,6 @@
 # hackaton
 
-Monorepo with two images: a **Spring Boot** API (`backend/`) and an **Angular** app (`frontend/`).
+Monorepo with a **Spring Boot** API (`backend/`), **Angular** frontend (`frontend/`) and **Better Auth** service (`auth/`).
 
 | | Staging | Prod |
 |---|---|---|
@@ -16,6 +16,7 @@ Both run on one hostname each: `/api/*` and `/actuator/*` go to the backend, eve
 |---|---|
 | `backend/` | Java 25, Spring Boot 4.1, Maven. Postgres via Spring Data JPA, Flyway migrations |
 | `frontend/` | Angular 22, served by nginx. Reads `/config.json` at start, so one image runs in every environment |
+| `auth/` | Node 24, Better Auth email/password sessions and RS256 JWTs; owns the Postgres `auth` schema |
 | `docker-compose.yml` | Postgres for local development, started by the backend on `spring-boot:run` |
 | `.github/workflows/ci-*.yml` | pull requests, only for the side they touch: `mvn verify`; `ng lint`, `ng test`, `ng build` |
 | `.github/workflows/deploy.yml` | builds the images and writes the hosts' `.env` |
@@ -29,7 +30,7 @@ API:
 | `GET /actuator/health` | health check |
 | `/api/docs` | OpenAPI UI |
 
-There is no login: every endpoint is public. New controllers go under `/api/...` so they reach the backend.
+Better Auth owns `/api/auth/*`; Spring APIs stay under `/api/...`. See [authentication setup](docs/AUTH.md) for local secrets, migrations and the repeatable test account.
 
 ## Run it locally
 
@@ -37,6 +38,7 @@ Needs JDK 25, Node 24.15+ (or 22.22.3+) and Docker.
 
 ```bash
 cd backend && ./mvnw spring-boot:run       # API on :8080, starts Postgres from docker-compose.yml
+cd auth && pnpm install && pnpm setup && pnpm dev # auth on :3000, creates its own schema
 cd frontend && pnpm install && pnpm start         # http://localhost:4200, /api is proxied to :8080
 ```
 
