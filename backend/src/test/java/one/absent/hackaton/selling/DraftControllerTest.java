@@ -113,10 +113,4 @@ class DraftControllerTest {
         mvc.perform(multipart("/api/listing-drafts").file(photo("image/png")))
                 .andExpect(status().isUnauthorized());
     }
-
-    @Test void unknownPhotoIsNotFound() throws Exception {
-        mvc.perform(get("/api/photos/999999"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.detail").value("Photo not found."));
-    }
 }

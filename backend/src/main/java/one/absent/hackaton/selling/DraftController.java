@@ -112,14 +112,17 @@ public class DraftController {
         if (files.isEmpty() || files.size() > 5) {
             throw badRequest("Please add between 1 and 5 photos.");
         }
-        for (MultipartFile file : files) {
-            if (!IMAGE_TYPES.contains(file.getContentType())) {
-                throw badRequest("Photos must be JPEG, PNG, GIF or WebP images.");
-            }
-            if (file.isEmpty() || file.getSize() > MAX_BYTES) {
-                throw badRequest("Each photo must be at most 5 MB.");
-            }
-        }
+        files.forEach(
+                file -> {
+                    if (!IMAGE_TYPES.contains(file.getContentType())) {
+                        throw badRequest("Photos must be JPEG, PNG, GIF or WebP images.");
+                    }
+                    if (file.isEmpty() || file.getSize() > MAX_BYTES) {
+                        throw badRequest("Each photo must be at most 5 MB.");
+                    }
+                }
+        );
+
         List<AiClient.Image> images = files.stream().map(f -> new AiClient.Image(bytes(f), f.getContentType())).toList();
         List<Photo> stored = images.stream().map(image -> photos.save(photo(image, seller.getSubject()))).toList();
         AiDraft draft = ai.ask(SYSTEM, "Create the listing draft for the item in these photos.", images, SCHEMA,
@@ -128,17 +131,6 @@ public class DraftController {
                 draft.description(), draft.condition(), draft.facts(), draft.questions(),
                 prices.estimate(draft.category(), draft.title(), draft.facts(), draft.condition()),
                 draft.privacyWarnings());
-    }
-
-    @GetMapping("/api/photos/{id}")
-    public ResponseEntity<byte[]> getPhoto(@PathVariable long id) {
-        Photo photo = photos.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Photo not found."));
-        byte[] data = photo.getStorageKey() == null ? photo.getData() : storage.get(photo.getStorageKey()).bytes();
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(photo.getContentType()))
-                .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePublic())
-                .body(data);
     }
 
     /** The new object key, or null when S3 fails, so the upload still works with the bytes in the database. */
