@@ -576,6 +576,19 @@
           },
           "explanation" : {
             "type" : "string"
+          },
+          "condition" : {
+            "type" : "string",
+            "description" : "Condition the range is adjusted to",
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "comparableCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "soldCount" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },
@@ -590,6 +603,28 @@
             "type" : "string"
           },
           "priceChf" : {
+            "type" : "number"
+          },
+          "similarity" : {
+            "type" : "string",
+            "enum" : [ "SAME_MODEL", "SAME_BRAND", "SIMILAR_TITLE" ]
+          },
+          "similarityPercent" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "condition" : {
+            "type" : "string",
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "sold" : {
+            "type" : "boolean"
+          },
+          "ageDays" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "adjustedPriceChf" : {
             "type" : "number"
           }
         }

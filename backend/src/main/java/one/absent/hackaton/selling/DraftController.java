@@ -102,7 +102,7 @@ public class DraftController {
                 AiDraft.class);
         return new ListingDraft(stored.stream().map(Photo::getId).toList(), draft.category(), draft.title(),
                 draft.description(), draft.condition(), draft.facts(), draft.questions(),
-                prices.estimate(draft.category(), draft.title()));
+                prices.estimate(draft.category(), draft.title(), draft.facts(), draft.condition()));
     }
 
     @GetMapping("/api/photos/{id}")
