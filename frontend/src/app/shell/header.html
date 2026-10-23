@@ -15,20 +15,21 @@
           [ngModel]="query()"
           (ngModelChange)="query.set($event)"
         />
-        <button appButton variant="primary" type="submit" aria-label="Suchen">
+        <button appButton type="submit" aria-label="Suchen">
           <app-icon name="search" />
         </button>
       </form>
     }
     <nav class="zw-nav" aria-label="Hauptnavigation">
-      <a routerLink="/find"><app-icon name="bookmark" />Meine Suchen</a>
-      <a appButton routerLink="/sell"><app-icon name="camera" /><span>Verkaufen</span></a>
-      @if (auth.user(); as user) {
-        <span>{{ user.name }}</span>
+      @if (auth.user()) {
+        <a routerLink="/find" aria-label="Meine Suchen"><app-icon name="bookmark" /></a>
+        <a appButton routerLink="/sell"><app-icon name="camera" /><span>Verkaufen</span></a>
         <button type="button" class="zw-nav__link" [disabled]="signingOut()" (click)="logout()">
           Abmelden
         </button>
       } @else {
+        <a routerLink="/find"><app-icon name="bookmark" />Meine Suchen</a>
+        <a appButton routerLink="/sell"><app-icon name="camera" /><span>Verkaufen</span></a>
         <a routerLink="/login">Anmelden</a>
       }
     </nav>
