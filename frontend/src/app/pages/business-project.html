@@ -1,0 +1,301 @@
+<!-- TODO: not designed yet, replace with the Firmen-Projekt design -->
+@if (project(); as p) {
+  <header class="bp-head">
+    <a routerLink="/business" class="bp-back">Alle Projekte</a>
+    <span class="zw-caption">Räumungsprojekt</span>
+    <h1>{{ p.companyName }}</h1>
+    <p class="zw-muted">
+      {{ p.postcode }} {{ p.locality }} · Termin {{ p.deadline | date: 'dd.MM.yyyy' }} ·
+      <strong class="bp-ink">noch {{ p.daysLeft }} {{ p.daysLeft === 1 ? 'Tag' : 'Tage' }}</strong>
+    </p>
+    <dl class="bp-totals" data-testid="totals">
+      <div>
+        <dt class="zw-caption">Positionen</dt>
+        <dd>{{ p.totals.itemLines }}</dd>
+      </div>
+      <div>
+        <dt class="zw-caption">Stück</dt>
+        <dd>{{ p.totals.units }}</dd>
+      </div>
+      <div>
+        <dt class="zw-caption">Geschätzter Wiederverkauf</dt>
+        <dd>{{ p.totals.estimatedResaleChf | chf }}</dd>
+      </div>
+      <div>
+        <dt class="zw-caption">Entwurf / inseriert / verkauft</dt>
+        <dd>{{ p.totals.draft }} / {{ p.totals.listed }} / {{ p.totals.sold }}</dd>
+      </div>
+    </dl>
+  </header>
+
+  <section class="zw-section bp-rule" aria-labelledby="h-add">
+    <h2 id="h-add">1. Inventar erfassen</h2>
+    <p class="zw-muted">
+      Füg eine Liste ein oder lad Fotos hoch. Wir lesen Menge, Zustand und Kategorie heraus.
+    </p>
+    <div class="zw-field">
+      <label class="zw-label" for="bp-text">Inventarliste</label>
+      <textarea
+        id="bp-text"
+        class="zw-input bp-text"
+        rows="7"
+        maxlength="10000"
+        [value]="text()"
+        (input)="text.set($any($event.target).value)"
+      ></textarea>
+    </div>
+    <div class="zw-field">
+      <label class="zw-label" for="bp-photos">Fotos (optional, bis zu 5)</label>
+      <input
+        id="bp-photos"
+        type="file"
+        accept="image/*"
+        multiple
+        (change)="photos.set(files($any($event.target)))"
+      />
+    </div>
+    <div class="bp-actions">
+      <button appButton type="button" (click)="text.set(sample)">Beispiel einfügen</button>
+      <button
+        appButton
+        type="button"
+        [variant]="p.items.length ? 'default' : 'primary'"
+        [disabled]="busy() || (!text().trim() && !photos().length)"
+        (click)="extract()"
+      >
+        {{ reading() ? 'Wird gelesen …' : 'Inventar lesen' }}
+      </button>
+    </div>
+  </section>
+
+  <section class="zw-section bp-rule" aria-labelledby="h-review">
+    <h2 id="h-review">2. Positionen prüfen</h2>
+    @if (p.items.length) {
+      <div class="bp-scroll" role="region" aria-labelledby="h-review" tabindex="0">
+        <table class="bp-table">
+          <thead>
+            <tr>
+              <th scope="col">Bezeichnung</th>
+              <th scope="col">Menge</th>
+              <th scope="col">Kategorie</th>
+              <th scope="col">Zustand</th>
+              <th scope="col">Notizen</th>
+              <th scope="col">Schätzung</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="zw-sr-only">Aktionen</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of p.items; track item.id) {
+              @let locked = item.status !== 'DRAFT';
+              <tr data-testid="item">
+                <td>
+                  <input
+                    aria-label="Bezeichnung"
+                    maxlength="120"
+                    class="zw-input bp-w-name"
+                    [disabled]="locked"
+                    [value]="item.name"
+                    (change)="edit(item, { name: $any($event.target).value })"
+                  />
+                </td>
+                <td>
+                  <input
+                    aria-label="Menge"
+                    type="number"
+                    min="1"
+                    max="10000"
+                    class="zw-input bp-w-qty"
+                    [disabled]="locked"
+                    [value]="item.quantity"
+                    (change)="edit(item, { quantity: $any($event.target).valueAsNumber })"
+                  />
+                </td>
+                <td>
+                  <!-- TODO: German labels for the categories; the values must stay the backend's -->
+                  <select
+                    aria-label="Kategorie"
+                    class="zw-input"
+                    [disabled]="locked"
+                    (change)="edit(item, { category: $any($event.target).value })"
+                  >
+                    @for (category of categories; track category) {
+                      <option [value]="category" [selected]="category === item.category">
+                        {{ category }}
+                      </option>
+                    }
+                  </select>
+                </td>
+                <td>
+                  <select
+                    aria-label="Zustand"
+                    class="zw-input"
+                    [disabled]="locked"
+                    (change)="edit(item, { condition: $any($event.target).value })"
+                  >
+                    @for (condition of conditions; track condition) {
+                      <option [value]="condition" [selected]="condition === item.condition">
+                        {{ conditionNames[condition] }}
+                      </option>
+                    }
+                  </select>
+                </td>
+                <td>
+                  <input
+                    aria-label="Notizen"
+                    maxlength="1000"
+                    class="zw-input bp-w-notes"
+                    [disabled]="locked"
+                    [value]="item.notes ?? ''"
+                    (change)="edit(item, { notes: $any($event.target).value })"
+                  />
+                </td>
+                <td class="bp-num">
+                  {{ item.estimatedUnitChf | chf }} × {{ item.quantity }}<br />
+                  = {{ item.estimatedTotalChf | chf }}
+                </td>
+                <td>
+                  <div class="bp-status">
+                    @if (item.quantityConfirmed) {
+                      <app-badge variant="inverse" data-testid="badge">Bestätigt</app-badge>
+                    } @else {
+                      <app-badge data-testid="badge">Provisorisch</app-badge>
+                    }
+                    @if (
+                      !item.quantityConfirmed && item.notes?.startsWith('Quantity approximate')
+                    ) {
+                      <span class="zw-help">Menge geschätzt</span>
+                    }
+                    <span data-testid="status">
+                      @if (item.listingId) {
+                        <a [routerLink]="['/listings', item.listingId]">{{
+                          item.status === 'SOLD' ? 'Verkauft' : 'Inseriert'
+                        }}</a>
+                      } @else {
+                        Entwurf
+                      }
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <button
+                    appButton
+                    variant="ghost"
+                    type="button"
+                    [disabled]="locked || busy()"
+                    [attr.aria-label]="item.name + ' löschen'"
+                    (click)="remove(item)"
+                  >
+                    Löschen
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <button
+          appButton
+          type="button"
+          [disabled]="busy()"
+          (click)="run(api.confirmQuantities({ id: p.id }))"
+        >
+          Alle Mengen bestätigen
+        </button>
+      </div>
+    } @else {
+      <p class="zw-muted">Noch keine Positionen. Lies zuerst ein Inventar ein.</p>
+    }
+  </section>
+
+  <section
+    class="zw-section bp-rule"
+    [class.zw-section--last]="p.route !== 'SELF_SERVICE'"
+    aria-labelledby="h-routes"
+  >
+    <h2 id="h-routes">3. Weg wählen</h2>
+    <div class="bp-routes">
+      @for (option of p.routes; track option.route) {
+        <div
+          class="bp-route"
+          [class.bp-route--chosen]="p.route === option.route"
+          data-testid="route"
+        >
+          <h3>{{ names[option.route] }}</h3>
+          @if (option.route === p.recommendedRoute) {
+            <div><app-badge variant="inverse" data-testid="recommended">Empfohlen</app-badge></div>
+            <!-- TODO: recommendationReason, timeframe and yourWork come in English from the backend -->
+            <p class="zw-help">{{ p.recommendationReason }}</p>
+          }
+          <p class="bp-net">{{ option.netChf | chf }}</p>
+          <p class="zw-muted">{{ option.certain ? 'Festes Angebot' : 'Schätzung' }}</p>
+          @if (option.serviceFeeChf) {
+            <p class="zw-help">inkl. Servicegebühr {{ option.serviceFeeChf | chf }}</p>
+          }
+          <p class="zw-help">{{ option.timeframe }}</p>
+          <p class="zw-help">Dein Aufwand: {{ option.yourWork }}</p>
+          <div>
+            <button
+              appButton
+              type="button"
+              [disabled]="busy() || p.route === option.route"
+              [attr.aria-label]="names[option.route] + ' wählen'"
+              (click)="run(api.chooseRoute({ id: p.id, body: { route: option.route } }))"
+            >
+              {{ p.route === option.route ? 'Gewählt' : 'Wählen' }}
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+    <p class="zw-help">
+      Annahmen, keine Angebote: Selbst verkaufen bringt 70 % des geschätzten Wiederverkaufswerts.
+      Wir verkaufen erzielt 85 % und behält 15 % Servicegebühr auf dem Erlös. Wir kaufen zahlt 45 %
+      des geschätzten Wiederverkaufswerts innert 5 Arbeitstagen.
+    </p>
+    @if (p.route === 'MANAGED' || p.route === 'DIRECT_PURCHASE') {
+      <p role="status">
+        Anfrage erfasst. Unser Team meldet sich innerhalb eines Arbeitstags (Demo).
+      </p>
+    }
+  </section>
+
+  @if (p.route === 'SELF_SERVICE') {
+    <section class="zw-section zw-section--last bp-rule" aria-labelledby="h-publish">
+      <h2 id="h-publish">4. Veröffentlichen</h2>
+      <ul class="bp-list">
+        @for (item of drafts(p); track item.id) {
+          <li class="zw-row">
+            <label class="bp-check">
+              <input
+                type="checkbox"
+                [disabled]="!item.quantityConfirmed"
+                [checked]="selected().has(item.id)"
+                (change)="toggle(item.id)"
+              />
+              <span>{{ item.name }} ({{ item.quantity }})</span>
+              @if (!item.quantityConfirmed) {
+                <span class="zw-help">Bestätige zuerst die Menge.</span>
+              }
+            </label>
+          </li>
+        } @empty {
+          <li class="zw-muted">Nichts mehr zu veröffentlichen.</li>
+        }
+      </ul>
+      <div>
+        <button
+          appButton
+          type="button"
+          [variant]="p.items.length ? 'primary' : 'default'"
+          [disabled]="busy() || !selected().size"
+          (click)="publish(p)"
+        >
+          {{ selected().size }} {{ selected().size === 1 ? 'Position' : 'Positionen' }}
+          veröffentlichen
+        </button>
+      </div>
+    </section>
+  }
+}
