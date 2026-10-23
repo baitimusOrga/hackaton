@@ -41,3 +41,9 @@ The older experimental session PR used a different Flyway V4. Do not delete or r
 Cookie sessions stay inside Better Auth, with origin/CSRF checks enabled. API JWTs use RS256, public origin as issuer, `hackaton-api` as audience, five-minute expiry, and `sub`, `name`, `email` identity claims. Private signing keys remain encrypted in Better Auth's schema. Rate limits use the database.
 
 Passwords are 12–128 characters. Email verification, password reset and social login are outside the current HAC-32 scope, so no mail server is required.
+
+## Angular
+
+The injectable Better Auth client uses the page's own origin. Login/registration return to a validated internal `returnUrl` (default `/`), and `/sell` checks the server session before entry. The API interceptor fetches `/api/auth/token`, shares concurrent requests and caches the JWT in memory until 30 seconds before expiry. It never attaches tokens to auth endpoints or external URLs.
+
+A backend 401 clears local auth state and redirects to login without the global error banner. Logout clears the in-memory JWT and revokes the Better Auth session. As with other stateless JWT setups, a previously issued token remains cryptographically valid until its five-minute expiry; it is not persisted in browser storage.

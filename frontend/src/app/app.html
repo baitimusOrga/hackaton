@@ -1,3 +1,26 @@
+<header
+  class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4"
+>
+  <a routerLink="/" class="text-xl font-semibold">hackaton</a>
+  <nav aria-label="Main navigation" class="flex flex-wrap items-center gap-4">
+    <a routerLink="/">Discover</a>
+    <a routerLink="/sell">Sell</a>
+    @if (auth.user(); as user) {
+      <span>{{ user.name }}</span>
+      <button
+        type="button"
+        (click)="logout()"
+        [disabled]="signingOut()"
+        class="cursor-pointer rounded-md bg-teal-800 px-4 py-2 text-white"
+      >
+        Log out
+      </button>
+    } @else {
+      <a routerLink="/login">Log in</a>
+      <a routerLink="/register">Create account</a>
+    }
+  </nav>
+</header>
 <main>
   @if (errors.message(); as message) {
     <div class="error-banner" role="alert">

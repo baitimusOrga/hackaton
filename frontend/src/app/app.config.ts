@@ -4,12 +4,13 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideApiConfiguration } from './api/api-configuration';
 import { errorInterceptor } from './errors';
 import { routes } from './app.routes';
+import { authInterceptor } from './auth/auth-interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withInterceptors([errorInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     provideApiConfiguration(''),
   ],
 };

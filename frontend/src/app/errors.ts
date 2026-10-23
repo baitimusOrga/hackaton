@@ -28,7 +28,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const banner = inject(ErrorBanner);
   return next(req).pipe(
     catchError((err: unknown) => {
-      if (err instanceof HttpErrorResponse && !req.context.get(HANDLES_ERRORS)) {
+      if (
+        err instanceof HttpErrorResponse &&
+        !req.context.get(HANDLES_ERRORS) &&
+        !(err.status === 401 && req.url.startsWith('/api/') && !req.url.startsWith('/api/auth/'))
+      ) {
         banner.show(messageOf(err));
       }
       return throwError(() => err);
