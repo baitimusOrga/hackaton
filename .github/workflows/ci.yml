@@ -47,6 +47,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: API client matches openapi.json
         run: pnpm run api && test -z "$(git status --porcelain -- src/app/api)" || { echo "::error::src/app/api is stale. Run pnpm run api and commit it."; exit 1; }
+      - run: pnpm run format:check
       - run: pnpm exec ng lint
       - run: pnpm exec ng test --watch=false
       - run: pnpm exec ng build
