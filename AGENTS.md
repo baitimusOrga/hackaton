@@ -8,6 +8,7 @@ through `CLAUDE.md`). Humans: the setup and deployment story is in [`README.md`]
 | Path | Contents |
 |---|---|
 | `backend/` | Java 25, Spring Boot 4.1, Maven, Spring Data JPA, Lombok (entities only), Flyway, Postgres 16 (H2 in tests) |
+| `auth/` | Node 24, TypeScript, Better Auth email/password sessions and RS256 JWTs, Postgres `auth` schema |
 | `frontend/` | Angular 22 (standalone components, signals), Tailwind CSS 4, Vitest, ESLint, Prettier, served by nginx |
 | `docs/DATA-MODEL.md` | tables and migration rules, updated in the same PR as a migration |
 
