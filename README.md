@@ -59,6 +59,7 @@ Reset the local database: `docker compose down -v`.
 ## Additions
 
 - Errors are Problem Details (`application/problem+json`), shown by a global banner in the frontend.
+- API client generated from OpenAPI: after an API change run `./mvnw verify` (backend) and `pnpm run api` (frontend), commit both.
 
 ## Workflow
 

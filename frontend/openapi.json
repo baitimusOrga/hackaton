@@ -1,0 +1,47 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "hackaton API"
+  },
+  "servers" : [ {
+    "url" : "/"
+  } ],
+  "paths" : {
+    "/api/info" : {
+      "get" : {
+        "tags" : [ "Info" ],
+        "operationId" : "info",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Info"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "Info" : {
+        "type" : "object",
+        "properties" : {
+          "env" : {
+            "type" : "string"
+          },
+          "release" : {
+            "type" : "string"
+          },
+          "revision" : {
+            "type" : "string"
+          }
+        }
+      }
+    }
+  }
+}

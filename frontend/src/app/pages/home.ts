@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Api } from '../api';
+import { InfoService } from '../api/services';
 
 @Component({
   selector: 'app-home',
@@ -12,5 +12,5 @@ import { Api } from '../api';
   `,
 })
 export class Home {
-  protected readonly info = toSignal(inject(Api).info());
+  protected readonly info = toSignal(inject(InfoService).info());
 }
