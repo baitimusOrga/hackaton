@@ -54,6 +54,8 @@ For a personal variant (other port, env vars), copy a configuration and leave *S
 
 Tests: `cd backend && ./mvnw verify` (H2, no Docker needed) and `cd frontend && npx ng lint && npx ng test`.
 
+AI features need `ANTHROPIC_API_KEY=...` in `backend/.env` (gitignored, read by Spring; not a global shell variable, or Claude Code bills that key). Check it with `./mvnw test -Dtest=AiClientLiveTest -Dai.live=true`.
+
 Reset the local database: `docker compose down -v`.
 
 ## Additions
