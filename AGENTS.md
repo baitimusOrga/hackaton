@@ -38,6 +38,9 @@ Run locally: `cd backend && ./mvnw spring-boot:run` (starts Postgres via Docker)
 
 ## Rules that are easy to break
 
+- **Unclear or missing task → stop and ask, never guess.** If the issue description is not in
+  your prompt, fetch it (Linear MCP); if that fails, or the acceptance criteria are ambiguous,
+  comment your questions on the issue and stop without changing code.
 - **API paths start with `/api/`.** Only `/api/*` and `/actuator/*` reach the backend in
   staging and prod; anything else is served by the frontend.
 - **The schema belongs to Flyway.** New table or column → new file
