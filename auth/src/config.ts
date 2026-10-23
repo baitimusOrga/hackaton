@@ -13,7 +13,9 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
   if (!databaseURL) throw new Error("DATABASE_URL is required.");
   const port = Number(env.PORT ?? 3000);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("PORT must be a valid TCP port.");
-  return { secret, baseURL: url.origin, databaseURL, port };
+  const trustedProxies = (env.AUTH_TRUSTED_PROXIES ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+  const ipHeader = env.AUTH_IP_HEADER?.trim().toLowerCase() || undefined;
+  return { secret, baseURL: url.origin, databaseURL, port, trustedProxies, ipHeader };
 }
 
 export type AuthConfig = ReturnType<typeof readConfig>;
