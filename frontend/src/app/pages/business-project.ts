@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { ClearanceService } from '../api/services';
 import { ItemView, ProjectDetail, RouteOption, Totals } from '../api/models';
+import { CATEGORIES } from '../categories';
 
 type Item = Required<ItemView>;
 type Option = Required<RouteOption>;
@@ -26,19 +27,6 @@ const ROUTE_NAMES: Record<Route, string> = {
   MANAGED: 'Managed selling',
   DIRECT_PURCHASE: 'Direct purchase',
 };
-const CATEGORIES = [
-  'Computers',
-  'Laptops',
-  'Monitors',
-  'Phones',
-  'Tablets',
-  'Office furniture',
-  'Office equipment',
-  'Audio',
-  'Cameras',
-  'Household',
-  'Other',
-];
 const CONDITIONS = ['NEW', 'LIKE_NEW', 'GOOD', 'USED', 'DEFECTIVE'] as const;
 
 @Component({

@@ -71,7 +71,7 @@ publishing refused before quantities are confirmed (409), then 5 listings on Dis
 | # | Finding | Status |
 |---|---|---|
 | N1 | `PriceEstimator` threw `LazyInitializationException` on Postgres (attributes read outside a transaction); every photo draft returned 500. Tests on H2 didn't catch it. | fixed in the integration branch (`@Transactional(readOnly = true)`) |
-| N2 | Clearance: the AI invents categories outside the 10 allowed ones ("Office equipment" for printers), so those listings can't be found with the category filter. | open — enum in the extraction schema |
-| N3 | Clearance: unit prices fall back to category averages because German names don't match the price evidence (20 Aeron chairs at CHF 120 each; a demo Aeron asks CHF 380). | open — pass brand/model to `PriceEstimator` |
-| N4 | Search: the AI adds noise to `differences` / `missingDetails` ("Keyboard and mouse included, which the buyer did not ask for" on a confirmed match). | open — only code-derived differences, AI text as `reason` only |
+| N2 | Clearance: the AI invents categories outside the 10 allowed ones ("Office equipment" for printers), so those listings can't be found with the category filter. | fixed in PR fix/n2-n4: one category list (`Categories`, `categories.ts`) incl. "Office equipment" for sell, search and clearance |
+| N3 | Clearance: unit prices fall back to category averages because German names don't match the price evidence (20 Aeron chairs at CHF 120 each; a demo Aeron asks CHF 380). | fixed in PR fix/n2-n4: brand/model stored per item (V11) and passed to `PriceEstimator`; live: Aeron CHF 380, ThinkPad CHF 290, Dell U2719D CHF 157 |
+| N4 | Search: the AI adds noise to `differences` / `missingDetails` ("Keyboard and mouse included, which the buyer did not ask for" on a confirmed match). | fixed in PR fix/n2-n4: missing details and differences come from code; the AI only writes the reason |
 | N5 | Clearance runs the AI call inside a DB transaction (holds a connection for a few seconds). | open, low |

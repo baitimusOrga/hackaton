@@ -4,19 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 import { map, switchMap } from 'rxjs';
 import { ListingsService } from '../api/services';
-
-const CATEGORIES = [
-  'Computers',
-  'Laptops',
-  'Monitors',
-  'Phones',
-  'Tablets',
-  'Office furniture',
-  'Audio',
-  'Cameras',
-  'Household',
-  'Bikes',
-];
+import { CATEGORIES } from '../categories';
 
 type FilterName = 'q' | 'category' | 'maxPrice' | 'postcode';
 

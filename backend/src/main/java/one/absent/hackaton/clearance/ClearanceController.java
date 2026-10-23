@@ -113,7 +113,7 @@ public class ClearanceController {
         item.setQuantityConfirmed(request.quantityConfirmed());
         item.setCondition(request.condition());
         item.setNotes(ClearanceService.blankToNull(request.notes()));
-        item.setEstimatedUnitChf(service.estimateUnit(item.getCategory(), item.getName(), item.getCondition()));
+        item.setEstimatedUnitChf(service.estimateUnit(item));
         return service.detail(project);
     }
 
@@ -180,6 +180,8 @@ public class ClearanceController {
         listing.setCreatedAt(Instant.now());
         listing.setSellerId(sellerId);
         listing.setSellerName(project.getCompanyName());
+        if (item.getBrand() != null) listing.getAttributes().put("Brand", item.getBrand());
+        if (item.getModel() != null) listing.getAttributes().put("Model", item.getModel());
         return listing;
     }
 

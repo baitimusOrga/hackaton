@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -13,10 +14,13 @@ import java.util.stream.Collectors;
 
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.clearance.ClearanceDtos.*;
+import one.absent.hackaton.listing.Categories;
 import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.listing.Listing;
 import one.absent.hackaton.listing.ListingRepository;
 import one.absent.hackaton.listing.ListingStatus;
+import one.absent.hackaton.selling.ListingDraft.DraftFact;
+import one.absent.hackaton.selling.ListingDraft.FactSource;
 import one.absent.hackaton.selling.PriceEstimator;
 import org.springframework.stereotype.Service;
 
@@ -35,9 +39,18 @@ public class ClearanceService {
     static final int URGENT_DAYS = 14;
 
     // assumption: unit price in CHF when no comparable listing exists
-    private static final Map<String, Integer> FALLBACK_CHF = Map.of("Computers", 300, "Laptops", 300,
-            "Monitors", 90, "Phones", 200, "Tablets", 200, "Office furniture", 150, "Office equipment", 80,
-            "Audio", 80, "Cameras", 300, "Household", 40);
+    private static final Map<String, Integer> FALLBACK_CHF = Map.ofEntries(
+            Map.entry("Computers", 300),
+            Map.entry("Laptops", 300),
+            Map.entry("Monitors", 90),
+            Map.entry("Phones", 200),
+            Map.entry("Tablets", 200),
+            Map.entry("Office furniture", 150),
+            Map.entry("Office equipment", 80),
+            Map.entry("Audio", 80),
+            Map.entry("Cameras", 300),
+            Map.entry("Household", 40),
+            Map.entry("Bikes", 150));
     private static final int OTHER_FALLBACK_CHF = 50;
 
     static final String SYSTEM = """
@@ -45,6 +58,7 @@ public class ClearanceService {
             secondhand marketplace. Rules:
             - One item per distinct product/model line; never merge different models; never split one line.
             - name: concise, brand and model first when given, at most 80 characters; never invent a brand or model.
+            - brand, model: exactly as stated (e.g. "Herman Miller", "Aeron"), null when not given.
             - quantity: the stated integer. If it is approximate ("ca.", "~", "about", "?") or counted from photos,
               give your best integer and start the notes with "Quantity approximate, please count."; 1 if none given.
             - condition: from the text or photos; if not stated use USED and add "Condition not stated." to the notes.
@@ -58,19 +72,21 @@ public class ClearanceService {
     static final String SCHEMA = """
             {"type": "object", "additionalProperties": false, "required": ["items"],
              "properties": {"items": {"type": "array", "items": {"type": "object", "additionalProperties": false,
-               "required": ["name", "category", "quantity", "condition", "notes"],
+               "required": ["name", "brand", "model", "category", "quantity", "condition", "notes"],
                "properties": {
                  "name": {"type": "string"},
-                 "category": {"type": "string", "enum": ["Computers", "Laptops", "Monitors", "Phones", "Tablets",
-                   "Office furniture", "Office equipment", "Audio", "Cameras", "Household", "Other"]},
+                 "brand": {"type": ["string", "null"]},
+                 "model": {"type": ["string", "null"]},
+                 "category": {"type": "string", "enum": %s},
                  "quantity": {"type": "integer"},
                  "condition": {"type": "string", "enum": ["NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE"]},
                  "notes": {"type": "string"}}}}}}
-            """;
+            """.formatted(Categories.JSON);
 
     record AiInventory(List<AiItem> items) {}
 
-    record AiItem(String name, String category, int quantity, Condition condition, String notes) {}
+    record AiItem(String name, String brand, String model, String category, int quantity, Condition condition,
+                  String notes) {}
 
     private final AiClient ai;
     private final PriceEstimator priceEstimator;
@@ -97,23 +113,33 @@ public class ClearanceService {
             var item = new ClearanceItem();
             item.setProjectId(project.getId());
             item.setName(cut(read.name().strip(), 120));
-            item.setCategory(cut(read.category() == null || read.category().isBlank() ? "Other" : read.category(), 80));
+            item.setCategory(Categories.ALL.contains(read.category()) ? read.category() : "Household");
             item.setQuantity(Math.clamp(read.quantity(), 1, 10000));
             item.setCondition(read.condition() == null ? Condition.USED : read.condition());
             item.setNotes(blankToNull(read.notes()));
-            item.setEstimatedUnitChf(estimateUnit(item.getCategory(), item.getName(), item.getCondition()));
+            item.setBrand(read.brand() == null ? null : blankToNull(cut(read.brand(), 80)));
+            item.setModel(read.model() == null ? null : blankToNull(cut(read.model(), 80)));
+            item.setEstimatedUnitChf(estimateUnit(item));
             items.save(item);
         }
     }
 
-    BigDecimal estimateUnit(String category, String name, Condition condition) {
-        return unitPrice(priceEstimator.estimate(category, name).midChf(), category, condition);
+    /** Brand and model let the estimator use sales of the same model; it also adjusts for the condition. */
+    BigDecimal estimateUnit(ClearanceItem item) {
+        List<DraftFact> facts = new ArrayList<>();
+        if (item.getBrand() != null) facts.add(new DraftFact("Brand", item.getBrand(), FactSource.SELLER, null));
+        if (item.getModel() != null) facts.add(new DraftFact("Model", item.getModel(), FactSource.SELLER, null));
+        BigDecimal mid = priceEstimator.estimate(item.getCategory(), item.getName(), facts, item.getCondition())
+                .midChf();
+        return unitPrice(mid, item.getCategory(), item.getCondition());
     }
 
-    /** Whole-franc price per piece: comparable median (or category fallback) times a condition factor. */
+    /** Whole-franc price per piece: the condition-adjusted comparable median, else category fallback × factor. */
     static BigDecimal unitPrice(BigDecimal mid, String category, Condition condition) {
-        BigDecimal base = mid != null ? mid
-                : BigDecimal.valueOf(FALLBACK_CHF.getOrDefault(category, OTHER_FALLBACK_CHF));
+        if (mid != null) {
+            return mid.setScale(0, RoundingMode.HALF_UP).max(BigDecimal.ONE);
+        }
+        BigDecimal base = BigDecimal.valueOf(FALLBACK_CHF.getOrDefault(category, OTHER_FALLBACK_CHF));
         BigDecimal factor = switch (condition) {
             case USED -> new BigDecimal("0.8");
             case DEFECTIVE -> new BigDecimal("0.2");

@@ -98,6 +98,22 @@ class SearchServiceTest {
         assertThat(results.confirmed().get(0).reason()).isEqualTo("Listing states every must-have.");
     }
 
+    @Test
+    void aiDetailsDoNotLeakIntoCodeDecidedGroups() {
+        SearchService.Ranked ranked = new SearchService.Ranked(List.of(
+                new SearchService.Item(1, "Fits.", List.of("Does it have a keyboard?"),
+                        List.of("Keyboard and mouse included, which the buyer did not ask for."))), List.of(
+                new SearchService.Item(3, "Close.", List.of("No keyboard included."), List.of("Older model."))),
+                List.of());
+
+        SearchResults results = service().validate(demoQuery(), List.of(IMAC, OLD_IMAC), ranked);
+
+        assertThat(results.confirmed().get(0).differences()).isEmpty();
+        assertThat(results.confirmed().get(0).missingDetails()).isEmpty();
+        assertThat(results.possible().get(0).missingDetails()).containsExactly("Display: 27\" 5K", "Year: 2017");
+        assertThat(results.possible().get(0).differences()).isEmpty();
+    }
+
     static SearchRequirements demoQuery() {
         return new SearchRequirements(List.of(req("Model", "iMac"), req("Display", "27\" 5K"), req("Year", "2017"),
                 req("Condition", "working")), List.of(), "Computers", List.of("imac"), new BigDecimal("600"), "8001",

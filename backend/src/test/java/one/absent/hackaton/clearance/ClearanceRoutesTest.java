@@ -34,7 +34,8 @@ class ClearanceRoutesTest {
         assertThat(ClearanceService.unitPrice(null, "Unknown", Condition.DEFECTIVE)).isEqualByComparingTo("10");
         assertThat(ClearanceService.unitPrice(new BigDecimal("120"), "Monitors", Condition.LIKE_NEW))
                 .isEqualByComparingTo("120");
+        // a comparable median is already condition-adjusted by the estimator
         assertThat(ClearanceService.unitPrice(new BigDecimal("2"), "Monitors", Condition.DEFECTIVE))
-                .isEqualByComparingTo("1");
+                .isEqualByComparingTo("2");
     }
 }
