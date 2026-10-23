@@ -1,5 +1,70 @@
 # hackaton
 
+Zentral Hack 2026, challenge "Bring your own challenge" (Suva).
+
+## The project
+
+_To fill in at the hackathon._
+
+| | |
+|---|---|
+| Problem | _what hurts today, for whom_ |
+| Target group | _who uses it_ |
+| Solution | _one or two sentences_ |
+| Business model | _how it earns money or sustains itself_ |
+| Demo | https://hackaton-staging.absent.one |
+
+### Progress during the hackathon
+
+Everything after the tag `hackathon-start` was built during the event: `git diff hackathon-start..main`.
+
+- _feature, PR link_
+
+### User feedback
+
+- _who tried it, what they said, what we changed_
+
+### Next steps
+
+- _..._
+
+## Prepared before the hackathon
+
+No product code existed at the start (tag `hackathon-start`). Prepared in advance:
+
+- Project template: Spring Boot + Angular monorepo, Postgres, Docker images, CI, staging and prod deploys.
+- Setup: Problem Details error handling, generated API client, Tailwind, Lombok, Prettier check.
+- Agent workflow: rules for coding agents (`AGENTS.md`, `docs/LEAN-CODE.md`), Linear issue flow (`docs/LINEAR.md`).
+- Product idea: `docs/PRODUCT-PLAN.md`.
+
+## AI and open source
+
+AI tools used during development:
+
+| Tool | Used for |
+|---|---|
+| Claude Code (Anthropic) | writing code, tests and docs, reviewing pull requests |
+| Codex (OpenAI) | writing code, reviewing pull requests |
+| Cyrus (self-hosted) | runs Claude Code on Linear issues and opens pull requests |
+
+Every AI change went through a pull request that a team member reviewed and merged.
+AI features in the product itself: _model / API, what data is sent to it_.
+
+Open-source components:
+
+| Component | License |
+|---|---|
+| Spring Boot, Spring Data JPA, springdoc-openapi, Flyway | Apache-2.0 |
+| Lombok | MIT |
+| PostgreSQL | PostgreSQL License |
+| H2 (tests only) | MPL-2.0 / EPL-1.0 |
+| Angular, Tailwind CSS, ng-openapi-gen, Vitest, ESLint, Prettier | MIT |
+| nginx | BSD-2-Clause |
+| Cyrus | MIT |
+| Ponytail (basis of `docs/LEAN-CODE.md`) | MIT |
+
+## Technical setup
+
 Monorepo with two images: a **Spring Boot** API (`backend/`) and an **Angular** app (`frontend/`).
 
 | | Staging | Prod |
