@@ -73,6 +73,8 @@ Then *Actions → deploy → Run workflow* with `sync` = `staging` (or `prod`), 
 
 Values must not contain `'` or line breaks. Use the same name with both prefixes when staging and prod need it.
 
+Don't change `*_POSTGRES_PASSWORD` once the environment runs: Postgres only reads it when the database is first created, so the backend would lose its connection. Rotating it needs an `ALTER USER` in the database first.
+
 ## Adding an AI feature
 
 Copy `backend/.../ai/AiController.java`: it builds the Anthropic client from `ANTHROPIC_API_KEY`, calls Claude (`LLM_MODEL`, default `claude-opus-5-5`) and maps errors to HTTP codes. Keep keys and prompts on the server; the frontend only calls `/api/ai/...`.
