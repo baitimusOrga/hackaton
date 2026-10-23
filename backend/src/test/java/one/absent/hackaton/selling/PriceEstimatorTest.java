@@ -26,7 +26,7 @@ class PriceEstimatorTest {
     private static final List<DraftFact> DELL = facts("Dell", "U2719D", FactSource.LABEL);
 
     private static List<DraftFact> facts(String brand, String model, FactSource source) {
-        return List.of(new DraftFact("Brand", brand, source), new DraftFact("Model", model, source));
+        return List.of(new DraftFact("Brand", brand, source, null), new DraftFact("Model", model, source, null));
     }
 
     private static Listing listing(long id, String category, String title, int price, Condition condition,
