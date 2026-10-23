@@ -12,20 +12,49 @@ import { StrictHttpResponse } from '../strict-http-response';
 
 import { completeFacts } from '../fn/selling/complete-facts';
 import { CompleteFacts$Params } from '../fn/selling/complete-facts';
-import { createDraft } from '../fn/selling/create-draft';
-import { CreateDraft$Params } from '../fn/selling/create-draft';
+import { DraftEvent } from '../models/draft-event';
 import { DraftFact } from '../models/draft-fact';
 import { getPhoto } from '../fn/selling/get-photo';
 import { GetPhoto$Params } from '../fn/selling/get-photo';
 import { ListingDetail } from '../models/listing-detail';
-import { ListingDraft } from '../models/listing-draft';
 import { publish } from '../fn/selling/publish';
 import { Publish$Params } from '../fn/selling/publish';
+import { streamDraft } from '../fn/selling/stream-draft';
+import { StreamDraft$Params } from '../fn/selling/stream-draft';
+import { uploadPhotos } from '../fn/selling/upload-photos';
+import { UploadPhotos$Params } from '../fn/selling/upload-photos';
 
 @Injectable({ providedIn: 'root' })
 export class SellingService extends BaseService {
   constructor(config: ApiConfiguration, http: HttpClient) {
     super(config, http);
+  }
+
+  /** Path part for operation `uploadPhotos()` */
+  static readonly UploadPhotosPath = '/api/photos';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `uploadPhotos()` instead.
+   *
+   * This method sends `multipart/form-data` and handles request body of type `multipart/form-data`.
+   */
+  uploadPhotos$Response(params?: UploadPhotos$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<number>>> {
+    const obs = uploadPhotos(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `uploadPhotos$Response()` instead.
+   *
+   * This method sends `multipart/form-data` and handles request body of type `multipart/form-data`.
+   */
+  uploadPhotos(params?: UploadPhotos$Params, context?: HttpContext): Observable<Array<number>> {
+    const resp = this.uploadPhotos$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<number>>): Array<number> => r.body)
+    );
   }
 
   /** Path part for operation `publish()` */
@@ -55,33 +84,6 @@ export class SellingService extends BaseService {
     );
   }
 
-  /** Path part for operation `createDraft()` */
-  static readonly CreateDraftPath = '/api/listing-drafts';
-
-  /**
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `createDraft()` instead.
-   *
-   * This method sends `multipart/form-data` and handles request body of type `multipart/form-data`.
-   */
-  createDraft$Response(params?: CreateDraft$Params, context?: HttpContext): Observable<StrictHttpResponse<ListingDraft>> {
-    const obs = createDraft(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `createDraft$Response()` instead.
-   *
-   * This method sends `multipart/form-data` and handles request body of type `multipart/form-data`.
-   */
-  createDraft(params?: CreateDraft$Params, context?: HttpContext): Observable<ListingDraft> {
-    const resp = this.createDraft$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<ListingDraft>): ListingDraft => r.body)
-    );
-  }
-
   /** Path part for operation `completeFacts()` */
   static readonly CompleteFactsPath = '/api/listing-drafts/web-facts';
 
@@ -106,6 +108,33 @@ export class SellingService extends BaseService {
     const resp = this.completeFacts$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Array<DraftFact>>): Array<DraftFact> => r.body)
+    );
+  }
+
+  /** Path part for operation `streamDraft()` */
+  static readonly StreamDraftPath = '/api/listing-drafts/stream';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `streamDraft()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  streamDraft$Response(params: StreamDraft$Params, context?: HttpContext): Observable<StrictHttpResponse<DraftEvent>> {
+    const obs = streamDraft(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `streamDraft$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  streamDraft(params: StreamDraft$Params, context?: HttpContext): Observable<DraftEvent> {
+    const resp = this.streamDraft$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<DraftEvent>): DraftEvent => r.body)
     );
   }
 

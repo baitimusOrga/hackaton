@@ -7,18 +7,14 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { ListingDraft } from '../../models/listing-draft';
+import { CategoryInfo } from '../../models/category-info';
 
-export interface CreateDraft$Params {
-      body?: {
-'photos': Array<Blob>;
-}
+export interface Categories$Params {
 }
 
-export function createDraft(http: HttpClient, rootUrl: string, params?: CreateDraft$Params, context?: HttpContext): Observable<StrictHttpResponse<ListingDraft>> {
-  const rb = new RequestBuilder(rootUrl, createDraft.PATH, 'post');
+export function categories(http: HttpClient, rootUrl: string, params?: Categories$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<CategoryInfo>>> {
+  const rb = new RequestBuilder(rootUrl, categories.PATH, 'get');
   if (params) {
-    rb.body(params.body, 'multipart/form-data');
   }
 
   return http.request(
@@ -26,9 +22,9 @@ export function createDraft(http: HttpClient, rootUrl: string, params?: CreateDr
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<ListingDraft>;
+      return r as StrictHttpResponse<Array<CategoryInfo>>;
     })
   );
 }
 
-createDraft.PATH = '/api/listing-drafts';
+categories.PATH = '/api/categories';
