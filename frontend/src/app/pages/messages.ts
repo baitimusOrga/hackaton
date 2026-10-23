@@ -7,6 +7,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   selector: 'app-messages',
   template: `<h1 class="title">Nachrichten</h1>
     <p class="zw-muted">Hier siehst du bald deine Unterhaltungen mit Käufern und Verkäufern.</p>`,
-  styles: '.title { margin: 0 0 var(--space-4); font-size: 32px; line-height: 36px; font-weight: 700; }',
+  styles:
+    '.title { margin: 0 0 var(--space-4); font-size: 32px; line-height: 36px; font-weight: 700; }',
 })
 export class Messages {}

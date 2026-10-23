@@ -18,6 +18,8 @@ export class App {
   constructor() {
     void inject(Auth)
       .restore()
-      .catch(() => this.errors.show('Deine Anmeldung lässt sich gerade nicht prüfen. Versuch es nochmals.'));
+      .catch(() =>
+        this.errors.show('Deine Anmeldung lässt sich gerade nicht prüfen. Versuch es nochmals.'),
+      );
   }
 }
