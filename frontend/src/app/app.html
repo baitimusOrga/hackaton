@@ -1,3 +1,16 @@
+<header class="site-header">
+  <a routerLink="/" class="brand">hackaton</a>
+  <nav aria-label="Main navigation">
+    <a routerLink="/">Discover</a>
+    @if (auth.user(); as user) {
+      <a routerLink="/account">{{ user.displayName }}</a>
+      <button type="button" (click)="logout()" [disabled]="busy()">Sign out</button>
+    } @else {
+      <a routerLink="/login">Sign in</a>
+      <a routerLink="/register">Create account</a>
+    }
+  </nav>
+</header>
 <main>
   @if (errors.message(); as message) {
     <div class="error-banner" role="alert">

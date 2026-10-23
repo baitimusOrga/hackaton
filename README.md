@@ -29,7 +29,7 @@ API:
 | `GET /actuator/health` | health check |
 | `/api/docs` | OpenAPI UI |
 
-There is no login: every endpoint is public. New controllers go under `/api/...` so they reach the backend.
+Accounts use Spring Security and database-backed sessions. Register at `/register`, sign in at `/login`, and manage your private profile at `/account`. Public listing reads and health/info remain accessible; other endpoints require authentication. New controllers go under `/api/...` so they reach the backend. See [authentication setup and API](docs/AUTH.md) for CSRF, password recovery and SMTP configuration.
 
 ## Run it locally
 

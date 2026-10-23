@@ -2,6 +2,22 @@
 # app.env -> APP_ENV, spring.datasource.url -> SPRING_DATASOURCE_URL, ...
 # Defaults below are for local development against docker-compose.yml.
 spring:
+  session:
+    timeout: 30m
+    jdbc:
+      initialize-schema: never
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp:
+        auth: ${SMTP_AUTH:false}
+        starttls.required: ${SMTP_STARTTLS:false}
+        connectiontimeout: 3000
+        timeout: 3000
+        writetimeout: 3000
   application:
     name: hackaton
   config:
@@ -27,6 +43,9 @@ server:
   forward-headers-strategy: framework   # behind Traefik + Cloudflare
 
 management:
+  health:
+    mail:
+      enabled: false # SMTP delivery is optional for liveness; recovery failures are logged.
   endpoints:
     web:
       exposure:
@@ -51,6 +70,9 @@ ai:
   base-url: https://api.anthropic.com
 
 app:
+  auth:
+    public-url: ${AUTH_PUBLIC_URL:http://localhost:4200}
+    mail-from: ${AUTH_MAIL_FROM:no-reply@hackaton.local}
   env: ${APP_ENV:dev}
   release: ${APP_RELEASE:dev}
   revision: ${APP_REVISION:}

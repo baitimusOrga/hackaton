@@ -26,3 +26,40 @@ body {
 .muted {
   color: var(--muted);
 }
+
+a { color: #145b54; text-underline-offset: 0.2em; }
+button, input, select { font: inherit; }
+button {
+  border: 1px solid #145b54;
+  border-radius: 0.45rem;
+  padding: 0.65rem 1rem;
+  background: #145b54;
+  color: white;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.55; cursor: default; }
+:focus-visible { outline: 3px solid #ca8a04; outline-offset: 3px; }
+.site-header {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1rem; padding: 1rem max(1rem, calc((100vw - 960px) / 2));
+  border-bottom: 1px solid #dbe3e7; background: white; flex-wrap: wrap;
+}
+.brand { font-weight: 750; font-size: 1.3rem; text-decoration: none; }
+.site-header nav, .account-links { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.account-card {
+  max-width: 32rem; margin: 2rem auto; padding: 1.75rem;
+  border: 1px solid #dbe3e7; border-radius: 0.8rem; background: white;
+}
+.account-card h1 { margin-top: 0; }
+.account-card form { display: grid; gap: 0.55rem; }
+.account-card label { font-weight: 600; margin-top: 0.5rem; }
+.account-card input, .account-card select {
+  width: 100%; min-width: 0; padding: 0.7rem;
+  border: 1px solid #88959f; border-radius: 0.4rem; background: white; color: var(--text);
+}
+.account-card form button { margin-top: 1rem; }
+.account-links { margin-top: 1.5rem; font-size: 0.9rem; }
+.error { color: #9b1c1c; background: #fff1f1; padding: 0.8rem; border-radius: 0.4rem; }
+.field-error { color: #9b1c1c; font-size: 0.9rem; }
+.field-error:empty { display: none; }
+.notice { color: #145b54; background: #eaf6f0; padding: 0.8rem; border-radius: 0.4rem; }
