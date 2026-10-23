@@ -32,7 +32,7 @@ In an IDE, add `local` to the active Spring profiles. The fixture is disabled fo
 
 ## Configuration
 
-Set environment variables in the backend process or IDE run configuration; Spring Boot does not automatically source `.env` files.
+Set environment variables in the backend process or IDE run configuration, or use the gitignored `backend/.env` imported by the local backend configuration. Never commit SMTP credentials.
 
 | Variable | Local default | Use |
 |---|---|---|
