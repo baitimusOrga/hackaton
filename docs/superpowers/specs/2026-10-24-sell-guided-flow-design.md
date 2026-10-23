@@ -70,7 +70,8 @@ Household → Brand, Model, Dimensions
 
 All 11 categories get 3–6 facts; categories like Household and Office equipment stay short. The
 union of all names is the allowed fact-name list in the prompt. The endpoint returns the catalog
-through the generated client; `frontend/src/app/categories.ts` is deleted. Listing facts are stored
+through the generated client; the sell page reads categories from it. Home and the business pages
+keep `frontend/src/app/categories.ts` for now (moving them is a separate change). Listing facts are stored
 in the free `attributes` map, so no migration is needed.
 
 The catalog decides *which* facts matter (deterministic). The AI decides *how* to ask for a missing
