@@ -1,0 +1,237 @@
+<form class="find__query" role="search" (ngSubmit)="find()">
+  <label for="find-text" class="zw-sr-only">Was suchst du?</label>
+  <textarea
+    id="find-text"
+    name="text"
+    class="zw-input"
+    [(ngModel)]="text"
+    (keydown.control.enter)="find()"
+    (keydown.meta.enter)="find()"
+    required
+    maxlength="500"
+    rows="2"
+    placeholder="z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich"
+    aria-describedby="find-tip"
+  ></textarea>
+  <button appButton type="submit" [disabled]="loading() || !text().trim()">
+    <app-icon name="search" />
+    <span>{{ loading() ? 'Suche läuft…' : 'Suchen' }}</span>
+  </button>
+</form>
+<p id="find-tip" class="zw-help">Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter</p>
+
+<p role="status" aria-live="polite" class="zw-help">{{ progress() }}</p>
+
+@if (searched()) {
+  <div class="find__strip">
+    <span class="zw-help">Aus deinem Satz übernommen:</span>
+    @for (row of rows; track row.key) {
+      @for (r of list(row.key); track r.attribute + r.value) {
+        <button
+          type="button"
+          class="zw-chip"
+          [attr.aria-pressed]="row.key === 'mustHave'"
+          (click)="remove(r, row.key)"
+        >
+          @if (row.key === 'mustHave') {
+            <app-icon name="check" [size]="16" />
+          }
+          <span>{{ label(r) }}<span class="zw-sr-only"> entfernen</span></span>
+        </button>
+      }
+    }
+    @if (budget() !== null) {
+      <button type="button" class="zw-chip" aria-pressed="true" (click)="budget.set(null)">
+        <app-icon name="check" [size]="16" />
+        <span>{{ budgetLabel() }}<span class="zw-sr-only"> entfernen</span></span>
+      </button>
+    }
+    @if (postcode().trim()) {
+      <button type="button" class="zw-chip" aria-pressed="true" (click)="clearRegion()">
+        <app-icon name="check" [size]="16" />
+        <span>{{ regionLabel() }}<span class="zw-sr-only"> entfernen</span></span>
+      </button>
+    }
+    <span class="zw-help">Antippen zum Entfernen, links alles im Detail.</span>
+    <!-- TODO: "Suche speichern" needs a saved-search/alert API (immediate, daily, weekly; dedup of relists). -->
+    <button appButton variant="primary" type="button" disabled>Suche speichern</button>
+  </div>
+
+  <div class="find__cols">
+    <form class="find__filters" aria-label="Filter" (ngSubmit)="showMatches()">
+      <div class="find__f">
+        <span class="zw-label">Anforderungen</span>
+        @for (row of rows; track row.key) {
+          <span class="zw-help">{{ row.label }}</span>
+          <ul class="find__reqs" [attr.data-testid]="row.key">
+            @for (r of list(row.key); track r.attribute + r.value) {
+              <li class="zw-row">
+                <span>{{ label(r) }}</span>
+                <button
+                  appButton
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  (click)="move(r, row.key)"
+                  [attr.aria-label]="r.attribute + ' zu ' + row.other + ' verschieben'"
+                >
+                  → {{ row.other }}
+                </button>
+              </li>
+            } @empty {
+              <li class="zw-help">Keine.</li>
+            }
+          </ul>
+        }
+      </div>
+      <div class="find__f">
+        <label class="zw-label" for="find-cat">Kategorie</label>
+        <input id="find-cat" name="category" class="zw-input" [(ngModel)]="category" />
+      </div>
+      <!-- TODO: brand filter; the backend has no brand field in SearchRequirements. -->
+      <fieldset class="find__f" disabled>
+        <label class="zw-label" for="find-brand">Marke</label>
+        <select id="find-brand" class="zw-input">
+          <option>Alle Marken</option>
+        </select>
+      </fieldset>
+      <div class="find__f">
+        <label class="zw-label" for="find-keywords">Modell, Stichwort</label>
+        <input id="find-keywords" name="keywords" class="zw-input" [(ngModel)]="keywords" />
+        <span class="zw-help">Mehrere mit Komma trennen</span>
+      </div>
+      <fieldset class="find__f">
+        <legend class="zw-label">Preis</legend>
+        <div class="find__pair">
+          <!-- TODO: minimum price; the backend only knows a maximum budget. -->
+          <input
+            class="zw-input zw-input--price"
+            type="number"
+            placeholder="von"
+            aria-label="Preis von"
+            disabled
+          />
+          <input
+            class="zw-input zw-input--price"
+            type="number"
+            min="0"
+            name="budget"
+            placeholder="bis"
+            aria-label="Preis bis"
+            [(ngModel)]="budget"
+          />
+        </div>
+        <!-- TODO: total price incl. shipping; listings have no shipping cost yet. -->
+        <label class="find__ck"><input type="checkbox" disabled />Gesamtpreis inkl. Versand</label>
+      </fieldset>
+      <fieldset class="find__f">
+        <legend class="zw-label">Region</legend>
+        <div class="find__pair">
+          <input
+            class="zw-input"
+            name="postcode"
+            inputmode="numeric"
+            maxlength="4"
+            aria-label="PLZ"
+            [(ngModel)]="postcode"
+          />
+          <select class="zw-input" name="radius" aria-label="Umkreis" [(ngModel)]="radius">
+            <option [ngValue]="null">Ganze Schweiz</option>
+            @for (km of radii; track km) {
+              <option [ngValue]="km">{{ km }} km</option>
+            }
+          </select>
+        </div>
+        <!-- TODO: pickup / shipping filter; listings have no delivery options yet. -->
+        <label class="find__ck"><input type="checkbox" disabled />Abholung</label>
+        <label class="find__ck"><input type="checkbox" disabled />Versand</label>
+      </fieldset>
+      <!-- TODO: condition, sale mode and "Nur" filters are not in SearchRequirements yet. -->
+      <fieldset class="find__f" disabled>
+        <legend class="zw-label">Zustand</legend>
+        @for (c of conditionOptions; track c) {
+          <label class="find__ck"><input type="checkbox" />{{ c }}</label>
+        }
+      </fieldset>
+      <fieldset class="find__f" disabled>
+        <legend class="zw-label">Verkaufsart</legend>
+        @for (m of modeOptions; track m) {
+          <label class="find__ck"><input type="checkbox" />{{ m }}</label>
+        }
+      </fieldset>
+      <fieldset class="find__f">
+        <legend class="zw-label">Nur</legend>
+        @for (o of onlyOptions; track o) {
+          <label class="find__ck"><input type="checkbox" disabled />{{ o }}</label>
+        }
+        <label class="find__ck">
+          <input type="checkbox" name="acceptUnknown" [(ngModel)]="acceptUnknown" />
+          Auch Inserate mit fehlenden Angaben
+        </label>
+      </fieldset>
+      <button appButton type="submit" [disabled]="matching()">
+        {{ matching() ? 'Suche läuft…' : results() ? 'Treffer aktualisieren' : 'Treffer zeigen' }}
+      </button>
+      <button appButton variant="ghost" size="sm" type="button" (click)="reset()">
+        Filter zurücksetzen
+      </button>
+    </form>
+
+    <div class="find__results">
+      @if (results(); as res) {
+        <div class="find__bar">
+          <span>{{ total(res) }} Inserate</span>
+          <span class="zw-help">{{ res.compared }} verglichen</span>
+          <!-- TODO: sort order; the backend returns a fixed best-fit order. -->
+          <label for="find-sort">Sortieren</label>
+          <select id="find-sort" class="zw-input" disabled>
+            <option>Beste Passung</option>
+          </select>
+        </div>
+        <!-- TODO: "Letzter Scan" line; the backend does not expose when listings were last scanned. -->
+
+        @if (!total(res)) {
+          <p>Noch nichts Passendes.</p>
+        } @else {
+          @for (group of groups; track group.key) {
+            <section class="find__grp" [attr.aria-labelledby]="'find-' + group.key">
+              <h2 [id]="'find-' + group.key">
+                {{ group.title }} <span>{{ res[group.key].length }} · {{ group.note }}</span>
+              </h2>
+              @if (res[group.key].length) {
+                <div class="zw-grid">
+                  @for (m of res[group.key]; track m.listing?.id) {
+                    <div class="find__item">
+                      <!-- TODO: sale mode, current bid ("Gebot, nicht Endpreis") and total cost incl. shipping are not in ListingSummary yet; all cards show as Festpreis. -->
+                      <app-listing-card
+                        [link]="['/listings', m.listing?.id]"
+                        [title]="m.listing?.title ?? ''"
+                        [price]="m.listing?.priceChf ?? 0"
+                        [image]="m.listing?.imageUrl ?? ''"
+                        [meta]="meta(m)"
+                      />
+                      <p class="find__why" [class.find__why--ok]="group.key === 'confirmed'">
+                        {{ why(m, group.key) }}
+                      </p>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="zw-muted">{{ group.empty }}</p>
+              }
+            </section>
+          }
+        }
+
+        <p class="zw-help">
+          Nichts dabei?
+          <!-- TODO: "Gesuch aufgeben" needs a wanted-listing API; the buyer's budget must stay private. -->
+          <button appButton variant="ghost" size="sm" type="button" disabled>
+            Gesuch aufgeben
+          </button>
+          Verkäufer sehen, dass jemand sucht. Dein Budget bleibt privat.
+        </p>
+      }
+    </div>
+  </div>
+}
