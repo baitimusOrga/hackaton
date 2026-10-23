@@ -75,6 +75,16 @@ Reset the local database: `docker compose down -v`.
 
 Database change: new file `backend/src/main/resources/db/migration/V<next>__<what>.sql`, never edit an old one.
 
+## Planning with Linear
+
+Work is tracked in Linear (team `HAC`, Hackaton-zentralhack). The 4 people work as 2 pairs, and each pair owns whole features, from database to screen.
+
+- **Labels**: Area (Backend, Frontend, Infra/CI, Docs, Shared), Lane (`Pair-A`, `Pair-B`), Size (S, M, L), `Blocked`, `API Contract`.
+- **A feature** is a parent issue with one Backend and one Frontend sub-issue, both carrying the same Pair label. The API contract (endpoint, DTOs, errors) is written in the parent.
+- **Templates** for issues, features and documents are in [`docs/linear-templates/`](docs/linear-templates/) and as `Template: ...` documents in Linear.
+- **Flyway versions**: Pair-A uses `V1xx`, Pair-B `V2xx`, Shared `V0xx`, so migrations don't collide.
+- **Agents**: the `linear-split-work` skill (`.claude/skills/linear-split-work/`) reads the board, assigns features to the pairs and, after confirmation, starts a backend and a frontend agent per pair. Anything cross-cutting (layout, error banner, base config) goes through a `Shared` issue first.
+
 ## Secrets and settings
 
 Staging and prod get their environment from this repo's *Settings → Secrets and variables → Actions*. Every `STAGING_<NAME>` / `PROD_<NAME>` secret or variable becomes `<NAME>` in that host's `.env`:
