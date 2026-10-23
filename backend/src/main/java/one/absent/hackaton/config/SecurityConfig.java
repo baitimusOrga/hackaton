@@ -13,11 +13,9 @@ import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.method.support.HandlerMethodArgumentResolver;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class SecurityConfig implements WebMvcConfigurer {
+public class SecurityConfig {
     @Bean
     JwtDecoder jwtDecoder(@Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}") String jwks,
                           @Value("${app.auth.issuer}") String issuer) {
@@ -36,9 +34,7 @@ public class SecurityConfig implements WebMvcConfigurer {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .requestCache(cache -> cache.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
-                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/listing-drafts", "/api/listings").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/listings").authenticated()
                 .anyRequest().permitAll())
             .exceptionHandling(errors -> errors.authenticationEntryPoint((req, res, ex) -> unauthorized(res)))
             .oauth2ResourceServer(server -> server.jwt(jwt -> {})
@@ -51,10 +47,5 @@ public class SecurityConfig implements WebMvcConfigurer {
         response.setHeader("WWW-Authenticate", "Bearer");
         response.setContentType("application/problem+json");
         response.getWriter().write("{\"status\":401,\"detail\":\"Please log in.\"}");
-    }
-
-    @Override
-    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
-        resolvers.add(new CurrentUserArgumentResolver());
     }
 }

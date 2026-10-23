@@ -21,7 +21,7 @@ pnpm dev
 | `DATABASE_URL` | `postgres://hackaton:hackaton@localhost:5432/hackaton` |
 | `PORT` | `3000` |
 
-The service creates schema `auth` and applies Better Auth's own migrations before listening. `pnpm migrate` applies the same migrations explicitly. An advisory lock serializes concurrent startup migrations. Flyway continues to manage only the backend's public schema.
+The service creates schema `auth` and applies Better Auth's own migrations before listening. An advisory lock serializes concurrent startup migrations. Flyway continues to manage only the backend's public schema.
 
 Start the backend and Angular as described in the README. Angular proxies `/api/auth` to Node before the broader `/api` rule.
 
@@ -52,7 +52,7 @@ A backend 401 clears local auth state and redirects to login without the global 
 
 `AUTH_JWKS_URI` defaults to `http://localhost:3000/api/auth/jwks`; `AUTH_ISSUER` defaults to `http://localhost:4200`. Set the issuer to the exact public auth origin in staging and in custom local setups. The audience is `hackaton-api`, and the accepted signing algorithm is pinned to RS256. Signature, issuer, audience, subject and token times are checked.
 
-API authentication is stateless. Reads stay public; listing/draft creation requires a verified bearer token. Missing/invalid tokens return 401 Problem Details with “Please log in.” Controllers receive a `CurrentUser` record resolved from the verified JWT. No auth service is needed to run normal backend tests; JWKS is fetched lazily when a real bearer token is received.
+API authentication is stateless. Reads stay public; publishing a listing requires a verified bearer token. Missing/invalid tokens return 401 Problem Details with “Please log in.” Controllers take the verified token as `@AuthenticationPrincipal Jwt` (`sub`, `name`, `email` claims). No auth service is needed to run normal backend tests; JWKS is fetched lazily when a real bearer token is received.
 
 ## Staging rollout (HAC-34)
 
