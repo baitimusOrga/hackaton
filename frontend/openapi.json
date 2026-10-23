@@ -55,6 +55,32 @@
             }
           }
         }
+      },
+      "post" : {
+        "tags" : [ "Selling" ],
+        "operationId" : "publish",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateListingRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ListingDetail"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/listings/{id}" : {
@@ -105,36 +131,58 @@
   },
   "components" : {
     "schemas" : {
-      "ListingSummary" : {
+      "CreateListingRequest" : {
         "type" : "object",
         "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "title" : {
-            "type" : "string"
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
           },
-          "priceChf" : {
-            "type" : "number"
+          "description" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          },
+          "category" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
           },
           "condition" : {
             "type" : "string",
             "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
           },
-          "category" : {
-            "type" : "string"
+          "priceChf" : {
+            "type" : "number",
+            "exclusiveMinimum" : 0
           },
           "postcode" : {
-            "type" : "string"
+            "type" : "string",
+            "pattern" : "[0-9]{4}"
           },
           "locality" : {
-            "type" : "string"
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
           },
-          "imageUrl" : {
-            "type" : "string"
+          "attributes" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "photoIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "maxItems" : 5,
+            "minItems" : 0
           }
-        }
+        },
+        "required" : [ "attributes", "category", "condition", "description", "locality", "photoIds", "postcode", "priceChf", "title" ]
       },
       "ListingDetail" : {
         "type" : "object",
@@ -177,6 +225,40 @@
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
+          },
+          "sellerName" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ListingSummary" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "priceChf" : {
+            "type" : "number"
+          },
+          "condition" : {
+            "type" : "string",
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "postcode" : {
+            "type" : "string"
+          },
+          "locality" : {
+            "type" : "string"
+          },
+          "imageUrl" : {
+            "type" : "string"
           }
         }
       },

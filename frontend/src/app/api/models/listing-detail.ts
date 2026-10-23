@@ -14,5 +14,6 @@ export interface ListingDetail {
   locality?: string;
   postcode?: string;
   priceChf?: number;
+  sellerName?: (string | null);
   title?: string;
 }
