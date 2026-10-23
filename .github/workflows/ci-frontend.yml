@@ -1,0 +1,35 @@
+# Frontend checks for pull requests that touch the frontend, on the homelab runners. Merge only
+# when green; see ci-backend.yml. An API change reaches this workflow through frontend/openapi.json.
+name: ci-frontend
+
+on:
+  pull_request:
+    paths:
+      - frontend/**
+      - .github/workflows/ci-frontend.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ci-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: [self-hosted, homelab]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      # No pnpm setup and no cache: the runner image has pnpm (it switches to packageManager's
+      # version) and keeps the pnpm store in a volume (baitimusOrga/platform runners/).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: pnpm install --frozen-lockfile
+      - name: API client matches openapi.json
+        run: pnpm run api && test -z "$(git status --porcelain -- src/app/api)" || { echo "::error::src/app/api is stale. Run pnpm run api and commit it."; exit 1; }
+      - run: pnpm run format:check
+      - run: pnpm exec ng lint
+      - run: pnpm exec ng test --watch=false
+      - run: pnpm exec ng build
