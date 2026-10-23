@@ -7,6 +7,62 @@
     "url" : "/"
   } ],
   "paths" : {
+    "/api/searches" : {
+      "post" : {
+        "tags" : [ "Search" ],
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SearchRequirements"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/searches/matches" : {
+      "post" : {
+        "tags" : [ "Search" ],
+        "operationId" : "matches",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SearchRequirements"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SearchResults"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/listings" : {
       "get" : {
         "tags" : [ "Listings" ],
@@ -131,6 +187,139 @@
   },
   "components" : {
     "schemas" : {
+      "SearchRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "text" ]
+      },
+      "Requirement" : {
+        "type" : "object",
+        "properties" : {
+          "attribute" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "value" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "attribute", "value" ]
+      },
+      "SearchRequirements" : {
+        "type" : "object",
+        "properties" : {
+          "mustHave" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Requirement"
+            }
+          },
+          "niceToHave" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Requirement"
+            }
+          },
+          "maxBudgetChf" : {
+            "type" : "number"
+          },
+          "postcode" : {
+            "type" : "string"
+          },
+          "maxDistanceKm" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "acceptUnknown" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "mustHave", "niceToHave" ]
+      },
+      "ListingSummary" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "priceChf" : {
+            "type" : "number"
+          },
+          "condition" : {
+            "type" : "string",
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "postcode" : {
+            "type" : "string"
+          },
+          "locality" : {
+            "type" : "string"
+          },
+          "imageUrl" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SearchMatch" : {
+        "type" : "object",
+        "properties" : {
+          "listing" : {
+            "$ref" : "#/components/schemas/ListingSummary"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "missingDetails" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "differences" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "SearchResults" : {
+        "type" : "object",
+        "properties" : {
+          "confirmed" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SearchMatch"
+            }
+          },
+          "possible" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SearchMatch"
+            }
+          },
+          "alternatives" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SearchMatch"
+            }
+          }
+        }
+      },
       "CreateListingRequest" : {
         "type" : "object",
         "properties" : {
@@ -228,37 +417,6 @@
           },
           "sellerName" : {
             "type" : [ "string", "null" ]
-          }
-        }
-      },
-      "ListingSummary" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "title" : {
-            "type" : "string"
-          },
-          "priceChf" : {
-            "type" : "number"
-          },
-          "condition" : {
-            "type" : "string",
-            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
-          },
-          "category" : {
-            "type" : "string"
-          },
-          "postcode" : {
-            "type" : "string"
-          },
-          "locality" : {
-            "type" : "string"
-          },
-          "imageUrl" : {
-            "type" : "string"
           }
         }
       },
