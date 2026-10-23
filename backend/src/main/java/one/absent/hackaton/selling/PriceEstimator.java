@@ -28,12 +28,14 @@ import one.absent.hackaton.selling.ListingDraft.PriceEstimate;
 import one.absent.hackaton.selling.ListingDraft.PriceEvidence;
 import one.absent.hackaton.selling.ListingDraft.Similarity;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Price range from comparable listings. Only the same brand and model is real evidence; look-alikes by title are
  * always provisional, and nothing similar means no numbers at all.
  */
 @Component
+@Transactional(readOnly = true) // reads lazy listing attributes outside the web request
 public class PriceEstimator {
     // keep in sync with FACTORS in frontend components/price-panel.ts
     static final Map<Condition, BigDecimal> FACTORS = new EnumMap<>(Map.of(

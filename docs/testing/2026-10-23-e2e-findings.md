@@ -57,3 +57,21 @@ does not work on staging (B1).
 ## Not tested
 
 Real phone photos (HEIC, > 5 MB), register and logout, prod beyond the health check, many parallel users.
+
+## Re-test after the USP round (local stack, real Claude, `usp-integration`)
+
+Fixed and confirmed live: H1–H4, M1–M3, L1, L4, L7. Demo query "working iMac 27 5K from 2017, max 600 CHF
+near Zürich" gives the same three groups in 3 of 3 runs (#1 confirmed, #1001 possible, #1002 alternative with
+"CHF 720 instead of at most CHF 600" and "In Bern"). Type-plate draft: title "Apple iMac 27" Retina 5K 2017",
+no condition, seller-voice text, serial-number warning, price from 5 sales of the same model (HIGH). Web
+lookup adds the 5K resolution with an Apple support link (~10 s). Clearance: 5 inventory lines from pasted
+German text in ~3.5 s, three routes with net amounts, Direct purchase recommended for a 10-day deadline,
+publishing refused before quantities are confirmed (409), then 5 listings on Discover.
+
+| # | Finding | Status |
+|---|---|---|
+| N1 | `PriceEstimator` threw `LazyInitializationException` on Postgres (attributes read outside a transaction); every photo draft returned 500. Tests on H2 didn't catch it. | fixed in the integration branch (`@Transactional(readOnly = true)`) |
+| N2 | Clearance: the AI invents categories outside the 10 allowed ones ("Office equipment" for printers), so those listings can't be found with the category filter. | open — enum in the extraction schema |
+| N3 | Clearance: unit prices fall back to category averages because German names don't match the price evidence (20 Aeron chairs at CHF 120 each; a demo Aeron asks CHF 380). | open — pass brand/model to `PriceEstimator` |
+| N4 | Search: the AI adds noise to `differences` / `missingDetails` ("Keyboard and mouse included, which the buyer did not ask for" on a confirmed match). | open — only code-derived differences, AI text as `reason` only |
+| N5 | Clearance runs the AI call inside a DB transaction (holds a connection for a few seconds). | open, low |
