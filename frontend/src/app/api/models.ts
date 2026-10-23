@@ -5,3 +5,8 @@ export type { CreateListingRequest } from './models/create-listing-request';
 export type { Info } from './models/info';
 export type { ListingDetail } from './models/listing-detail';
 export type { ListingSummary } from './models/listing-summary';
+export type { Requirement } from './models/requirement';
+export type { SearchMatch } from './models/search-match';
+export type { SearchRequest } from './models/search-request';
+export type { SearchRequirements } from './models/search-requirements';
+export type { SearchResults } from './models/search-results';
