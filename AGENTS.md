@@ -15,6 +15,9 @@ Where new code goes and the recipe for a feature end to end:
 [`.claude/skills/hackaton-architecture/SKILL.md`](.claude/skills/hackaton-architecture/SKILL.md)
 (Claude loads it as a skill; other agents read it before building a feature).
 
+**How to write code and spend context:** [`docs/LEAN-CODE.md`](docs/LEAN-CODE.md) — read it before
+every task; it applies to all agents.
+
 The `pom.xml` in the repo root only exists so IntelliJ imports `backend/` as a Maven project;
 build with `backend/mvnw`, not from the root.
 
