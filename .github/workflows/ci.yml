@@ -1,4 +1,5 @@
-# Checks for every pull request, on the homelab runners. Branch rules: merge only when green.
+# Checks for every pull request, on the homelab runners. Merge only when green (convention:
+# the org is on GitHub Free, which has no branch protection for private repos).
 name: ci
 
 on:
