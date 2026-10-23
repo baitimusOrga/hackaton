@@ -33,7 +33,7 @@ class AiClientTest {
     final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
 
     AiClient client(String apiKey) {
-        return new AiClient(builder, JsonMapper.builder().build(), apiKey, "claude-opus-5-5", 1000, "https://ai.test");
+        return new AiClient(builder, JsonMapper.builder().build(), apiKey, "claude-sonnet-5-5", 1000, "https://ai.test");
     }
 
     static String message(String stopReason, String text) {
@@ -49,7 +49,7 @@ class AiClientTest {
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(header("x-api-key", "test-key"))
                 .andExpect(header("anthropic-version", "2026-10-21"))
-                .andExpect(jsonPath("$.model").value("claude-opus-5-5"))
+                .andExpect(jsonPath("$.model").value("claude-sonnet-5-5"))
                 .andExpect(jsonPath("$.system").value("Identify the item."))
                 .andExpect(jsonPath("$.fallbacks").value("default"))
                 .andExpect(jsonPath("$.output_config.format.type").value("json_schema"))
