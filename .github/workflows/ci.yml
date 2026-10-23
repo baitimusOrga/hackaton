@@ -21,11 +21,13 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
           cache: maven
           cache-dependency-path: backend/pom.xml
       - name: mvn verify (compile + tests on H2)
         run: ./mvnw -B -ntp verify
+      - name: OpenAPI spec committed
+        run: test -z "$(git status --porcelain -- ../frontend/openapi.json)" || { echo "::error::frontend/openapi.json is stale. Run ./mvnw verify in backend/ and npm run api in frontend/, then commit both."; exit 1; }
 
   frontend:
     runs-on: [self-hosted, homelab]
@@ -40,6 +42,9 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
+      - name: API client matches openapi.json
+        run: npm run api && test -z "$(git status --porcelain -- src/app/api)" || { echo "::error::src/app/api is stale. Run npm run api and commit it."; exit 1; }
+      - run: npm run format:check
       - run: npx ng lint
       - run: npx ng test --watch=false
       - run: npx ng build

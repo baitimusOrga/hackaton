@@ -4,7 +4,6 @@ set -eu
 esc() { printf '%s' "$1" | sed -e 's/[\\"]/\\&/g'; }
 cat > /tmp/config.json <<JSON
 {
-  "apiUrl": "$(esc "${API_URL:-/api}")",
   "env": "$(esc "${APP_ENV:-dev}")",
   "release": "$(esc "${APP_RELEASE:-dev}")"
 }

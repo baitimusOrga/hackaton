@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+[ "${ALLOW_MAIN_PUSH:-}" = "1" ] && exit 0
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    cat >&2 <<'MSG'
+
+  Push to main refused: changes reach main only through a pull request.
+
+    git switch -c <branch>
+    git push -u origin <branch>
+
+MSG
+    exit 1
+  fi
+done
+exit 0

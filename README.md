@@ -14,7 +14,7 @@ Both run on one hostname each: `/api/*` and `/actuator/*` go to the backend, eve
 
 | Path | Contents |
 |---|---|
-| `backend/` | Java 21, Spring Boot 4.1, Maven. Postgres via Spring Data JPA, Flyway migrations |
+| `backend/` | Java 25, Spring Boot 4.1, Maven. Postgres via Spring Data JPA, Flyway migrations |
 | `frontend/` | Angular 22, served by nginx. Reads `/config.json` at start, so one image runs in every environment |
 | `docker-compose.yml` | Postgres for local development, started by the backend on `spring-boot:run` |
 | `.github/workflows/ci.yml` | every pull request: `mvn verify`, `ng lint`, `ng test`, `ng build` |
@@ -33,7 +33,7 @@ There is no login: every endpoint is public. New controllers go under `/api/...`
 
 ## Run it locally
 
-Needs JDK 21, Node 24.15+ (or 22.22.3+) and Docker.
+Needs JDK 25, Node 24.15+ (or 22.22.3+) and Docker.
 
 ```bash
 cd backend && ./mvnw spring-boot:run       # API on :8080, starts Postgres from docker-compose.yml
@@ -42,12 +42,11 @@ cd frontend && npm ci && npm start         # http://localhost:4200, /api is prox
 
 ### IntelliJ
 
-`.run/` holds shared run configurations: `backend` (Maven `spring-boot:run`), `frontend` (`npm start`) and `dev` (both at once). They contain no machine-specific paths, so each developer sets these once in their own IDE (`.idea/` isn't committed):
+`.run/` holds shared run configurations: `backend` (Maven `spring-boot:run`), `frontend` (`npm start`), `dev` (both at once) and `backend tests` (`mvn verify`). They contain no machine-specific paths, so each developer sets these once in their own IDE (`.idea/` isn't committed):
 
-- **Project SDK**: *File → Project Structure → Project → SDK* = a JDK 21. Without it `backend` fails with "Project JDK is not specified".
+- **Project SDK**: *File → Project Structure → Project → SDK* = a JDK 25. Without it `backend` fails with "Project JDK is not specified".
 - **Node interpreter**: *Settings → Languages & Frameworks → Node.js* = Node 24.15+ (or 22.22.3+). `frontend` uses the project's interpreter.
 - **Docker** must be running: the backend starts Postgres from `docker-compose.yml` on boot.
-- Optional: right-click `backend/pom.xml` → *Add as Maven Project* for Java code completion.
 
 On a cold start the frontend is ready before the backend, so the first `/api` calls log `http proxy error ... ECONNREFUSED`. Reload the page once the backend logs `Started HackatonApplication`.
 
@@ -56,6 +55,15 @@ For a personal variant (other port, env vars), copy a configuration and leave *S
 Tests: `cd backend && ./mvnw verify` (H2, no Docker needed) and `cd frontend && npx ng lint && npx ng test`.
 
 Reset the local database: `docker compose down -v`.
+
+## Additions
+
+- Tailwind CSS 4, Lombok (entities only), Spring DevTools.
+- Errors are Problem Details (`application/problem+json`), shown by a global banner in the frontend.
+- API client generated from OpenAPI: after an API change run `./mvnw verify` (backend) and `npm run api` (frontend), commit both.
+- CI also checks Prettier (`npm run format`) and that spec and client are current.
+- Root `pom.xml` so IntelliJ imports the backend as a Maven project.
+- Agents: [`AGENTS.md`](AGENTS.md). Once per clone: `git config core.hooksPath .githooks` (blocks pushes to `main`).
 
 ## Workflow
 
