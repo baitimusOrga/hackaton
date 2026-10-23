@@ -68,6 +68,19 @@ class AiClientTest {
     }
 
     @Test
+    void usesTheModelGivenPerCall() {
+        server.expect(requestTo("https://ai.test/v1/messages"))
+                .andExpect(jsonPath("$.model").value("claude-haiku-5-5"))
+                .andExpect(jsonPath("$.fallbacks").doesNotExist())
+                .andRespond(withSuccess(message("end_turn", "{\"title\": \"Desk\"}"), MediaType.APPLICATION_JSON));
+
+        Answer answer = client("test-key").ask("claude-haiku-5-5", "s", "t", List.of(), SCHEMA, Answer.class);
+
+        assertThat(answer.title()).isEqualTo("Desk");
+        server.verify();
+    }
+
+    @Test
     void missingKeyIs503WithoutCallingTheApi() {
         assertThatThrownBy(() -> client("").ask("s", "t", List.of(), SCHEMA, Answer.class))
                 .isInstanceOfSatisfying(ResponseStatusException.class,

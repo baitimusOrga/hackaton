@@ -3,8 +3,14 @@
 >
   <a routerLink="/" class="text-xl font-semibold">hackaton</a>
   <nav aria-label="Main navigation" class="flex flex-wrap items-center gap-4">
-    <a routerLink="/">Discover</a>
-    <a routerLink="/sell">Sell</a>
+    <a
+      routerLink="/"
+      routerLinkActive="font-semibold underline"
+      [routerLinkActiveOptions]="{ exact: true }"
+      >Discover</a
+    >
+    <a routerLink="/find" routerLinkActive="font-semibold underline">Find</a>
+    <a routerLink="/sell" routerLinkActive="font-semibold underline">Sell</a>
     @if (auth.user(); as user) {
       <span>{{ user.name }}</span>
       <button

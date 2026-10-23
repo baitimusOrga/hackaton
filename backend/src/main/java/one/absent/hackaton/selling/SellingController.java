@@ -3,6 +3,7 @@ package one.absent.hackaton.selling;
 import java.net.URI;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,20 +22,27 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/listings")
 public class SellingController {
     private final ListingRepository listings;
+    private final PhotoRepository photoRepository;
 
-    public SellingController(ListingRepository listings) {
+    public SellingController(ListingRepository listings, PhotoRepository photoRepository) {
         this.listings = listings;
+        this.photoRepository = photoRepository;
     }
 
     @PostMapping
     @Transactional
     public ResponseEntity<ListingDetail> publish(@Valid @RequestBody CreateListingRequest request,
             @AuthenticationPrincipal Jwt seller) {
-        // HAC-20 owns photo storage/linking. Never silently discard an uploaded photo.
-        if (!request.photoIds().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Photo publishing is not available yet.");
+        var photos = photoRepository.findAllById(request.photoIds());
+        if (photos.size() != new HashSet<>(request.photoIds()).size() || photos.stream().anyMatch(
+                p -> p.getListingId() != null || !p.getSellerId().equals(seller.getSubject()))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Some photos are unknown or already used. Please add them again.");
         }
         var listing = new Listing();
+        if (!request.photoIds().isEmpty()) {
+            listing.setImageUrl("/api/photos/" + request.photoIds().getFirst());
+        }
         listing.setTitle(request.title());
         listing.setDescription(request.description());
         listing.setCategory(request.category());
@@ -47,6 +55,7 @@ public class SellingController {
         listing.setSellerId(seller.getSubject());
         listing.setSellerName(seller.getClaimAsString("name"));
         listings.saveAndFlush(listing);
+        photos.forEach(p -> p.setListingId(listing.getId()));
         return ResponseEntity.created(URI.create("/api/listings/" + listing.getId())).body(listing.detail());
     }
 }

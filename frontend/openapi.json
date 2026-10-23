@@ -139,6 +139,71 @@
         }
       }
     },
+    "/api/listing-drafts" : {
+      "post" : {
+        "tags" : [ "Selling" ],
+        "operationId" : "createDraft",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "photos" : {
+                    "type" : "array",
+                    "items" : {
+                      "type" : "string",
+                      "format" : "binary"
+                    }
+                  }
+                },
+                "required" : [ "photos" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ListingDraft"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/photos/{id}" : {
+      "get" : {
+        "tags" : [ "Selling" ],
+        "operationId" : "getPhoto",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/listings/{id}" : {
       "get" : {
         "tags" : [ "Listings" ],
@@ -227,6 +292,15 @@
               "$ref" : "#/components/schemas/Requirement"
             }
           },
+          "category" : {
+            "type" : [ "string", "null" ]
+          },
+          "keywords" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
           "maxBudgetChf" : {
             "type" : "number"
           },
@@ -241,7 +315,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "mustHave", "niceToHave" ]
+        "required" : [ "keywords", "mustHave", "niceToHave" ]
       },
       "ListingSummary" : {
         "type" : "object",
@@ -417,6 +491,106 @@
           },
           "sellerName" : {
             "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "DraftFact" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "LABEL", "SELLER", "SUGGESTION" ]
+          }
+        }
+      },
+      "ListingDraft" : {
+        "type" : "object",
+        "properties" : {
+          "photoIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "condition" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "facts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DraftFact"
+            }
+          },
+          "questions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "price" : {
+            "$ref" : "#/components/schemas/PriceEstimate"
+          }
+        }
+      },
+      "PriceEstimate" : {
+        "type" : "object",
+        "properties" : {
+          "lowChf" : {
+            "type" : [ "number", "null" ]
+          },
+          "midChf" : {
+            "type" : [ "number", "null" ]
+          },
+          "highChf" : {
+            "type" : [ "number", "null" ]
+          },
+          "confidence" : {
+            "type" : "string",
+            "enum" : [ "LOW", "MEDIUM", "HIGH" ]
+          },
+          "provisional" : {
+            "type" : "boolean"
+          },
+          "evidence" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PriceEvidence"
+            }
+          },
+          "explanation" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PriceEvidence" : {
+        "type" : "object",
+        "properties" : {
+          "listingId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "priceChf" : {
+            "type" : "number"
           }
         }
       },

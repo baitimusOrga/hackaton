@@ -23,6 +23,10 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate          # the schema belongs to Flyway (src/main/resources/db/migration)
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 26MB
   web:
     error:
       include-message: always           # error responses carry the exception message
@@ -52,6 +56,7 @@ springdoc:
 ai:
   api-key: ${ANTHROPIC_API_KEY:}       # empty: AI endpoints answer 503
   model: claude-sonnet-5-5
+  search-model: claude-haiku-5-5
   max-tokens: 16000
   base-url: https://api.anthropic.com
 

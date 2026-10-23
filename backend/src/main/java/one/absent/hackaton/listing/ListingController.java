@@ -2,6 +2,7 @@ package one.absent.hackaton.listing;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Locale;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
@@ -31,8 +32,19 @@ public class ListingController {
                                      @RequestParam(required = false) String category,
                                      @RequestParam(required = false) BigDecimal maxPrice,
                                      @RequestParam(required = false) String postcode) {
-        // Filtering remains the separate listings-backend task (HAC-17).
-        return listings.findAll().stream().map(listing -> listing.detail().summary()).toList();
+        return listings.search(contains(q), lower(category), maxPrice,
+                        postcode == null || postcode.isBlank() ? null : postcode.strip() + "%")
+                .stream().map(listing -> listing.detail().summary()).toList();
+    }
+
+    private static String lower(String value) {
+        return value == null || value.isBlank() ? null : value.strip().toLowerCase(Locale.ROOT);
+    }
+
+    // shortcut: % and _ typed by the user act as wildcards, fine for a search box
+    private static String contains(String value) {
+        String lower = lower(value);
+        return lower == null ? null : "%" + lower + "%";
     }
 
     @GetMapping("/{id}")
