@@ -14,7 +14,9 @@ Rules:
 - `listing_attribute`: attribute names/values owned by a listing.
 - Nullable `listing.seller_id` and `seller_name` store the verified Better Auth subject and a display-name snapshot at publication. Existing demos retain null sellers. Auth owns the separate `auth` schema, with no cross-schema user foreign key.
 
-Photo storage/linking (HAC-20) and listing filters (HAC-17) remain separate work.
+- `photo`: uploaded listing photos (bytes + content type) with the uploading seller's subject. `listing_id` stays null until the photo is published with a listing; `listing.image_url` then points at `/api/photos/{first photo id}`. Unpublished draft photos are not cleaned up yet.
+
+Listing filters (HAC-17) remain separate work.
 
 ## Migrations so far
 
@@ -25,6 +27,7 @@ Photo storage/linking (HAC-20) and listing filters (HAC-17) remain separate work
 | V3 | drops `app_user` (login removed) |
 | V4 | listing content and attributes, with the existing contract demos |
 | V5 | nullable seller identity/name on listing |
+| V7 | `photo` (listing photos, optional link to a listing) |
 
 ## Backups
 

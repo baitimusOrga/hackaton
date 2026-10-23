@@ -10,7 +10,12 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { createDraft } from '../fn/selling/create-draft';
+import { CreateDraft$Params } from '../fn/selling/create-draft';
+import { getPhoto } from '../fn/selling/get-photo';
+import { GetPhoto$Params } from '../fn/selling/get-photo';
 import { ListingDetail } from '../models/listing-detail';
+import { ListingDraft } from '../models/listing-draft';
 import { publish } from '../fn/selling/publish';
 import { Publish$Params } from '../fn/selling/publish';
 
@@ -44,6 +49,60 @@ export class SellingService extends BaseService {
     const resp = this.publish$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<ListingDetail>): ListingDetail => r.body)
+    );
+  }
+
+  /** Path part for operation `createDraft()` */
+  static readonly CreateDraftPath = '/api/listing-drafts';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `createDraft()` instead.
+   *
+   * This method sends `multipart/form-data` and handles request body of type `multipart/form-data`.
+   */
+  createDraft$Response(params?: CreateDraft$Params, context?: HttpContext): Observable<StrictHttpResponse<ListingDraft>> {
+    const obs = createDraft(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `createDraft$Response()` instead.
+   *
+   * This method sends `multipart/form-data` and handles request body of type `multipart/form-data`.
+   */
+  createDraft(params?: CreateDraft$Params, context?: HttpContext): Observable<ListingDraft> {
+    const resp = this.createDraft$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<ListingDraft>): ListingDraft => r.body)
+    );
+  }
+
+  /** Path part for operation `getPhoto()` */
+  static readonly GetPhotoPath = '/api/photos/{id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `getPhoto()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  getPhoto$Response(params: GetPhoto$Params, context?: HttpContext): Observable<StrictHttpResponse<string>> {
+    const obs = getPhoto(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `getPhoto$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  getPhoto(params: GetPhoto$Params, context?: HttpContext): Observable<string> {
+    const resp = this.getPhoto$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<string>): string => r.body)
     );
   }
 
