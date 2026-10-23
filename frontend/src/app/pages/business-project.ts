@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, inject, input, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { ClearanceService } from '../api/services';
@@ -30,6 +30,7 @@ const ROUTE_NAMES: Record<Route, string> = {
 const CONDITIONS = ['NEW', 'LIKE_NEW', 'GOOD', 'USED', 'DEFECTIVE'] as const;
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business-project',
   imports: [DatePipe, DecimalPipe, RouterLink],
   template: `

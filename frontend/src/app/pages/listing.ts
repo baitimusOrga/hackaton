@@ -1,11 +1,12 @@
 import { CurrencyPipe, DatePipe, KeyValuePipe, TitleCasePipe } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, filter, map, switchMap } from 'rxjs';
 import { ListingsService } from '../api/services';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing',
   imports: [CurrencyPipe, DatePipe, KeyValuePipe, TitleCasePipe],
   template: `

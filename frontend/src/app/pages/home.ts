@@ -1,5 +1,5 @@
 import { CurrencyPipe, TitleCasePipe } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 import { map, switchMap } from 'rxjs';
@@ -19,6 +19,7 @@ function filtersOf(params: ParamMap) {
 }
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-home',
   imports: [CurrencyPipe, RouterLink, TitleCasePipe],
   template: `

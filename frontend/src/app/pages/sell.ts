@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { SellingService } from '../api/services';
 import { CreateListingRequest, ListingDraft } from '../api/models';
@@ -30,6 +30,7 @@ const MARKER_STYLES: Record<Source, string> = {
 };
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-sell',
   imports: [PricePanel],
   styles: `
