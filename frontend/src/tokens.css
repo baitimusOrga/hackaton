@@ -66,6 +66,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+a {
+  color: var(--ink);
+}
+a:hover {
+  color: var(--blue-text);
+}
+
 :focus-visible {
   outline: var(--border-2) solid var(--focus);
   outline-offset: 2px;

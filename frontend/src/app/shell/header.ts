@@ -1,46 +1,33 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { NavigationEnd, Router, RouterLink } from '@angular/router';
-import { filter, map } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
 import { Auth } from '../auth/auth';
 import { ErrorBanner } from '../errors';
 import { Button } from '../ui/button';
 import { Icon } from '../ui/icon';
+import { HeroSearch } from './hero-search';
 
-// shortcut: the landing hero is about this tall; read its real position once the landing page exists.
-const HERO_HEIGHT = 280;
+// shortcut: fixed location until the user can set one; the location picker is not designed yet.
+const LOCATION = { place: '8001 Zürich', radius: '25 km' };
 
-/** Sticky page header. On the landing page the search field docks into it once the hero is scrolled past. */
+/** Sticky page header. The search docks into it whenever no hero search is on screen. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, RouterLink, Button, Icon],
   selector: 'app-header',
-  host: {
-    class: 'zw-header',
-    '[class.zw-header--docked]': 'searchDocked()',
-    '(window:scroll)': 'scrollY.set(window.scrollY)',
-  },
+  host: { class: 'zw-header', '[class.zw-header--docked]': 'docked()' },
   templateUrl: './header.html',
 })
 export class Header {
   protected readonly auth = inject(Auth);
+  protected readonly hero = inject(HeroSearch);
   private readonly errors = inject(ErrorBanner);
   private readonly router = inject(Router);
-  protected readonly window = window;
-  protected readonly scrollY = signal(window.scrollY);
+  protected readonly location = LOCATION;
+  protected readonly locationLabel = `Standort ändern: ${LOCATION.place}, Umkreis ${LOCATION.radius}`;
+  protected readonly docked = computed(() => !this.hero.visible());
   protected readonly query = signal('');
   protected readonly signingOut = signal(false);
-  private readonly path = toSignal(
-    this.router.events.pipe(
-      filter((e) => e instanceof NavigationEnd),
-      map(() => this.router.url.split('?')[0]),
-    ),
-    { initialValue: this.router.url.split('?')[0] },
-  );
-  protected readonly searchDocked = computed(
-    () => this.path() !== '/' || this.scrollY() > HERO_HEIGHT,
-  );
 
   protected search(): void {
     const q = this.query().trim();

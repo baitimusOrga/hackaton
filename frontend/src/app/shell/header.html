@@ -2,34 +2,54 @@
   <div class="zw-container zw-header__bar">
     <a routerLink="/" class="zw-wordmark">
       <span class="zw-wordmark__name">Zweit.</span>
-      <span class="zw-wordmark__tagline">Gut, günstig, grün.</span>
+      @if (!docked()) {
+        <span class="zw-wordmark__tagline">Gut, günstig, grün.</span>
+      }
     </a>
-    @if (searchDocked()) {
-      <form class="zw-header__search" role="search" (ngSubmit)="search()">
+    @if (docked()) {
+      <form class="zw-dock" role="search" (ngSubmit)="search()">
+        <label for="header-q" class="zw-sr-only">Suche</label>
         <input
+          id="header-q"
           class="zw-input"
           type="search"
           name="q"
-          aria-label="Suchen"
-          placeholder="Was suchst du?"
           [ngModel]="query()"
           (ngModelChange)="query.set($event)"
         />
-        <button appButton type="submit" aria-label="Suchen">
+        <button type="button" class="zw-chip zw-chip--location" [attr.aria-label]="locationLabel">
+          <app-icon name="pin" [size]="16" />
+          <span>{{ location.radius }}</span>
+        </button>
+        <button
+          appButton
+          [variant]="hero.active() ? 'primary' : 'default'"
+          type="submit"
+          aria-label="Suchen"
+        >
           <app-icon name="search" />
         </button>
       </form>
+    } @else {
+      <button type="button" class="zw-chip zw-chip--location" [attr.aria-label]="locationLabel">
+        <app-icon name="pin" [size]="16" />
+        <span>{{ location.place }} · {{ location.radius }}</span>
+      </button>
     }
     <nav class="zw-nav" aria-label="Hauptnavigation">
-      @if (auth.user()) {
+      @if (docked()) {
         <a routerLink="/find" aria-label="Meine Suchen"><app-icon name="bookmark" /></a>
-        <a appButton routerLink="/sell"><app-icon name="camera" /><span>Verkaufen</span></a>
+        <a routerLink="/messages" aria-label="Nachrichten"><app-icon name="message" /></a>
+      } @else {
+        <a routerLink="/find"><app-icon name="bookmark" />Meine Suchen</a>
+        <a routerLink="/messages"><app-icon name="message" />Nachrichten</a>
+      }
+      <a appButton routerLink="/sell"><app-icon name="camera" /><span>Verkaufen</span></a>
+      @if (auth.user()) {
         <button type="button" class="zw-nav__link" [disabled]="signingOut()" (click)="logout()">
           Abmelden
         </button>
       } @else {
-        <a routerLink="/find"><app-icon name="bookmark" />Meine Suchen</a>
-        <a appButton routerLink="/sell"><app-icon name="camera" /><span>Verkaufen</span></a>
         <a routerLink="/login">Anmelden</a>
       }
     </nav>
