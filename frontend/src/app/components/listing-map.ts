@@ -16,13 +16,14 @@ import * as L from 'leaflet';
 export interface MapItem {
   id?: number;
   title?: string;
+  priceChf?: number;
   latitude?: number | null;
   longitude?: number | null;
 }
 
 const SWITZERLAND = L.latLng(46.8, 8.2);
 
-/** OpenStreetMap with one marker per listing, or, with `areaKm`, a circle instead (no exact spot). */
+/** OpenStreetMap with one area circle per cluster of listings within `areaKm` of each other, labelled with its listing count; a click lists them. The exact spot stays private. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing-map',
@@ -35,7 +36,7 @@ const SWITZERLAND = L.latLng(46.8, 8.2);
 })
 export class ListingMap {
   readonly items = input.required<MapItem[]>();
-  readonly areaKm = input<number>();
+  readonly areaKm = input(5);
   readonly label = input('Map of the listings');
 
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('map');
@@ -56,16 +57,21 @@ export class ListingMap {
       effect(
         () => {
           shapes.clearLayers();
-          const areaKm = this.areaKm();
+          // shortcut: greedy, joins the first cluster within range of its start; fine while listings are few
+          const radius = this.areaKm() * 1000;
+          const areas: { at: L.LatLng; group: MapItem[] }[] = [];
           for (const item of this.items()) {
             if (item.latitude == null || item.longitude == null) continue;
             const at = L.latLng(item.latitude, item.longitude);
-            (areaKm
-              ? L.circle(at, { radius: areaKm * 1000, weight: 2 })
-              : L.circleMarker(at, { radius: 9, weight: 2, fillOpacity: 0.7 }).bindPopup(
-                  this.popup(item),
-                )
-            ).addTo(shapes);
+            const area = areas.find((a) => a.at.distanceTo(at) <= radius);
+            if (area) area.group.push(item);
+            else areas.push({ at, group: [item] });
+          }
+          for (const { at, group } of areas) {
+            L.circle(at, { radius, weight: 2 })
+              .bindPopup(this.popup(group))
+              .bindTooltip(String(group.length), { permanent: true, direction: 'center' })
+              .addTo(shapes);
           }
           if (shapes.getLayers().length) map.fitBounds(shapes.getBounds(), { maxZoom: 13 });
         },
@@ -74,15 +80,20 @@ export class ListingMap {
     });
   }
 
-  // a real element, not an HTML string: titles are user input
-  private popup(item: MapItem) {
-    const link = document.createElement('a');
-    link.href = `/listings/${item.id}`;
-    link.textContent = item.title ?? 'Listing';
-    link.addEventListener('click', (event) => {
-      event.preventDefault();
-      void this.router.navigate(['/listings', item.id]);
-    });
-    return link;
+  // real elements, not an HTML string: titles are user input
+  private popup(group: MapItem[]) {
+    const list = document.createElement('ul');
+    for (const item of group) {
+      const link = document.createElement('a');
+      link.href = `/listings/${item.id}`;
+      link.textContent = `${item.title ?? 'Listing'} · CHF ${item.priceChf}`;
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        void this.router.navigate(['/listings', item.id]);
+      });
+      const row = list.appendChild(document.createElement('li'));
+      row.append(link);
+    }
+    return list;
   }
 }

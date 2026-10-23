@@ -35,7 +35,6 @@ import { ListingMap } from '../components/listing-map';
           <!-- the postcode area, not the address: the exact spot stays private -->
           <app-listing-map
             [items]="[item]"
-            [areaKm]="2"
             [label]="'Map of the area around ' + item.postcode + ' ' + item.locality"
           />
         }
