@@ -23,9 +23,15 @@ public record ListingDraft(List<Long> photoIds, String category, String title, S
                                 @Schema(nullable = true) BigDecimal midChf,
                                 @Schema(nullable = true) BigDecimal highChf,
                                 PriceConfidence confidence, boolean provisional,
-                                List<PriceEvidence> evidence, String explanation) {}
+                                List<PriceEvidence> evidence, String explanation,
+                                @Schema(description = "Condition the range is adjusted to") Condition condition,
+                                int comparableCount, int soldCount) {}
 
     public enum PriceConfidence { LOW, MEDIUM, HIGH }
 
-    public record PriceEvidence(long listingId, String title, BigDecimal priceChf) {}
+    public enum Similarity { SAME_MODEL, SAME_BRAND, SIMILAR_TITLE }
+
+    public record PriceEvidence(long listingId, String title, BigDecimal priceChf, Similarity similarity,
+                                int similarityPercent, Condition condition, boolean sold, long ageDays,
+                                BigDecimal adjustedPriceChf) {}
 }

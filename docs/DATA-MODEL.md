@@ -27,6 +27,7 @@ Rules:
 | V5 | nullable seller identity/name on listing |
 | V6 | `listing.status` (default `AVAILABLE`) and 20 demo listings (ids 1001–1020) |
 | V7 | `photo` (listing photos, optional link to a listing) |
+| V10 | 11 SOLD demo sales for price evidence, ids 1101–1111 (Dell U2719D, iMac 18,3) |
 
 ## Backups
 

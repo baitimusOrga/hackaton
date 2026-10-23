@@ -1,7 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { SellingService } from '../api/services';
 import { CreateListingRequest, ListingDraft } from '../api/models';
+import { PricePanel } from '../components/price-panel';
 
 type Source = 'LABEL' | 'SELLER' | 'SUGGESTION' | 'WEB';
 type Condition = CreateListingRequest['condition'];
@@ -29,7 +30,7 @@ const MARKER_STYLES: Record<Source, string> = {
 
 @Component({
   selector: 'app-sell',
-  imports: [RouterLink],
+  imports: [PricePanel],
   styles: `
     label {
       display: grid;
@@ -306,41 +307,11 @@ const MARKER_STYLES: Record<Source, string> = {
 
         <fieldset class="grid gap-2">
           <legend class="font-semibold">Price</legend>
-          @if (draft()?.price; as estimate) {
-            <div class="flex flex-wrap gap-2">
-              @for (strategy of strategies; track strategy.label) {
-                @let amount = estimate[strategy.key] ?? null;
-                <button
-                  type="button"
-                  class="secondary"
-                  [disabled]="amount === null"
-                  [attr.aria-pressed]="amount !== null && price() === amount"
-                  (click)="price.set(amount)"
-                >
-                  {{ strategy.label }}
-                  @if (amount !== null) {
-                    (CHF {{ amount }})
-                  }
-                </button>
-              }
-            </div>
-            @if (estimate.provisional) {
-              <p class="font-semibold">Provisional estimate</p>
-            }
-            <p class="text-sm">{{ estimate.explanation }}</p>
-            @if (estimate.evidence?.length) {
-              <ul class="list-disc pl-5 text-sm">
-                @for (item of estimate.evidence; track item.listingId) {
-                  <li>
-                    <a class="underline" [routerLink]="['/listings', item.listingId]">{{
-                      item.title
-                    }}</a>
-                    — CHF {{ item.priceChf }}
-                  </li>
-                }
-              </ul>
-            }
-          }
+          <app-price-panel
+            [estimate]="draft()?.price"
+            [condition]="fields().condition"
+            [(price)]="price"
+          />
           <label
             >Your price (CHF)
             <input
@@ -407,12 +378,6 @@ export class Sell {
     ['USED', 'Used'],
     ['DEFECTIVE', 'Defective'],
   ];
-  protected readonly strategies = [
-    { label: 'Sell faster', key: 'lowChf' },
-    { label: 'Balanced', key: 'midChf' },
-    { label: 'Higher, less certain', key: 'highChf' },
-  ] as const;
-
   protected readonly photos = signal<{ file: File; url: string }[]>([]);
   protected readonly busy = signal(false);
   protected readonly draft = signal<ListingDraft | null>(null);
