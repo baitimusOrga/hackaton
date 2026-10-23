@@ -227,6 +227,15 @@
               "$ref" : "#/components/schemas/Requirement"
             }
           },
+          "category" : {
+            "type" : [ "string", "null" ]
+          },
+          "keywords" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
           "maxBudgetChf" : {
             "type" : "number"
           },
@@ -241,7 +250,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "mustHave", "niceToHave" ]
+        "required" : [ "keywords", "mustHave", "niceToHave" ]
       },
       "ListingSummary" : {
         "type" : "object",
