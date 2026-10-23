@@ -27,8 +27,16 @@ Then set the issue to **In Progress** and assign it to the user.
 
 ## 3. Branch
 
+Start from a clean state: staged or uncommitted changes survive `git switch` and would end up
+in this PR. If `git status --porcelain` prints anything that isn't yours for this issue, don't
+stash or discard it — work in a separate worktree instead:
+
 ```bash
-git fetch origin && git switch -c <issue-id-lowercase>-<short-slug> origin/main   # e.g. hac-12-team-list
+git fetch origin
+git status --porcelain                                              # empty → switch here
+git switch -c <issue-id-lowercase>-<short-slug> origin/main         # e.g. hac-12-team-list
+# not empty → own worktree, the user's changes stay untouched:
+git worktree add -b <issue-id-lowercase>-<short-slug> ../hackaton-<issue-id-lowercase> origin/main
 ```
 
 Use Linear's suggested branch name if the issue shows one. One issue, one branch.

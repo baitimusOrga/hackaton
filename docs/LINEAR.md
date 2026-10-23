@@ -41,5 +41,10 @@ feature package at the same time.
 ## Setup (once per person)
 
 - Claude Code: `.mcp.json` lists the Linear server; run `/mcp` and authorize `linear`.
+- Codex doesn't read `.mcp.json`; add the server to your own Codex config once:
+  ```bash
+  codex mcp add linear --url https://mcp.linear.app/mcp
+  codex mcp login linear
+  ```
 - Linear workspace: connect the GitHub integration once, so `Fixes <ISSUE-ID>` links PRs
   and moves issues.
