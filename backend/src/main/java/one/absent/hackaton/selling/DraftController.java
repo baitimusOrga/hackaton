@@ -6,13 +6,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.listing.Categories;
 import one.absent.hackaton.listing.Condition;
+import one.absent.hackaton.photo.PhotoStorage;
 import one.absent.hackaton.selling.ListingDraft.DraftFact;
 import one.absent.hackaton.selling.ListingDraft.PrivacyWarning;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,8 +26,10 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import software.amazon.awssdk.core.exception.SdkException;
 
 /** Turns seller photos into a listing draft and serves stored photos. */
+@Slf4j
 @Tag(name = "Selling")
 @RestController
 public class DraftController {
@@ -85,11 +91,17 @@ public class DraftController {
                    List<DraftFact> facts, List<String> questions, List<PrivacyWarning> privacyWarnings) {}
 
     private final PhotoRepository photos;
+    private final PhotoStorage storage;
+    private final boolean useS3;
     private final AiClient ai;
     private final PriceEstimator prices;
 
-    public DraftController(PhotoRepository photos, AiClient ai, PriceEstimator prices) {
+    public DraftController(PhotoRepository photos, PhotoStorage storage, @Value("${s3.access-key}") String s3AccessKey,
+                           AiClient ai, PriceEstimator prices) {
         this.photos = photos;
+        this.storage = storage;
+        // without real S3 credentials (local dev, tests) photos stay in the database
+        this.useS3 = !"local".equals(s3AccessKey);
         this.ai = ai;
         this.prices = prices;
     }
@@ -108,9 +120,8 @@ public class DraftController {
                 throw badRequest("Each photo must be at most 5 MB.");
             }
         }
-        List<Photo> stored = files.stream().map(file -> photos.save(photo(file, seller.getSubject()))).toList();
-        List<AiClient.Image> images = stored.stream()
-                .map(p -> new AiClient.Image(p.getData(), p.getContentType())).toList();
+        List<AiClient.Image> images = files.stream().map(f -> new AiClient.Image(bytes(f), f.getContentType())).toList();
+        List<Photo> stored = images.stream().map(image -> photos.save(photo(image, seller.getSubject()))).toList();
         AiDraft draft = ai.ask(SYSTEM, "Create the listing draft for the item in these photos.", images, SCHEMA,
                 AiDraft.class);
         return new ListingDraft(stored.stream().map(Photo::getId).toList(), draft.category(), shortTitle(draft.title()),
@@ -123,10 +134,31 @@ public class DraftController {
     public ResponseEntity<byte[]> getPhoto(@PathVariable long id) {
         Photo photo = photos.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Photo not found."));
+        byte[] data = photo.getStorageKey() == null ? photo.getData() : storage.get(photo.getStorageKey()).bytes();
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(photo.getContentType()))
                 .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePublic())
-                .body(photo.getData());
+                .body(data);
+    }
+
+    /** The new object key, or null when S3 fails, so the upload still works with the bytes in the database. */
+    private String putInS3(AiClient.Image image) {
+        String key = "photos/" + UUID.randomUUID();
+        try {
+            storage.put(key, image.data(), image.mediaType());
+            return key;
+        } catch (SdkException e) {
+            log.warn("S3 upload failed, keeping the photo in the database: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private static byte[] bytes(MultipartFile file) {
+        try {
+            return file.getBytes();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     // shortcut: hard cut, the prompt does the real work
@@ -138,13 +170,12 @@ public class DraftController {
         return title.substring(0, space > 0 ? space : 60).strip();
     }
 
-    private static Photo photo(MultipartFile file, String sellerId) {
+    private Photo photo(AiClient.Image image, String sellerId) {
         var photo = new Photo();
-        photo.setContentType(file.getContentType());
-        try {
-            photo.setData(file.getBytes());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        photo.setContentType(image.mediaType());
+        photo.setStorageKey(useS3 ? putInS3(image) : null);
+        if (photo.getStorageKey() == null) {
+            photo.setData(image.data());
         }
         photo.setSellerId(sellerId);
         photo.setCreatedAt(Instant.now());

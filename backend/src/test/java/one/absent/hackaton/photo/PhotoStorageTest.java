@@ -71,7 +71,7 @@ class PhotoStorageTest {
 
     @Test
     void rejectsOtherContentTypes() {
-        assertThatThrownBy(() -> storage.put("a", new byte[1], "image/gif")).isInstanceOfSatisfying(
+        assertThatThrownBy(() -> storage.put("a", new byte[1], "image/svg+xml")).isInstanceOfSatisfying(
                 ResponseStatusException.class,
                 e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE));
     }
