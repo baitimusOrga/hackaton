@@ -1,5 +1,5 @@
 import { CurrencyPipe, TitleCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 import { map, switchMap } from 'rxjs';
@@ -15,13 +15,20 @@ function filtersOf(params: ParamMap) {
   const maxPrice = Number(params.get('maxPrice') || NaN);
   const postcode = params.get('postcode') || undefined;
   const radiusKm = Number(params.get('radiusKm') || NaN);
+  const lat = params.get('lat') ? Number(params.get('lat')) : undefined;
+  const lon = params.get('lon') ? Number(params.get('lon')) : undefined;
   return {
     q: params.get('q') || undefined,
     category: params.get('category') || undefined,
     maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
     postcode,
-    // a radius needs a full postcode to measure from
-    radiusKm: /^\d{4}$/.test(postcode ?? '') && RADII.includes(radiusKm) ? radiusKm : undefined,
+    // a radius needs a full postcode or the buyer's position to measure from
+    radiusKm:
+      RADII.includes(radiusKm) && (/^\d{4}$/.test(postcode ?? '') || lat !== undefined)
+        ? radiusKm
+        : undefined,
+    lat,
+    lon,
   };
 }
 
@@ -88,21 +95,23 @@ function filtersOf(params: ParamMap) {
         />
       </label>
       <label class="grid gap-1 text-sm font-semibold">
-        Radius (km)
+        Range around my location
         <select
-          #radius
+          #radiusKm
           name="radiusKm"
-          class="rounded-md border border-slate-400 p-2 font-normal disabled:opacity-60"
-          [disabled]="!hasFullPostcode()"
-          (change)="set('radiusKm', radius.value)"
+          class="rounded-md border border-slate-400 p-2 font-normal"
+          (change)="nearMe(radiusKm.value)"
         >
-          <option value="">Any distance</option>
+          <option value="" [selected]="!filters().radiusKm">Any distance</option>
           @for (km of radii; track km) {
-            <option [value]="km" [selected]="km === filters().radiusKm">{{ km }} km</option>
+            <option [value]="km" [selected]="filters().radiusKm === km">{{ km }} km</option>
           }
         </select>
       </label>
     </form>
+    @if (locationError()) {
+      <p role="alert" class="mb-4 text-red-700">{{ locationError() }}</p>
+    }
 
     @if (listings(); as items) {
       @if (items.length === 0) {
@@ -165,12 +174,10 @@ export class Home {
   protected readonly categories = CATEGORIES;
   protected readonly radii = RADII;
   protected readonly view = signal<'list' | 'map'>('list');
+  protected readonly locationError = signal('');
   protected readonly filters = toSignal(this.route.queryParamMap.pipe(map(filtersOf)), {
     initialValue: filtersOf(this.route.snapshot.queryParamMap),
   });
-  protected readonly hasFullPostcode = computed(() =>
-    /^\d{4}$/.test(this.filters().postcode ?? ''),
-  );
   protected readonly listings = toSignal(
     this.route.queryParamMap.pipe(switchMap((params) => this.api.list(filtersOf(params)))),
   );
@@ -181,5 +188,25 @@ export class Home {
       queryParams: { [name]: value.trim() || null },
       queryParamsHandling: 'merge',
     });
+  }
+
+  /** Asks the browser for the position once and keeps it, rounded to ~100 m, in the URL with the range. */
+  protected nearMe(radiusKm: string) {
+    this.locationError.set('');
+    const go = (queryParams: Record<string, string | null>) =>
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams,
+        queryParamsHandling: 'merge',
+      });
+    if (!radiusKm) return go({ radiusKm: null, lat: null, lon: null });
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) =>
+        go({ radiusKm, lat: coords.latitude.toFixed(3), lon: coords.longitude.toFixed(3) }),
+      () => {
+        this.locationError.set('Could not get your location. Allow location access and try again.');
+        go({ radiusKm: null, lat: null, lon: null });
+      },
+    );
   }
 }

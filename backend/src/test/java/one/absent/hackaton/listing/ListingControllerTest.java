@@ -119,4 +119,13 @@ class ListingControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Postcode 9999 not found."));
     }
+
+    @Test
+    void radiusAroundThePositionNeedsNoPostcode() throws Exception {
+        mvc.perform(get("/api/listings").param("lat", "47.378").param("lon", "8.5234").param("radiusKm", "30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].locality").value(hasItem("Zug")))
+                .andExpect(jsonPath("$[*].locality").value(not(hasItem("Lausanne"))))
+                .andExpect(jsonPath("$[0].locality").value("Zürich"));
+    }
 }

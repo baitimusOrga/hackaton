@@ -48,9 +48,11 @@ describe('Home (Discover)', () => {
     TestBed.resetTestingModule();
     const partial = await setup('/?postcode=80&radiusKm=25', []);
     expect(partial.list).toHaveBeenCalledWith({ postcode: '80' });
-    expect(
-      partial.element.querySelector<HTMLSelectElement>('select[name="radiusKm"]')!.disabled,
-    ).toBe(true);
+  });
+
+  it('measures the radius from the buyer position, no postcode needed', async () => {
+    const { list } = await setup('/?radiusKm=5&lat=47.378&lon=8.523', []);
+    expect(list).toHaveBeenCalledWith({ radiusKm: 5, lat: 47.378, lon: 8.523 });
   });
 
   it('keeps the list as default and switches to the map', async () => {
