@@ -1,15 +1,17 @@
-import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { SellingService } from '../api/services';
 import { CreateListingRequest, ListingDraft } from '../api/models';
+import { PricePanel } from '../components/price-panel';
 
-type Source = 'LABEL' | 'SELLER' | 'SUGGESTION';
+type Source = 'LABEL' | 'SELLER' | 'SUGGESTION' | 'WEB';
 type Condition = CreateListingRequest['condition'];
 type Field = 'title' | 'category' | 'condition' | 'description';
 interface Fact {
   name: string;
   value: string;
   source: Source;
+  sourceUrl?: string | null;
 }
 
 const MAX_PHOTOS = 5;
@@ -17,16 +19,18 @@ const MARKERS: Record<Source, string> = {
   LABEL: 'From label',
   SUGGESTION: 'Suggested — please check',
   SELLER: 'Confirmed by you',
+  WEB: 'From the web — please check',
 };
 const MARKER_STYLES: Record<Source, string> = {
   LABEL: 'bg-sky-100 text-sky-900',
   SUGGESTION: 'bg-amber-100 text-amber-900',
   SELLER: 'bg-emerald-100 text-emerald-900',
+  WEB: 'bg-violet-100 text-violet-900',
 };
 
 @Component({
   selector: 'app-sell',
-  imports: [RouterLink],
+  imports: [PricePanel],
   styles: `
     label {
       display: grid;
@@ -128,12 +132,32 @@ const MARKER_STYLES: Record<Source, string> = {
             <li>
               <img
                 [src]="photo.url"
-                [alt]="'Photo ' + (i + 1)"
+                [alt]="'Photo ' + (i + 1) + (excluded().has(i) ? ' (left out)' : '')"
                 class="h-20 w-20 rounded object-cover"
+                [class]="excluded().has(i) ? 'opacity-40 ring-2 ring-rose-500' : ''"
               />
             </li>
           }
         </ul>
+
+        @if (draft()?.privacyWarnings?.length) {
+          <section class="rounded border border-rose-300 bg-rose-50 p-3" aria-label="Privacy check">
+            <h2 class="font-semibold">Check before publishing</h2>
+            @for (warning of draft()?.privacyWarnings; track $index) {
+              <div class="mt-2">
+                <p>Photo {{ warning.photo }}: {{ warning.text }}</p>
+                <label class="flex! items-center gap-1 font-normal!"
+                  ><input
+                    type="checkbox"
+                    [checked]="excluded().has(warning.photo! - 1)"
+                    (change)="toggleExcluded(warning.photo! - 1)"
+                  />
+                  Leave out photo {{ warning.photo }}</label
+                >
+              </div>
+            }
+          </section>
+        }
 
         <section class="rounded border border-amber-300 bg-amber-50 p-3" aria-label="Tips">
           @if (draft()?.questions?.length) {
@@ -188,12 +212,20 @@ const MARKER_STYLES: Record<Source, string> = {
             required
             (change)="setField('condition', $any($event.target).value)"
           >
+            <option value="" disabled [selected]="!fields().condition">Choose condition</option>
             @for (condition of conditions; track condition[0]) {
               <option [value]="condition[0]" [selected]="condition[0] === fields().condition">
                 {{ condition[1] }}
               </option>
             }
           </select>
+          @if (!draft()?.condition && !fields().condition) {
+            <span class="text-sm font-normal">
+              The photos don't show the condition — please choose it.
+            </span>
+          } @else if (draft()?.condition && draft()?.condition === fields().condition) {
+            <span class="text-sm font-normal">Suggested from the photos — please check.</span>
+          }
         </label>
         <label
           >Description
@@ -212,9 +244,9 @@ const MARKER_STYLES: Record<Source, string> = {
           <p class="text-sm">Only details you confirm or that come from a label are published.</p>
           @for (fact of facts(); track fact.name; let i = $index) {
             <div class="grid grid-cols-[7rem_1fr] items-center gap-2" data-testid="fact">
-              <span>{{ fact.name }}</span>
+              <label [for]="'fact-' + i" class="font-normal!">{{ fact.name }}</label>
               <input
-                [attr.aria-label]="fact.name"
+                [id]="'fact-' + i"
                 maxlength="500"
                 [value]="fact.value"
                 (input)="editFact(i, $any($event.target).value)"
@@ -225,56 +257,61 @@ const MARKER_STYLES: Record<Source, string> = {
                 >{{ markers[fact.source] }}</span
               >
               <div class="col-start-2 flex gap-3 text-sm">
-                @if (fact.source === 'SUGGESTION') {
-                  <label class="flex! items-center gap-1 font-normal!"
-                    ><input type="checkbox" (change)="confirmFact(i)" /> This is correct</label
+                @if (fact.source === 'WEB' && fact.sourceUrl) {
+                  <a
+                    [href]="fact.sourceUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="underline"
+                    >Source</a
                   >
                 }
-                <button type="button" class="underline" (click)="removeFact(i)">Remove</button>
+                @if (fact.source === 'SUGGESTION' || fact.source === 'WEB') {
+                  <label class="flex! items-center gap-1 font-normal!"
+                    ><input
+                      type="checkbox"
+                      [attr.aria-label]="fact.name + ' is correct'"
+                      (change)="confirmFact(i)"
+                    />
+                    This is correct</label
+                  >
+                }
+                <button
+                  type="button"
+                  class="underline"
+                  [attr.aria-label]="'Remove ' + fact.name"
+                  (click)="removeFact(i)"
+                >
+                  Remove
+                </button>
               </div>
             </div>
           } @empty {
             <p class="text-sm">No details found in the photos.</p>
           }
+          <button
+            type="button"
+            class="secondary w-fit"
+            [disabled]="!canLookUp() || lookingUp()"
+            (click)="completeFacts()"
+          >
+            {{ lookingUp() ? 'Searching the web…' : 'Complete technical data' }}
+          </button>
+          @if (!canLookUp()) {
+            <p class="text-sm">Confirm the model first — we only look up what we know.</p>
+          }
+          @if (webNote()) {
+            <p class="text-sm">{{ webNote() }}</p>
+          }
         </fieldset>
 
         <fieldset class="grid gap-2">
           <legend class="font-semibold">Price</legend>
-          @if (draft()?.price; as estimate) {
-            <div class="flex flex-wrap gap-2">
-              @for (strategy of strategies; track strategy.label) {
-                @let amount = estimate[strategy.key] ?? null;
-                <button
-                  type="button"
-                  class="secondary"
-                  [disabled]="amount === null"
-                  [attr.aria-pressed]="amount !== null && price() === amount"
-                  (click)="price.set(amount)"
-                >
-                  {{ strategy.label }}
-                  @if (amount !== null) {
-                    (CHF {{ amount }})
-                  }
-                </button>
-              }
-            </div>
-            @if (estimate.provisional) {
-              <p class="font-semibold">Provisional estimate</p>
-            }
-            <p class="text-sm">{{ estimate.explanation }}</p>
-            @if (estimate.evidence?.length) {
-              <ul class="list-disc pl-5 text-sm">
-                @for (item of estimate.evidence; track item.listingId) {
-                  <li>
-                    <a class="underline" [routerLink]="['/listings', item.listingId]">{{
-                      item.title
-                    }}</a>
-                    — CHF {{ item.priceChf }}
-                  </li>
-                }
-              </ul>
-            }
-          }
+          <app-price-panel
+            [estimate]="draft()?.price"
+            [condition]="fields().condition"
+            [(price)]="price"
+          />
           <label
             >Your price (CHF)
             <input
@@ -341,22 +378,29 @@ export class Sell {
     ['USED', 'Used'],
     ['DEFECTIVE', 'Defective'],
   ];
-  protected readonly strategies = [
-    { label: 'Sell faster', key: 'lowChf' },
-    { label: 'Balanced', key: 'midChf' },
-    { label: 'Higher, less certain', key: 'highChf' },
-  ] as const;
-
   protected readonly photos = signal<{ file: File; url: string }[]>([]);
   protected readonly busy = signal(false);
   protected readonly draft = signal<ListingDraft | null>(null);
   protected readonly fields = signal<Record<Field, string>>({
     title: '',
     category: 'Computers',
-    condition: 'GOOD',
+    condition: '',
     description: '',
   });
   protected readonly facts = signal<Fact[]>([]);
+  protected readonly lookingUp = signal(false);
+  protected readonly webNote = signal('');
+  // 0-based indexes of photos the seller leaves out of the listing
+  protected readonly excluded = signal(new Set<number>());
+  protected readonly photoIdsToPublish = computed(() =>
+    (this.draft()?.photoIds ?? []).filter((_, i) => !this.excluded().has(i)),
+  );
+  protected readonly canLookUp = computed(() =>
+    this.facts().some(
+      (f) =>
+        f.name === 'Model' && f.value.trim() && (f.source === 'LABEL' || f.source === 'SELLER'),
+    ),
+  );
   protected readonly price = signal<number | null>(null);
   protected readonly postcode = signal('');
   protected readonly locality = signal('');
@@ -396,15 +440,21 @@ export class Sell {
     this.fields.update((fields) => {
       const next = { ...fields };
       for (const key of ['title', 'category', 'condition', 'description'] as const) {
-        const value = draft[key];
-        if (value && !this.sellerFields.has(key)) next[key] = value;
+        // a draft without condition clears an earlier suggestion: the seller has to choose
+        const value = draft[key] ?? '';
+        if ((value || key === 'condition') && !this.sellerFields.has(key)) next[key] = value;
       }
       return next;
     });
     const confirmed = this.facts().filter((f) => f.source === 'SELLER');
     const fresh = (draft.facts ?? [])
       .filter((f) => f.name && !confirmed.some((c) => c.name === f.name))
-      .map((f) => ({ name: f.name!, value: f.value ?? '', source: f.source ?? 'SUGGESTION' }));
+      .map((f) => ({
+        name: f.name!,
+        value: f.value ?? '',
+        source: f.source ?? 'SUGGESTION',
+        sourceUrl: f.sourceUrl,
+      }));
     this.facts.set([...confirmed, ...fresh]);
   }
 
@@ -423,6 +473,40 @@ export class Sell {
     this.editFact(index, this.facts()[index].value);
   }
 
+  protected toggleExcluded(index: number): void {
+    this.excluded.update((set) => {
+      const next = new Set(set);
+      if (!next.delete(index)) next.add(index);
+      return next;
+    });
+  }
+
+  protected completeFacts(): void {
+    if (!this.canLookUp() || this.lookingUp()) return;
+    this.lookingUp.set(true);
+    this.webNote.set('');
+    const facts = this.facts()
+      .filter((f) => f.value.trim())
+      .map((f) => ({ name: f.name, value: f.value.trim(), source: f.source }));
+    const { title, category } = this.fields();
+    this.api.completeFacts({ body: { title: title.trim(), category, facts } }).subscribe({
+      next: (found) => {
+        const fresh = found
+          .filter((f) => f.name && !this.facts().some((known) => known.name === f.name))
+          .map((f) => ({
+            name: f.name!,
+            value: f.value ?? '',
+            source: 'WEB' as const,
+            sourceUrl: f.sourceUrl,
+          }));
+        this.facts.update((all) => [...all, ...fresh]);
+        if (!fresh.length) this.webNote.set('Nothing reliable found on the web for this model.');
+        this.lookingUp.set(false);
+      },
+      error: () => this.lookingUp.set(false),
+    });
+  }
+
   protected removeFact(index: number): void {
     this.facts.update((facts) => facts.filter((_, i) => i !== index));
   }
@@ -431,8 +515,8 @@ export class Sell {
     event.preventDefault();
     const draft = this.draft();
     const price = this.price();
-    if (!draft || price === null || this.busy()) return;
     const fields = this.fields();
+    if (!draft || price === null || !fields.condition || this.busy()) return;
     const body: CreateListingRequest = {
       title: fields.title.trim(),
       description: fields.description.trim(),
@@ -443,10 +527,10 @@ export class Sell {
       locality: this.locality().trim(),
       attributes: Object.fromEntries(
         this.facts()
-          .filter((f) => f.source !== 'SUGGESTION' && f.value.trim())
+          .filter((f) => f.source !== 'SUGGESTION' && f.source !== 'WEB' && f.value.trim())
           .map((f) => [f.name, f.value.trim()]),
       ),
-      photoIds: draft.photoIds ?? [],
+      photoIds: this.photoIdsToPublish(),
     };
     this.busy.set(true);
     this.api.publish({ body }).subscribe({

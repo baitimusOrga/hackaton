@@ -3,6 +3,7 @@
 
 export interface DraftFact {
   name?: string;
-  source?: 'LABEL' | 'SELLER' | 'SUGGESTION';
+  source?: 'LABEL' | 'SELLER' | 'SUGGESTION' | 'WEB';
+  sourceUrl?: (string | null);
   value?: string;
 }

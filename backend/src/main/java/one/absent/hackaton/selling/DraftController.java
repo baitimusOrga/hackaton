@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.selling.ListingDraft.DraftFact;
+import one.absent.hackaton.selling.ListingDraft.PrivacyWarning;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -38,19 +39,28 @@ public class DraftController {
               Never claim working condition, ownership or included accessories.
             - Fact names only from the allowed list; values short and normalized (e.g. 27", 16 GB, 2560x1440).
               One fact per name at most; leave out what you cannot see.
-            - If the exact model or variant is uncertain, add a concrete tip to questions, e.g.
-              "Please photograph the type plate on the back" or "Please photograph the model label".
-              Questions are short, at most 4.
-            - title: concise, at most 80 characters, brand and model first when known.
-            - description: 2 to 4 factual sentences in English about what is visible, including visible wear;
-              no marketing language, no claims about function.
-            - condition: your best guess from visible wear (NEW, LIKE_NEW, GOOD, USED, DEFECTIVE), null if unclear.
+            - title: at most 60 characters, brand + model + one distinguishing variant (size or year).
+              No CPU, RAM, storage or part numbers in the title; those belong in facts.
+            - description: written as the seller, first person, 2 to 3 sentences: what it is, known model
+              details, visible wear. Never mention photos, pictures, images or labels ("The photo shows..." is
+              wrong). Never claim it works, is complete, or includes accessories. No marketing language.
+            - condition: null unless the photos clearly show the outside of the whole item. Label close-ups,
+              partial views and blurry photos give null. Absence of visible wear in a partial view is not evidence.
+              Otherwise NEW, LIKE_NEW, GOOD, USED or DEFECTIVE from visible wear.
+            - questions: at most 3, short. First the one missing photo that would identify the exact model or
+              variant, e.g. "Please photograph the type plate on the back".
+            - privacyWarnings: one entry per photo (photo = its 1-based position) that shows a serial number,
+              IMEI, MAC address, a person's name, address, phone number, a document, an employee or asset tag,
+              or a screen with personal content. Text e.g. "Shows a serial number. Leave this photo out or cover it."
+              Never repeat the value.
+            - Never copy serial numbers or personal data into title, description, facts or questions.
             - category: the best fit from the allowed list.
             """;
 
     static final String SCHEMA = """
             {"type": "object", "additionalProperties": false,
-             "required": ["category", "title", "description", "condition", "facts", "questions"],
+             "required": ["category", "title", "description", "condition", "facts", "questions",
+                          "privacyWarnings"],
              "properties": {
                "category": {"type": "string", "enum": ["Computers", "Laptops", "Monitors", "Phones", "Tablets",
                  "Office furniture", "Audio", "Cameras", "Household", "Bikes"]},
@@ -65,11 +75,14 @@ public class DraftController {
                      "Resolution", "CPU", "RAM", "Storage", "Material", "Dimensions"]},
                    "value": {"type": "string"},
                    "source": {"type": "string", "enum": ["LABEL", "SUGGESTION"]}}}},
-               "questions": {"type": "array", "items": {"type": "string"}}}}
+               "questions": {"type": "array", "items": {"type": "string"}},
+               "privacyWarnings": {"type": "array", "items": {"type": "object", "additionalProperties": false,
+                 "required": ["photo", "text"],
+                 "properties": {"photo": {"type": "integer"}, "text": {"type": "string"}}}}}}
             """;
 
     record AiDraft(String category, String title, String description, Condition condition,
-                   List<DraftFact> facts, List<String> questions) {}
+                   List<DraftFact> facts, List<String> questions, List<PrivacyWarning> privacyWarnings) {}
 
     private final PhotoRepository photos;
     private final AiClient ai;
@@ -100,9 +113,10 @@ public class DraftController {
                 .map(p -> new AiClient.Image(p.getData(), p.getContentType())).toList();
         AiDraft draft = ai.ask(SYSTEM, "Create the listing draft for the item in these photos.", images, SCHEMA,
                 AiDraft.class);
-        return new ListingDraft(stored.stream().map(Photo::getId).toList(), draft.category(), draft.title(),
+        return new ListingDraft(stored.stream().map(Photo::getId).toList(), draft.category(), shortTitle(draft.title()),
                 draft.description(), draft.condition(), draft.facts(), draft.questions(),
-                prices.estimate(draft.category(), draft.title()));
+                prices.estimate(draft.category(), draft.title(), draft.facts(), draft.condition()),
+                draft.privacyWarnings());
     }
 
     @GetMapping("/api/photos/{id}")
@@ -113,6 +127,15 @@ public class DraftController {
                 .contentType(MediaType.parseMediaType(photo.getContentType()))
                 .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePublic())
                 .body(photo.getData());
+    }
+
+    // shortcut: hard cut, the prompt does the real work
+    static String shortTitle(String title) {
+        if (title.length() <= 60) {
+            return title;
+        }
+        int space = title.lastIndexOf(' ', 60);
+        return title.substring(0, space > 0 ? space : 60).strip();
     }
 
     private static Photo photo(MultipartFile file, String sellerId) {

@@ -3,6 +3,12 @@
 
 import { PriceEvidence } from '../models/price-evidence';
 export interface PriceEstimate {
+  comparableCount?: number;
+
+  /**
+   * Condition the range is adjusted to
+   */
+  condition?: 'NEW' | 'LIKE_NEW' | 'GOOD' | 'USED' | 'DEFECTIVE';
   confidence?: 'LOW' | 'MEDIUM' | 'HIGH';
   evidence?: Array<PriceEvidence>;
   explanation?: string;
@@ -10,4 +16,5 @@ export interface PriceEstimate {
   lowChf?: (number | null);
   midChf?: (number | null);
   provisional?: boolean;
+  soldCount?: number;
 }

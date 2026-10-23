@@ -7,6 +7,121 @@
     "url" : "/"
   } ],
   "paths" : {
+    "/api/clearance/projects/{id}/route" : {
+      "put" : {
+        "tags" : [ "Clearance" ],
+        "operationId" : "chooseRoute",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChooseRouteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clearance/projects/{id}/items/{itemId}" : {
+      "put" : {
+        "tags" : [ "Clearance" ],
+        "operationId" : "updateItem",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "itemId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateItemRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "Clearance" ],
+        "operationId" : "deleteItem",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "itemId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/searches" : {
       "post" : {
         "tags" : [ "Search" ],
@@ -176,6 +291,196 @@
         }
       }
     },
+    "/api/listing-drafts/web-facts" : {
+      "post" : {
+        "tags" : [ "Selling" ],
+        "operationId" : "completeFacts",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WebFactsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DraftFact"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clearance/projects" : {
+      "get" : {
+        "tags" : [ "Clearance" ],
+        "operationId" : "listProjects",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ProjectSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Clearance" ],
+        "operationId" : "createProject",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateProjectRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clearance/projects/{id}/publish" : {
+      "post" : {
+        "tags" : [ "Clearance" ],
+        "operationId" : "publishItems",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PublishRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clearance/projects/{id}/items/extract" : {
+      "post" : {
+        "tags" : [ "Clearance" ],
+        "operationId" : "extractItems",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "text" : {
+                    "type" : "string"
+                  },
+                  "photos" : {
+                    "type" : "array",
+                    "items" : {
+                      "type" : "string",
+                      "format" : "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clearance/projects/{id}/items/confirm" : {
+      "post" : {
+        "tags" : [ "Clearance" ],
+        "operationId" : "confirmQuantities",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/photos/{id}" : {
       "get" : {
         "tags" : [ "Selling" ],
@@ -248,10 +553,228 @@
           }
         }
       }
+    },
+    "/api/clearance/projects/{id}" : {
+      "get" : {
+        "tags" : [ "Clearance" ],
+        "operationId" : "getProject",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components" : {
     "schemas" : {
+      "ChooseRouteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "route" : {
+            "type" : "string",
+            "enum" : [ "SELF_SERVICE", "MANAGED", "DIRECT_PURCHASE" ]
+          }
+        },
+        "required" : [ "route" ]
+      },
+      "ItemView" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "quantity" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "quantityConfirmed" : {
+            "type" : "boolean"
+          },
+          "condition" : {
+            "type" : "string",
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "notes" : {
+            "type" : [ "string", "null" ]
+          },
+          "estimatedUnitChf" : {
+            "type" : "number"
+          },
+          "estimatedTotalChf" : {
+            "type" : "number"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "DRAFT", "LISTED", "SOLD" ]
+          },
+          "listingId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        }
+      },
+      "ProjectDetail" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "companyName" : {
+            "type" : "string"
+          },
+          "postcode" : {
+            "type" : "string"
+          },
+          "locality" : {
+            "type" : "string"
+          },
+          "deadline" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "daysLeft" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "route" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "SELF_SERVICE", "MANAGED", "DIRECT_PURCHASE" ]
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemView"
+            }
+          },
+          "totals" : {
+            "$ref" : "#/components/schemas/Totals"
+          },
+          "routes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RouteOption"
+            }
+          },
+          "recommendedRoute" : {
+            "type" : "string",
+            "enum" : [ "SELF_SERVICE", "MANAGED", "DIRECT_PURCHASE" ]
+          },
+          "recommendationReason" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RouteOption" : {
+        "type" : "object",
+        "properties" : {
+          "route" : {
+            "type" : "string",
+            "enum" : [ "SELF_SERVICE", "MANAGED", "DIRECT_PURCHASE" ]
+          },
+          "netChf" : {
+            "type" : "number"
+          },
+          "serviceFeeChf" : {
+            "type" : "number"
+          },
+          "certain" : {
+            "type" : "boolean"
+          },
+          "timeframe" : {
+            "type" : "string"
+          },
+          "yourWork" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Totals" : {
+        "type" : "object",
+        "properties" : {
+          "itemLines" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "units" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "estimatedResaleChf" : {
+            "type" : "number"
+          },
+          "draft" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "listed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sold" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "UpdateItemRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "category" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "quantity" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 10000,
+            "minimum" : 1
+          },
+          "quantityConfirmed" : {
+            "type" : "boolean"
+          },
+          "condition" : {
+            "type" : "string",
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "notes" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "category", "condition", "name" ]
+      },
       "SearchRequest" : {
         "type" : "object",
         "properties" : {
@@ -273,6 +796,10 @@
           "value" : {
             "type" : "string",
             "minLength" : 1
+          },
+          "comparison" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "AT_LEAST", "EXACT", "AT_MOST" ]
           }
         },
         "required" : [ "attribute", "value" ]
@@ -391,6 +918,10 @@
             "items" : {
               "$ref" : "#/components/schemas/SearchMatch"
             }
+          },
+          "compared" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },
@@ -505,7 +1036,10 @@
           },
           "source" : {
             "type" : "string",
-            "enum" : [ "LABEL", "SELLER", "SUGGESTION" ]
+            "enum" : [ "LABEL", "SELLER", "SUGGESTION", "WEB" ]
+          },
+          "sourceUrl" : {
+            "type" : [ "string", "null" ]
           }
         }
       },
@@ -546,6 +1080,12 @@
           },
           "price" : {
             "$ref" : "#/components/schemas/PriceEstimate"
+          },
+          "privacyWarnings" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrivacyWarning"
+            }
           }
         }
       },
@@ -576,6 +1116,19 @@
           },
           "explanation" : {
             "type" : "string"
+          },
+          "condition" : {
+            "type" : "string",
+            "description" : "Condition the range is adjusted to",
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "comparableCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "soldCount" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },
@@ -591,8 +1144,125 @@
           },
           "priceChf" : {
             "type" : "number"
+          },
+          "similarity" : {
+            "type" : "string",
+            "enum" : [ "SAME_MODEL", "SAME_BRAND", "SIMILAR_TITLE" ]
+          },
+          "similarityPercent" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "condition" : {
+            "type" : "string",
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "sold" : {
+            "type" : "boolean"
+          },
+          "ageDays" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "adjustedPriceChf" : {
+            "type" : "number"
           }
         }
+      },
+      "PrivacyWarning" : {
+        "type" : "object",
+        "properties" : {
+          "photo" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "text" : {
+            "type" : "string"
+          }
+        }
+      },
+      "KnownFact" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "value" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "LABEL", "SELLER", "SUGGESTION", "WEB" ]
+          }
+        },
+        "required" : [ "name", "source", "value" ]
+      },
+      "WebFactsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "category" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "facts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/KnownFact"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "category", "facts", "title" ]
+      },
+      "CreateProjectRequest" : {
+        "type" : "object",
+        "properties" : {
+          "companyName" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "postcode" : {
+            "type" : "string",
+            "pattern" : "[0-9]{4}"
+          },
+          "locality" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "deadline" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "companyName", "deadline", "locality", "postcode" ]
+      },
+      "PublishRequest" : {
+        "type" : "object",
+        "properties" : {
+          "itemIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "maxItems" : 100,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "itemIds" ]
       },
       "Info" : {
         "type" : "object",
@@ -605,6 +1275,33 @@
           },
           "revision" : {
             "type" : "string"
+          }
+        }
+      },
+      "ProjectSummary" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "companyName" : {
+            "type" : "string"
+          },
+          "locality" : {
+            "type" : "string"
+          },
+          "deadline" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "route" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "SELF_SERVICE", "MANAGED", "DIRECT_PURCHASE" ]
+          },
+          "itemLines" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       }
