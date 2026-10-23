@@ -70,6 +70,6 @@ class SellingControllerTest {
         mvc.perform(post("/api/listings").with(seller).contentType(MediaType.APPLICATION_JSON)
                         .content(REQUEST.replace("\"photoIds\":[]", "\"photoIds\":[123]")))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("Photo publishing is not available yet."));
+                .andExpect(jsonPath("$.detail").value("Some photos are unknown or already used. Please add them again."));
     }
 }

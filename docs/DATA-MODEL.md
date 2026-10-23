@@ -15,7 +15,7 @@ Rules:
 - `listing.status`: `AVAILABLE` (default) or `SOLD`; `GET /api/listings` only returns `AVAILABLE`, newest first. V6 adds 20 fictional demo listings with ids 1001–1020.
 - Nullable `listing.seller_id` and `seller_name` store the verified Better Auth subject and a display-name snapshot at publication. Existing demos retain null sellers. Auth owns the separate `auth` schema, with no cross-schema user foreign key.
 
-Photo storage/linking (HAC-20) remains separate work.
+- `photo`: uploaded listing photos (bytes + content type) with the uploading seller's subject. `listing_id` stays null until the photo is published with a listing; `listing.image_url` then points at `/api/photos/{first photo id}`. Unpublished draft photos are not cleaned up yet.
 
 ## Migrations so far
 
@@ -27,6 +27,7 @@ Photo storage/linking (HAC-20) remains separate work.
 | V4 | listing content and attributes, with the existing contract demos |
 | V5 | nullable seller identity/name on listing |
 | V6 | `listing.status` (default `AVAILABLE`) and 20 demo listings (ids 1001–1020) |
+| V7 | `photo` (listing photos, optional link to a listing) |
 
 ## Backups
 
