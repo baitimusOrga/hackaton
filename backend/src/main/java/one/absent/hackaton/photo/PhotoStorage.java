@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 public class PhotoStorage {
 
     static final int MAX_BYTES = 5 * 1024 * 1024;
-    static final Set<String> TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+    static final Set<String> TYPES = Set.of("image/jpeg", "image/png", "image/gif", "image/webp");
 
     public record Photo(byte[] bytes, String contentType) {
     }

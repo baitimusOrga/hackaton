@@ -16,8 +16,9 @@ public class Photo {
     private Long id;
     @Column(nullable = false, length = 100)
     private String contentType;
-    @Column(nullable = false)
     private byte[] data;
+    @Column(length = 200)
+    private String storageKey;
     @Column(nullable = false)
     private String sellerId;
     @Column(nullable = false)
