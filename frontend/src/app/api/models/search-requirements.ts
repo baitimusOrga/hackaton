@@ -4,6 +4,8 @@
 import { Requirement } from '../models/requirement';
 export interface SearchRequirements {
   acceptUnknown?: boolean;
+  category?: (string | null);
+  keywords: Array<string>;
   maxBudgetChf?: number;
   maxDistanceKm?: number;
   mustHave: Array<Requirement>;

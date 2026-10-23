@@ -57,6 +57,11 @@ public class AiClient {
      * {@code schema} is the JSON schema of {@code type}; every object in it needs {@code "additionalProperties": false}.
      */
     public <T> T ask(String system, String text, List<Image> images, String schema, Class<T> type) {
+        return ask(model, system, text, images, schema, type);
+    }
+
+    /** Like {@link #ask(String, String, List, String, Class)}, but on the given {@code model}. */
+    public <T> T ask(String model, String system, String text, List<Image> images, String schema, Class<T> type) {
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("AI call skipped: ai.api-key (ANTHROPIC_API_KEY) is not set");
             throw unavailable();
@@ -66,7 +71,7 @@ public class AiClient {
             response = http.post().uri("/v1/messages")
                     .header("x-api-key", apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(json.writeValueAsString(request(system, text, images, schema)))
+                    .body(json.writeValueAsString(request(model, system, text, images, schema)))
                     .retrieve()
                     .body(String.class);
         } catch (RestClientException e) {
@@ -92,7 +97,7 @@ public class AiClient {
         }
     }
 
-    private Map<String, Object> request(String system, String text, List<Image> images, String schema) {
+    private Map<String, Object> request(String model, String system, String text, List<Image> images, String schema) {
         List<Map<String, Object>> content = new ArrayList<>();
         for (Image image : images) {
             content.add(Map.of("type", "image", "source", Map.of("type", "base64", "media_type", image.mediaType(),
