@@ -1,0 +1,36 @@
+<header class="zw-header" [class.zw-header--docked]="searchDocked()">
+  <div class="zw-container zw-header__bar">
+    <a routerLink="/" class="zw-wordmark">
+      <span class="zw-wordmark__name">Zweit.</span>
+      <span class="zw-wordmark__tagline">Gut, günstig, grün.</span>
+    </a>
+    @if (searchDocked()) {
+      <form class="zw-header__search" role="search" (ngSubmit)="search()">
+        <input
+          class="zw-input"
+          type="search"
+          name="q"
+          aria-label="Suchen"
+          placeholder="Was suchst du?"
+          [ngModel]="query()"
+          (ngModelChange)="query.set($event)"
+        />
+        <button appButton variant="primary" type="submit" aria-label="Suchen">
+          <app-icon name="search" />
+        </button>
+      </form>
+    }
+    <nav class="zw-nav" aria-label="Hauptnavigation">
+      <a routerLink="/find"><app-icon name="bookmark" />Meine Suchen</a>
+      <a appButton routerLink="/sell"><app-icon name="camera" /><span>Verkaufen</span></a>
+      @if (auth.user(); as user) {
+        <span>{{ user.name }}</span>
+        <button type="button" class="zw-nav__link" [disabled]="signingOut()" (click)="logout()">
+          Abmelden
+        </button>
+      } @else {
+        <a routerLink="/login">Anmelden</a>
+      }
+    </nav>
+  </div>
+</header>
