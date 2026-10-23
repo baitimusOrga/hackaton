@@ -4,11 +4,12 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, filter, map, switchMap } from 'rxjs';
 import { ListingsService } from '../api/services';
+import { ListingMap } from '../components/listing-map';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing',
-  imports: [CurrencyPipe, DatePipe, KeyValuePipe, TitleCasePipe],
+  imports: [CurrencyPipe, DatePipe, KeyValuePipe, TitleCasePipe, ListingMap],
   template: `
     @if (listing(); as item) {
       <article class="grid max-w-3xl gap-3">
@@ -30,6 +31,14 @@ import { ListingsService } from '../api/services';
         </p>
         <p class="whitespace-pre-line">{{ item.description }}</p>
         <p>{{ item.postcode }} {{ item.locality }}</p>
+        @if (typeof item.latitude === 'number' && typeof item.longitude === 'number') {
+          <!-- the postcode area, not the address: the exact spot stays private -->
+          <app-listing-map
+            [items]="[item]"
+            [areaKm]="2"
+            [label]="'Map of the area around ' + item.postcode + ' ' + item.locality"
+          />
+        }
         @if (item.attributes | keyvalue; as attributes) {
           @if (attributes.length) {
             <table class="w-full max-w-md text-left text-sm">

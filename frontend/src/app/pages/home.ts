@@ -1,31 +1,38 @@
 import { CurrencyPipe, TitleCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 import { map, switchMap } from 'rxjs';
 import { ListingsService } from '../api/services';
 import { CATEGORIES } from '../categories';
+import { ListingMap } from '../components/listing-map';
 
-type FilterName = 'q' | 'category' | 'maxPrice' | 'postcode';
+type FilterName = 'q' | 'category' | 'maxPrice' | 'postcode' | 'radiusKm';
+
+const RADII = [5, 10, 25, 50, 100];
 
 function filtersOf(params: ParamMap) {
   const maxPrice = Number(params.get('maxPrice') || NaN);
+  const postcode = params.get('postcode') || undefined;
+  const radiusKm = Number(params.get('radiusKm') || NaN);
   return {
     q: params.get('q') || undefined,
     category: params.get('category') || undefined,
     maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
-    postcode: params.get('postcode') || undefined,
+    postcode,
+    // a radius needs a full postcode to measure from
+    radiusKm: /^\d{4}$/.test(postcode ?? '') && RADII.includes(radiusKm) ? radiusKm : undefined,
   };
 }
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-home',
-  imports: [CurrencyPipe, RouterLink, TitleCasePipe],
+  imports: [CurrencyPipe, ListingMap, RouterLink, TitleCasePipe],
   template: `
     <h1 class="mb-4 text-2xl font-semibold">Discover</h1>
     <form
-      class="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      class="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
       role="search"
       (submit)="$event.preventDefault()"
     >
@@ -80,12 +87,43 @@ function filtersOf(params: ParamMap) {
           (change)="set('postcode', postcode.value)"
         />
       </label>
+      <label class="grid gap-1 text-sm font-semibold">
+        Radius (km)
+        <select
+          #radius
+          name="radiusKm"
+          class="rounded-md border border-slate-400 p-2 font-normal disabled:opacity-60"
+          [disabled]="!hasFullPostcode()"
+          (change)="set('radiusKm', radius.value)"
+        >
+          <option value="">Any distance</option>
+          @for (km of radii; track km) {
+            <option [value]="km" [selected]="km === filters().radiusKm">{{ km }} km</option>
+          }
+        </select>
+      </label>
     </form>
 
     @if (listings(); as items) {
       @if (items.length === 0) {
         <p class="text-slate-600">No listings match your filters.</p>
       } @else {
+        <div class="mb-4 flex gap-2" role="group" aria-label="View">
+          @for (mode of ['list', 'map']; track mode) {
+            <button
+              type="button"
+              class="rounded-md border border-slate-400 px-3 py-1 text-sm capitalize aria-pressed:bg-slate-800 aria-pressed:text-white"
+              [attr.aria-pressed]="view() === mode"
+              (click)="view.set($any(mode))"
+            >
+              {{ mode }}
+            </button>
+          }
+        </div>
+      }
+      @if (items.length > 0 && view() === 'map') {
+        <app-listing-map [items]="items" label="Map of the matching listings" />
+      } @else if (items.length > 0) {
         <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           @for (item of items; track item.id) {
             <li>
@@ -125,9 +163,14 @@ export class Home {
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(ListingsService);
   protected readonly categories = CATEGORIES;
+  protected readonly radii = RADII;
+  protected readonly view = signal<'list' | 'map'>('list');
   protected readonly filters = toSignal(this.route.queryParamMap.pipe(map(filtersOf)), {
     initialValue: filtersOf(this.route.snapshot.queryParamMap),
   });
+  protected readonly hasFullPostcode = computed(() =>
+    /^\d{4}$/.test(this.filters().postcode ?? ''),
+  );
   protected readonly listings = toSignal(
     this.route.queryParamMap.pipe(switchMap((params) => this.api.list(filtersOf(params)))),
   );

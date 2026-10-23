@@ -41,4 +41,29 @@ describe('Home (Discover)', () => {
     expect(list).toHaveBeenLastCalledWith({ q: 'imac', maxPrice: 500 });
     expect(TestBed.inject(Router).url).toBe('/?q=imac&maxPrice=500');
   });
+
+  it('sends the radius with a full postcode and drops it without one', async () => {
+    const { list } = await setup('/?postcode=8004&radiusKm=25', []);
+    expect(list).toHaveBeenCalledWith({ postcode: '8004', radiusKm: 25 });
+    TestBed.resetTestingModule();
+    const partial = await setup('/?postcode=80&radiusKm=25', []);
+    expect(partial.list).toHaveBeenCalledWith({ postcode: '80' });
+    expect(
+      partial.element.querySelector<HTMLSelectElement>('select[name="radiusKm"]')!.disabled,
+    ).toBe(true);
+  });
+
+  it('keeps the list as default and switches to the map', async () => {
+    const { harness, element } = await setup('/', [
+      { id: 2, title: 'Dell monitor', priceChf: 120, latitude: 47.4, longitude: 8.5 },
+    ]);
+    expect(element.querySelector('li a')).not.toBeNull();
+    const map = [...element.querySelectorAll('button')].find(
+      (b) => b.textContent!.trim() === 'map',
+    )!;
+    map.click();
+    await harness.fixture.whenStable();
+    expect(element.querySelector('li a')).toBeNull();
+    expect(element.querySelector('[role="region"]')).not.toBeNull();
+  });
 });
