@@ -165,6 +165,7 @@ Staging and prod get their environment from this repo's *Settings → Secrets an
 | Name | Used for |
 |---|---|
 | `STAGING_POSTGRES_PASSWORD`, `PROD_POSTGRES_PASSWORD` | database |
+| `STAGING_S3_BUCKET`, `STAGING_S3_ACCESS_KEY`, `STAGING_S3_SECRET_KEY` (same with `PROD_`) | photo bucket on cloudscale; `S3_ENDPOINT` (default Lausanne) and `S3_REGION` (`lpg`) only if they differ |
 
 Add or change one (the value is read from the terminal):
 

@@ -69,3 +69,11 @@ app:
   env: ${APP_ENV:dev}
   release: ${APP_RELEASE:dev}
   revision: ${APP_REVISION:}
+
+# cloudscale object storage (S3 compatible); photos live in a private bucket
+s3:
+  endpoint: ${S3_ENDPOINT:https://objects.lpg.cloudscale.ch}
+  region: ${S3_REGION:lpg}
+  bucket: ${S3_BUCKET:hackaton-photos}
+  access-key: ${S3_ACCESS_KEY:local}
+  secret-key: ${S3_SECRET_KEY:local}
