@@ -8,4 +8,9 @@ export interface UpdateItemRequest {
   notes?: string;
   quantity?: number;
   quantityConfirmed?: boolean;
+
+  /**
+   * Price per piece the company sets; null keeps the estimate unconfirmed
+   */
+  unitPriceChf?: (number | null);
 }

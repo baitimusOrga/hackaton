@@ -119,7 +119,7 @@ const CONDITIONS = ['NEW', 'LIKE_NEW', 'GOOD', 'USED', 'DEFECTIVE'] as const;
                     <th scope="col" class="p-1">Category</th>
                     <th scope="col" class="p-1">Condition</th>
                     <th scope="col" class="p-1">Notes</th>
-                    <th scope="col" class="p-1">Estimate</th>
+                    <th scope="col" class="p-1">Price per piece</th>
                     <th scope="col" class="p-1">Status</th>
                     <th scope="col" class="p-1"><span class="sr-only">Actions</span></th>
                   </tr>
@@ -188,10 +188,38 @@ const CONDITIONS = ['NEW', 'LIKE_NEW', 'GOOD', 'USED', 'DEFECTIVE'] as const;
                           (change)="edit(item, { notes: $any($event.target).value })"
                         />
                       </td>
-                      <td class="p-1 whitespace-nowrap">
-                        CHF {{ item.estimatedUnitChf | number: '1.0-0' }} × {{ item.quantity
-                        }}<br />= CHF
-                        {{ item.estimatedTotalChf | number: '1.0-0' }}
+                      <td class="p-1 whitespace-nowrap" data-testid="price">
+                        <p class="text-xs">
+                          Estimate CHF {{ item.estimatedUnitChf | number: '1.0-0' }}
+                        </p>
+                        <label class="text-xs"
+                          >Your price (CHF)
+                          <input
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            class="block w-24 rounded border border-slate-400 p-1 text-sm"
+                            [disabled]="locked"
+                            [value]="item.unitPriceChf"
+                            (change)="
+                              edit(item, { unitPriceChf: $any($event.target).valueAsNumber })
+                            "
+                          />
+                        </label>
+                        @if (!item.priceConfirmed && !locked) {
+                          <button
+                            type="button"
+                            class="text-xs underline"
+                            [disabled]="busy()"
+                            [attr.aria-label]="'Accept the estimate for ' + item.name"
+                            (click)="edit(item, { unitPriceChf: item.unitPriceChf })"
+                          >
+                            Accept estimate
+                          </button>
+                        }
+                        <p class="text-xs">
+                          × {{ item.quantity }} = CHF {{ item.estimatedTotalChf | number: '1.0-0' }}
+                        </p>
                       </td>
                       <td class="p-1">
                         @if (item.quantityConfirmed) {
@@ -310,13 +338,16 @@ const CONDITIONS = ['NEW', 'LIKE_NEW', 'GOOD', 'USED', 'DEFECTIVE'] as const;
                   <label class="flex items-center gap-2"
                     ><input
                       type="checkbox"
-                      [disabled]="!item.quantityConfirmed"
+                      [disabled]="!item.quantityConfirmed || !item.priceConfirmed"
                       [checked]="selected().has(item.id)"
                       (change)="toggle(item.id)"
                     />
                     {{ item.name }} ({{ item.quantity }})
                     @if (!item.quantityConfirmed) {
                       <span class="text-sm">— confirm the quantity first</span>
+                    }
+                    @if (!item.priceConfirmed) {
+                      <span class="text-sm">— set or accept the price first</span>
                     }
                   </label>
                 </li>
@@ -404,7 +435,10 @@ export class BusinessProject implements OnInit {
 
   protected edit(item: Item, patch: Partial<Item>): void {
     const next = { ...item, ...patch };
-    if (!(next.quantity >= 1)) return this.run(this.api.getProject({ id: this.project()!.id }));
+    const priced = 'unitPriceChf' in patch || item.priceConfirmed;
+    if (!(next.quantity >= 1) || (priced && !(next.unitPriceChf > 0))) {
+      return this.run(this.api.getProject({ id: this.project()!.id }));
+    }
     this.run(
       this.api.updateItem({
         id: this.project()!.id,
@@ -416,6 +450,8 @@ export class BusinessProject implements OnInit {
           quantityConfirmed: next.quantityConfirmed,
           condition: next.condition,
           notes: next.notes ?? undefined,
+          // only a price the company set or accepted counts; the estimate alone stays unconfirmed
+          unitPriceChf: priced ? next.unitPriceChf : null,
         },
       }),
     );
