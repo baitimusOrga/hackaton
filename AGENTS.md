@@ -63,6 +63,8 @@ Run locally: `cd backend && ./mvnw spring-boot:run` (starts Postgres via Docker)
   merge unless a human asked for it in this conversation.
 - Stage files by name. No `git add -A` / `git add .`: agent worktrees, `.env` and IDE files
   must not slip in.
+- **Compare against `origin/main`, never the local `main`** (`git fetch` first, then
+  `git diff origin/main...HEAD`). A local `main` can be stale; never `git reset` a branch onto it.
 - **No tool signature in commits or PR texts**, whichever agent writes them. That means exactly
   these lines, case-insensitive:
   - `Co-Authored-By: …` (any such trailer, also for humans)
