@@ -36,6 +36,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.POST, "/api/listings", "/api/listing-drafts").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/photos/**").permitAll()
+                .requestMatchers("/api/clearance/**").authenticated()
                 .anyRequest().permitAll())
             .exceptionHandling(errors -> errors.authenticationEntryPoint((req, res, ex) -> unauthorized(res)))
             .oauth2ResourceServer(server -> server.jwt(jwt -> {})
