@@ -30,7 +30,7 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/tailwind.css", "src/styles.scss"]
+            "styles": ["src/tailwind.css", "src/tokens.css", "src/components.css"]
           },
           "configurations": {
             "production": {
