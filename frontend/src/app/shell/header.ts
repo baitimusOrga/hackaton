@@ -16,7 +16,11 @@ const HERO_HEIGHT = 280;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, RouterLink, Button, Icon],
   selector: 'app-header',
-  host: { '(window:scroll)': 'scrollY.set(window.scrollY)' },
+  host: {
+    class: 'zw-header',
+    '[class.zw-header--docked]': 'searchDocked()',
+    '(window:scroll)': 'scrollY.set(window.scrollY)',
+  },
   templateUrl: './header.html',
 })
 export class Header {

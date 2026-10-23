@@ -420,6 +420,7 @@
 }
 
 .zw-header {
+  display: block;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -464,6 +465,10 @@
   color: var(--ink-muted);
 }
 @media (max-width: 719px) {
+  /* The wrapped header takes a third of a phone screen; let it scroll away. */
+  .zw-header {
+    position: static;
+  }
   .zw-wordmark__tagline {
     display: none;
   }
