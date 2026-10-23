@@ -17,7 +17,7 @@ Both run on one hostname each: `/api/*` and `/actuator/*` go to the backend, eve
 | `backend/` | Java 25, Spring Boot 4.1, Maven. Postgres via Spring Data JPA, Flyway migrations |
 | `frontend/` | Angular 22, served by nginx. Reads `/config.json` at start, so one image runs in every environment |
 | `docker-compose.yml` | Postgres for local development, started by the backend on `spring-boot:run` |
-| `.github/workflows/ci.yml` | every pull request: `mvn verify`, `ng lint`, `ng test`, `ng build` |
+| `.github/workflows/ci-*.yml` | pull requests, only for the side they touch: `mvn verify`; `ng lint`, `ng test`, `ng build` |
 | `.github/workflows/deploy.yml` | builds the images and writes the hosts' `.env` |
 | `docs/DATA-MODEL.md` | tables and migration rules |
 
