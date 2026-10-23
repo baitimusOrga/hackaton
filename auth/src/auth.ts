@@ -17,7 +17,7 @@ export function createAuth(config: AuthConfig) {
     rateLimit: { enabled: true, storage: "database" },
     advanced: {
       ipAddress: {
-        ...(config.trustedProxies.length && { trustedProxies: config.trustedProxies }),
+        ...(config.trustedProxies?.length && { trustedProxies: config.trustedProxies }),
         ...(config.ipHeader && { ipAddressHeaders: [config.ipHeader] }),
       },
     },
