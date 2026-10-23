@@ -42,12 +42,11 @@ cd frontend && pnpm install && pnpm start         # http://localhost:4200, /api 
 
 ### IntelliJ
 
-`.run/` holds shared run configurations: `backend` (Maven `spring-boot:run`), `frontend` (`pnpm start`) and `dev` (both at once). They contain no machine-specific paths, so each developer sets these once in their own IDE (`.idea/` isn't committed):
+`.run/` holds shared run configurations: `backend` (Maven `spring-boot:run`), `frontend` (`pnpm start`), `dev` (both at once) and `backend tests` (`mvn verify`). They contain no machine-specific paths, so each developer sets these once in their own IDE (`.idea/` isn't committed):
 
 - **Project SDK**: *File → Project Structure → Project → SDK* = a JDK 25. Without it `backend` fails with "Project JDK is not specified".
 - **Node interpreter**: *Settings → Languages & Frameworks → Node.js* = Node 24.15+ (or 22.22.3+). `frontend` uses the project's interpreter.
 - **Docker** must be running: the backend starts Postgres from `docker-compose.yml` on boot.
-- Optional: right-click `backend/pom.xml` → *Add as Maven Project* for Java code completion.
 
 On a cold start the frontend is ready before the backend, so the first `/api` calls log `http proxy error ... ECONNREFUSED`. Reload the page once the backend logs `Started HackatonApplication`.
 
