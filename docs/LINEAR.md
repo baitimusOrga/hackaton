@@ -35,6 +35,9 @@ following `.claude/skills/work-issue/SKILL.md`" (other agents). It stops at the 
 <steps or the request to try; diffs against origin/main, e.g. git diff origin/main...HEAD -- <file>>
 ```
 
+Write and split issues with `/create-tickets` (`.claude/skills/create-tickets/SKILL.md`): a feature
+with a new endpoint gets an API contract issue first, then backend and frontend in parallel.
+
 Rule of thumb: one issue = one PR = at most half a day. Two agents never work in the same
 feature package at the same time.
 
