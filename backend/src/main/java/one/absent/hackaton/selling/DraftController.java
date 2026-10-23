@@ -20,6 +20,8 @@ import jakarta.validation.constraints.Size;
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.listing.Categories;
 import one.absent.hackaton.photo.PhotoStorage;
+import one.absent.hackaton.selling.WebFactsController.KnownFact;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,6 +39,27 @@ import tools.jackson.databind.json.JsonMapper;
 @Tag(name = "Selling")
 @RestController
 public class DraftController {
+
+    /** Shared by the draft and the rewrite after the seller changed facts. */
+    static final String TEXT_RULES = """
+            - title: at most 60 characters, brand + model + one distinguishing variant (size or year).
+              No CPU, RAM, storage or part numbers in the title; those belong in facts.
+            - description: written as the seller, first person, 2 to 3 sentences: what it is, known model
+              details, visible wear. Never mention photos, pictures, images or labels ("The photo shows..." is
+              wrong). Never claim it works, is complete, or includes accessories. No marketing language.
+            """;
+
+    static final String TEXT_SYSTEM = """
+            You rewrite the title and description of a Swiss secondhand listing after the seller corrected facts.
+            Facts with source LABEL or SELLER are true and win over the current text. SUGGESTION and WEB facts are
+            unconfirmed: never state them as certain. Keep what the current description says about visible wear.
+            Rules:
+            %s""".formatted(TEXT_RULES);
+
+    static final String TEXT_SCHEMA = """
+            {"type": "object", "additionalProperties": false, "required": ["title", "description"],
+             "properties": {"title": {"type": "string"}, "description": {"type": "string"}}}
+            """;
 
     static final String SYSTEM = """
             You prepare a listing draft for a Swiss secondhand marketplace from the seller's photos.
@@ -66,12 +89,7 @@ public class DraftController {
               Never claim working condition, ownership or included accessories.
             - Fact names only from the allowed list; values short and normalized (e.g. 27", 16 GB, 2560x1440).
               One fact per name at most; leave out what you cannot see. Facts the seller confirmed are final.
-            - title: at most 60 characters, brand + model + one distinguishing variant (size or year).
-              No CPU, RAM, storage or part numbers in the title; those belong in facts.
-            - description: written as the seller, first person, 2 to 3 sentences: what it is, known model
-              details, visible wear. Never mention photos, pictures, images or labels ("The photo shows..." is
-              wrong). Never claim it works, is complete, or includes accessories. No marketing language.
-            - condition: null unless the photos clearly show the outside of the whole item. Label close-ups,
+            %s- condition: null unless the photos clearly show the outside of the whole item. Label close-ups,
               partial views and blurry photos give null. Absence of visible wear in a partial view is not evidence.
               Otherwise NEW, LIKE_NEW, GOOD, USED or DEFECTIVE from visible wear.
             - Never copy serial numbers or personal data into any line.
@@ -80,7 +98,7 @@ public class DraftController {
             Allowed fact names: %s
             Key facts per category:
             %s
-            """.formatted(Categories.JSON, String.join(", ", Categories.FACT_NAMES),
+            """.formatted(TEXT_RULES, Categories.JSON, String.join(", ", Categories.FACT_NAMES),
             Categories.ALL.stream().map(c -> c + ": " + String.join(", ", Categories.KEY_FACTS.get(c)))
                     .collect(Collectors.joining("\n")));
 
@@ -90,19 +108,27 @@ public class DraftController {
     public record DraftRequest(@NotNull @Size(min = 1, max = 5) List<Long> photoIds,
                                @NotNull List<@Valid ConfirmedFact> confirmedFacts) {}
 
+    public record DraftTextRequest(@NotBlank @Size(max = 80) String category, @NotNull @Size(max = 120) String title,
+                                   @NotNull @Size(max = 4000) String description,
+                                   @NotNull @Size(max = 30) List<@Valid @NotNull KnownFact> facts) {}
+
+    public record DraftText(String title, String description) {}
+
     private final PhotoRepository photos;
     private final PhotoStorage storage;
     private final AiClient ai;
     private final PriceEstimator prices;
     private final JsonMapper json;
+    private final String fastModel;
 
     public DraftController(PhotoRepository photos, PhotoStorage storage, AiClient ai, PriceEstimator prices,
-                           JsonMapper json) {
+                           JsonMapper json, @Value("${ai.search-model}") String fastModel) {
         this.photos = photos;
         this.storage = storage;
         this.ai = ai;
         this.prices = prices;
         this.json = json;
+        this.fastModel = fastModel;
     }
 
     @Operation(responses = @ApiResponse(responseCode = "200", description = "One `data:` line per DraftEvent",
@@ -136,6 +162,18 @@ public class DraftController {
                 // keeps a reverse proxy from buffering the stream
                 .header("X-Accel-Buffering", "no")
                 .body(emitter);
+    }
+
+    /** Title and description that match the facts after the seller changed them; on the fast model. */
+    // login is enforced by SecurityConfig (POST /api/listing-drafts/**)
+    @PostMapping("/api/listing-drafts/text")
+    public DraftText rewriteText(@Valid @RequestBody DraftTextRequest request) {
+        String text = "Category: %s\nCurrent title: %s\nCurrent description: %s\nFacts:\n%s".formatted(
+                request.category(), request.title(), request.description(), request.facts().stream()
+                        .map(f -> "- %s: %s (%s)".formatted(f.name(), f.value(), f.source()))
+                        .collect(Collectors.joining("\n")));
+        DraftText answer = ai.ask(fastModel, TEXT_SYSTEM, text, List.of(), TEXT_SCHEMA, DraftText.class);
+        return new DraftText(shortTitle(answer.title()), answer.description());
     }
 
     /** The images of the seller's unpublished photos, in request order. */

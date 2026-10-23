@@ -14,11 +14,14 @@ import { completeFacts } from '../fn/selling/complete-facts';
 import { CompleteFacts$Params } from '../fn/selling/complete-facts';
 import { DraftEvent } from '../models/draft-event';
 import { DraftFact } from '../models/draft-fact';
+import { DraftText } from '../models/draft-text';
 import { getPhoto } from '../fn/selling/get-photo';
 import { GetPhoto$Params } from '../fn/selling/get-photo';
 import { ListingDetail } from '../models/listing-detail';
 import { publish } from '../fn/selling/publish';
 import { Publish$Params } from '../fn/selling/publish';
+import { rewriteText } from '../fn/selling/rewrite-text';
+import { RewriteText$Params } from '../fn/selling/rewrite-text';
 import { streamDraft } from '../fn/selling/stream-draft';
 import { StreamDraft$Params } from '../fn/selling/stream-draft';
 import { uploadPhotos } from '../fn/selling/upload-photos';
@@ -108,6 +111,33 @@ export class SellingService extends BaseService {
     const resp = this.completeFacts$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Array<DraftFact>>): Array<DraftFact> => r.body)
+    );
+  }
+
+  /** Path part for operation `rewriteText()` */
+  static readonly RewriteTextPath = '/api/listing-drafts/text';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `rewriteText()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  rewriteText$Response(params: RewriteText$Params, context?: HttpContext): Observable<StrictHttpResponse<DraftText>> {
+    const obs = rewriteText(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `rewriteText$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  rewriteText(params: RewriteText$Params, context?: HttpContext): Observable<DraftText> {
+    const resp = this.rewriteText$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<DraftText>): DraftText => r.body)
     );
   }
 

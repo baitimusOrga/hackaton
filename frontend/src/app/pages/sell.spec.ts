@@ -232,6 +232,49 @@ describe('Sell', () => {
     ).toContain('Source');
   });
 
+  it('rewrites title and description when the seller answers a fact', async () => {
+    const rewriteText = vi
+      .fn()
+      .mockReturnValue(of({ title: 'Dell U2719D', description: 'My Dell U2719D monitor.' }));
+    const { fixture, element } = await analyse([streams(done(DRAFT))], { rewriteText });
+
+    const answer = element.querySelector<HTMLInputElement>('[data-testid="gap"] input')!;
+    answer.value = 'U2719D';
+    answer.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    button(element, 'Save').click();
+    await fixture.whenStable();
+    button(element, 'Correct').click(); // same value: no second rewrite
+    await fixture.whenStable();
+
+    expect(rewriteText).toHaveBeenCalledOnce();
+    expect(rewriteText.mock.calls[0][0].body.facts).toContainEqual({
+      name: 'Model',
+      value: 'U2719D',
+      source: 'SELLER',
+    });
+    expect(fixture.componentInstance['fields']()).toMatchObject({
+      title: 'Dell U2719D',
+      description: 'My Dell U2719D monitor.',
+    });
+  });
+
+  it('keeps a title the seller wrote when rewriting', async () => {
+    const rewriteText = vi
+      .fn()
+      .mockReturnValue(of({ title: 'AI title', description: 'AI description.' }));
+    const { fixture } = await review(DRAFT, { rewriteText });
+    const sell = fixture.componentInstance;
+
+    sell['setField']('title', 'My own title');
+    sell['rewriteText']();
+
+    expect(sell['fields']()).toMatchObject({
+      title: 'My own title',
+      description: 'AI description.',
+    });
+  });
+
   it('fills the locality from the postcode and keeps it editable', async () => {
     const place = vi.fn().mockReturnValue(of({ postcode: '1700', locality: 'Fribourg' }));
     const page = await analyse([streams(done(DRAFT))], {}, place);

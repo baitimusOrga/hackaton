@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -120,6 +121,22 @@ class DraftControllerTest {
         mvc.perform(post("/api/listing-drafts/stream").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"photoIds\":[1],\"confirmedFacts\":[]}"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test void rewritesTitleAndDescriptionFromTheFacts() throws Exception {
+        when(ai.ask(anyString(), anyString(), anyString(), anyList(), anyString(), eq(DraftController.DraftText.class)))
+                .thenReturn(new DraftController.DraftText("Dell U2719D 27\" monitor", "My Dell U2719D monitor."));
+
+        mvc.perform(post("/api/listing-drafts/text").with(jwt().jwt(j -> j.subject("seller")))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"category":"Monitors","title":"Dell monitor","description":"My monitor.",
+                                 "facts":[{"name":"Model","value":"U2719D","source":"SELLER"}]}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Dell U2719D 27\" monitor"))
+                .andExpect(jsonPath("$.description").value("My Dell U2719D monitor."));
+        ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
+        verify(ai).ask(anyString(), anyString(), text.capture(), anyList(), anyString(), eq(DraftController.DraftText.class));
+        assertThat(text.getValue()).contains("Model: U2719D (SELLER)", "Dell monitor");
     }
 
     @Test void shortTitleCutsAtAWordBoundary() {

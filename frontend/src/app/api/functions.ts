@@ -29,6 +29,8 @@ export type { Publish$Params as Publish$Params } from './fn/selling/publish';
 export { publish as publish } from './fn/selling/publish';
 export type { CompleteFacts$Params as CompleteFacts$Params } from './fn/selling/complete-facts';
 export { completeFacts as completeFacts } from './fn/selling/complete-facts';
+export type { RewriteText$Params as RewriteText$Params } from './fn/selling/rewrite-text';
+export { rewriteText as rewriteText } from './fn/selling/rewrite-text';
 export type { StreamDraft$Params as StreamDraft$Params } from './fn/selling/stream-draft';
 export { streamDraft as streamDraft } from './fn/selling/stream-draft';
 export type { GetPhoto$Params as GetPhoto$Params } from './fn/selling/get-photo';

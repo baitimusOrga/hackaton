@@ -10,6 +10,8 @@ export type { Detection } from './models/detection';
 export type { DraftEvent } from './models/draft-event';
 export type { DraftFact } from './models/draft-fact';
 export type { DraftRequest } from './models/draft-request';
+export type { DraftText } from './models/draft-text';
+export type { DraftTextRequest } from './models/draft-text-request';
 export type { Gap } from './models/gap';
 export type { Info } from './models/info';
 export type { ItemView } from './models/item-view';

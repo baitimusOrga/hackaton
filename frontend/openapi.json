@@ -334,6 +334,34 @@
         }
       }
     },
+    "/api/listing-drafts/text" : {
+      "post" : {
+        "tags" : [ "Selling" ],
+        "operationId" : "rewriteText",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DraftTextRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DraftText"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/listing-drafts/stream" : {
       "post" : {
         "tags" : [ "Selling" ],
@@ -1187,6 +1215,46 @@
           },
           "sourceUrl" : {
             "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "DraftTextRequest" : {
+        "type" : "object",
+        "properties" : {
+          "category" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "description" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          },
+          "facts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/KnownFact"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "category", "description", "facts", "title" ]
+      },
+      "DraftText" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
           }
         }
       },

@@ -300,6 +300,9 @@ const MARKER_STYLES: Record<Source, string> = {
             </section>
           }
 
+          @if (rewriting()) {
+            <p class="text-sm" aria-live="polite">Updating title and description…</p>
+          }
           <label
             >Title
             <input
@@ -368,6 +371,7 @@ const MARKER_STYLES: Record<Source, string> = {
                   maxlength="500"
                   [value]="fact.value"
                   (input)="editFact(i, $any($event.target).value)"
+                  (change)="rewriteText()"
                 />
                 <span
                   class="col-start-2 w-fit rounded px-2 text-sm {{ markerStyles[fact.source] }}"
@@ -514,6 +518,7 @@ export class Sell {
   protected readonly facts = signal<Fact[]>([]);
   protected readonly lookingUp = signal(false);
   protected readonly webNote = signal('');
+  protected readonly rewriting = signal(false);
   // 0-based indexes of photos the seller leaves out of the listing
   protected readonly excluded = signal(new Set<number>());
   protected readonly keyFacts = computed(
@@ -547,6 +552,8 @@ export class Sell {
   protected readonly locality = signal(lastLocation().locality);
   // fields the seller typed in keep their value when the draft is re-run
   private readonly sellerFields = new Set<Field>();
+  // only the latest rewrite may change the text
+  private rewriteRun = 0;
 
   protected marksOn(photo: number): { box: number[]; label: string; privacy: boolean }[] {
     return [
@@ -684,13 +691,49 @@ export class Sell {
       this.setField('condition', value);
     } else {
       const fact: Fact = { name: card.fact, value: value.trim(), source: 'SELLER' };
+      const changed = this.facts().find((f) => f.name === card.fact)?.value !== fact.value;
       this.facts.update((facts) =>
         facts.some((f) => f.name === card.fact)
           ? facts.map((f) => (f.name === card.fact ? fact : f))
           : [fact, ...facts],
       );
+      if (changed) this.rewriteText();
     }
     this.nextCard();
+  }
+
+  /** Lets the AI fit title and description to changed facts; text the seller wrote stays. */
+  protected rewriteText(): void {
+    const { title, description, category } = this.fields();
+    if (!this.draft() || (this.sellerFields.has('title') && this.sellerFields.has('description')))
+      return;
+    const run = ++this.rewriteRun;
+    this.rewriting.set(true);
+    const facts = this.facts()
+      .filter((f) => f.value.trim())
+      .map((f) => ({ name: f.name, value: f.value.trim(), source: f.source }));
+    this.api
+      .rewriteText(
+        { body: { category, title, description, facts } },
+        // a failed rewrite keeps the current text
+        new HttpContext().set(HANDLES_ERRORS, true),
+      )
+      .subscribe({
+        next: (text) => {
+          if (run !== this.rewriteRun) return;
+          this.fields.update((fields) => ({
+            ...fields,
+            title: this.sellerFields.has('title') ? fields.title : (text.title ?? fields.title),
+            description: this.sellerFields.has('description')
+              ? fields.description
+              : (text.description ?? fields.description),
+          }));
+          this.rewriting.set(false);
+        },
+        error: () => {
+          if (run === this.rewriteRun) this.rewriting.set(false);
+        },
+      });
   }
 
   protected skip(card: GapCard): void {
