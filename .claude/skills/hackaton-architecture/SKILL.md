@@ -69,12 +69,14 @@ feature packages keep their merges apart.
 - Frontend runtime config comes from `/config.json` (written at container start), not from
   Angular environment files: one image runs in every environment.
 
-## Not decided yet
+## Authentication
 
-- **Authentication**: planned with Better Auth, not installed. Better Auth runs on Node, so it
-  would be its own small service (e.g. `/api/auth/*` routed to it) and Spring would only verify
-  its JWTs (`spring-boot-starter-oauth2-resource-server` against Better Auth's JWKS). Until then
-  every endpoint is public.
+Better Auth runs in the Node service `auth/`, routed at `/api/auth/*`, with its own Postgres
+`auth` schema. The JWT plugin uses RS256 and the `hackaton-api` audience; Spring verifies
+tokens against its JWKS. Accounts, password hashing and cookie sessions belong to Better Auth,
+never to backend Flyway/JPA. See `docs/AUTH.md` for the environment and migration commands.
+
+## Not decided yet
 - **Design system**: to be defined by the team. Styling is Tailwind CSS 4 (`src/tailwind.css`,
   wired through `.postcssrc.json`): utility classes in templates first; component `.scss` only for
   what utilities can't express. Shared tokens go into `src/tailwind.css` as `@theme` once decided.

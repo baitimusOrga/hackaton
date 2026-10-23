@@ -10,7 +10,11 @@ Rules:
 
 ## Tables
 
-None yet: the schema is empty (apart from Flyway's own `flyway_schema_history`). Add the first table as `V4__<what>.sql`.
+- `listing`: listing content, CHF price, condition, postcode/locality and creation time. V4 persists the three public contract demos; new identities start at 4.
+- `listing_attribute`: attribute names/values owned by a listing.
+- Nullable `listing.seller_id` and `seller_name` store the verified Better Auth subject and a display-name snapshot at publication. Existing demos retain null sellers. Auth owns the separate `auth` schema, with no cross-schema user foreign key.
+
+Photo storage/linking (HAC-20) and listing filters (HAC-17) remain separate work.
 
 ## Migrations so far
 
@@ -19,6 +23,8 @@ None yet: the schema is empty (apart from Flyway's own `flyway_schema_history`).
 | V1 | `app_user`, plus an example table `listing` |
 | V2 | drops `listing` again |
 | V3 | drops `app_user` (login removed) |
+| V4 | listing content and attributes, with the existing contract demos |
+| V5 | nullable seller identity/name on listing |
 
 ## Backups
 
