@@ -29,11 +29,6 @@ export class Header {
   protected readonly query = signal('');
   protected readonly signingOut = signal(false);
 
-  protected search(): void {
-    const q = this.query().trim();
-    void this.router.navigate(['/find'], { queryParams: q ? { q } : {} });
-  }
-
   protected async logout(): Promise<void> {
     if (this.signingOut()) return;
     this.signingOut.set(true);

@@ -66,6 +66,30 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Type scale from tokens.json: h1 page titles, h2 section titles, h3 group and dialog titles. */
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+h2 {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 700;
+}
+h3 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
 a {
   color: var(--ink);
 }

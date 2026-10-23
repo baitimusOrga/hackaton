@@ -7,7 +7,7 @@
       }
     </a>
     @if (docked()) {
-      <form class="zw-dock" role="search" (ngSubmit)="search()">
+      <form class="zw-dock" role="search" (ngSubmit)="hero.open(query())">
         <label for="header-q" class="zw-sr-only">Suche</label>
         <input
           id="header-q"
@@ -46,7 +46,7 @@
       }
       <a appButton routerLink="/sell"><app-icon name="camera" /><span>Verkaufen</span></a>
       @if (auth.user()) {
-        <button type="button" class="zw-nav__link" [disabled]="signingOut()" (click)="logout()">
+        <button type="button" class="zw-link" [disabled]="signingOut()" (click)="logout()">
           Abmelden
         </button>
       } @else {
