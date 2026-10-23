@@ -54,7 +54,7 @@ Open-source components:
 
 | Component | License |
 |---|---|
-| Spring Boot, Spring Data JPA, springdoc-openapi, Flyway | Apache-2.0 |
+| Spring Boot, Spring Data JPA, springdoc-openapi, Flyway, MapStruct | Apache-2.0 |
 | Lombok | MIT |
 | PostgreSQL | PostgreSQL License |
 | H2 (tests only) | MPL-2.0 / EPL-1.0 |
@@ -123,7 +123,7 @@ Reset the local database: `docker compose down -v`.
 
 ## Additions
 
-- Tailwind CSS 4, Lombok (entities only), Spring DevTools.
+- Tailwind CSS 4, Lombok (entities only), MapStruct, Spring DevTools.
 - Errors are Problem Details (`application/problem+json`), shown by a global banner in the frontend.
 - API client generated from OpenAPI: after an API change run `./mvnw verify` (backend) and `pnpm run api` (frontend), commit both.
 - CI also checks Prettier (`pnpm run format`) and that spec and client are current.
