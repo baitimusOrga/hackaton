@@ -27,7 +27,7 @@ import { Auth } from '../auth';
   `,
 })
 export class Login {
-  /** ?next=/listings/new from the auth guard. */
+  /** ?next=<url> from the auth guard: where to go after login. */
   readonly next = input<string>();
 
   private readonly auth = inject(Auth);

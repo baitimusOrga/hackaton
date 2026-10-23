@@ -5,7 +5,6 @@
   <a routerLink="/" class="brand">hackaton</a>
   <nav>
     @if (auth.user(); as user) {
-      <a routerLink="/listings/new" class="button">New listing</a>
       <span class="muted">{{ user.displayName }}</span>
       <button type="button" class="link" (click)="logout()">Log out</button>
     } @else {

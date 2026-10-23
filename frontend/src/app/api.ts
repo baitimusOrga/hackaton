@@ -14,29 +14,10 @@ export interface AuthResponse {
   user: User;
 }
 
-export interface Listing {
-  id: number;
-  title: string;
-  description: string;
-  priceCents: number | null;
-  imageUrl: string | null;
-  ownerId: number;
-  ownerName: string;
-  createdAt: string;
-}
-
-export interface Page<T> {
-  items: T[];
-  page: number;
-  size: number;
-  total: number;
-}
-
 export interface Info {
   env: string;
   release: string;
   revision: string;
-  llm: boolean;
 }
 
 /** All calls to the backend. Paths are relative to apiUrl from config.json (normally "/api"). */
@@ -53,24 +34,8 @@ export class Api {
     return this.http.post<AuthResponse>(`${this.base}/auth/login`, { email, password });
   }
 
-  listings(page = 0, size = 20): Observable<Page<Listing>> {
-    return this.http.get<Page<Listing>>(`${this.base}/listings`, { params: { page, size } });
-  }
-
-  listing(id: number | string): Observable<Listing> {
-    return this.http.get<Listing>(`${this.base}/listings/${id}`);
-  }
-
-  createListing(data: FormData): Observable<Listing> {
-    return this.http.post<Listing>(`${this.base}/listings`, data);
-  }
-
-  deleteListing(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/listings/${id}`);
-  }
-
-  describe(title: string, notes: string): Observable<{ text: string; model: string }> {
-    return this.http.post<{ text: string; model: string }>(`${this.base}/ai/describe`, { title, notes });
+  me(): Observable<User> {
+    return this.http.get<User>(`${this.base}/auth/me`);
   }
 
   info(): Observable<Info> {
