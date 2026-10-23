@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ErrorBanner } from './errors';
 
 @Component({
   imports: [RouterOutlet],
@@ -7,4 +8,6 @@ import { RouterOutlet } from '@angular/router';
   styleUrl: './app.scss',
   templateUrl: './app.html',
 })
-export class App {}
+export class App {
+  protected readonly errors = inject(ErrorBanner);
+}

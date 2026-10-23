@@ -56,6 +56,10 @@ Tests: `cd backend && ./mvnw verify` (H2, no Docker needed) and `cd frontend && 
 
 Reset the local database: `docker compose down -v`.
 
+## Additions
+
+- Errors are Problem Details (`application/problem+json`), shown by a global banner in the frontend.
+
 ## Workflow
 
 1. Branch from `main`, open a pull request, wait for CI to pass.
