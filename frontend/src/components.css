@@ -707,6 +707,38 @@ textarea.zw-input {
   gap: var(--space-3);
   margin-left: auto;
 }
+.zw-account {
+  display: contents;
+}
+/* The header carries the account link; the footer only shows it where the header's nav is hidden. */
+.zw-footer .zw-account {
+  display: none;
+}
+@media (max-width: 720px) {
+  .zw-footer .zw-account {
+    display: contents;
+  }
+  .zw-footer__bar {
+    gap: var(--space-3) var(--space-6);
+    padding-top: var(--space-6);
+    padding-bottom: var(--space-6);
+  }
+  .zw-footer__bar a,
+  .zw-footer__bar .zw-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .zw-footer__langs {
+    width: 100%;
+    margin-left: 0;
+    gap: var(--space-4);
+  }
+  .zw-footer__langs button {
+    min-height: 44px;
+    padding: 0 var(--space-1);
+  }
+}
 
 /* Sections */
 .zw-section {
