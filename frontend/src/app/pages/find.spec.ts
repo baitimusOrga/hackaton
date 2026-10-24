@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { of, Subject } from 'rxjs';
-import { SearchService } from '../api/services';
+import { ListingsService, SearchService } from '../api/services';
 import { Find } from './find';
 
 const TEXT = 'working iMac 2017, bis CHF 600 in Zürich';
@@ -386,5 +386,67 @@ describe('Find', () => {
       'bis 600',
       'in Chur',
     ]);
+    expect(trigger(el, 'Zustand').textContent).toContain('2');
+    const url = decodeURIComponent(TestBed.inject(Router).url);
+    expect(url).toContain('cond=GOOD,USED');
+    expect(url).toContain('maxp=bis 600');
+    expect(url).toContain('plzp=in Chur');
+  });
+
+  it('lists the auctions on /find?mode=auction before a search', async () => {
+    const list = vi
+      .fn()
+      .mockReturnValue(
+        of([{ id: 3, title: 'Aeron', priceChf: 300, saleMode: 'AUCTION', bidCount: 2 }]),
+      );
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: SearchService, useValue: { create: vi.fn(), matches: vi.fn() } },
+        { provide: ListingsService, useValue: { list } },
+        {
+          provide: ActivatedRoute,
+          useValue: { queryParamMap: of(convertToParamMap({ mode: 'auction' })) },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(Find);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(list).toHaveBeenCalledWith({ saleMode: 'AUCTION' });
+    expect(el.textContent).toContain('Alle Auktionen');
+    expect(el.querySelector('a[href="/listings/3"]')).not.toBeNull();
+    expect(el.querySelector('textarea')).not.toBeNull();
+  });
+
+  it('"Mein Standort" in the Region facet switches to the position and searches once', async () => {
+    const asked = geolocation({
+      coords: { latitude: 47.37812, longitude: 8.52345 },
+    } as GeolocationPosition);
+    const create = vi.fn().mockReturnValue(of(REQ));
+    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
+    const { fixture, el } = setup({ create, matches });
+    await fixture.whenStable();
+    await search(fixture, el, TEXT);
+
+    trigger(el, 'Region').click();
+    await fixture.whenStable();
+    [...el.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')]
+      .find((b) => b.textContent!.includes('Mein Standort'))!
+      .click();
+    await fixture.whenStable();
+    await escape(fixture);
+
+    expect(asked).toHaveBeenCalledTimes(1);
+    expect(matches).toHaveBeenCalledTimes(2);
+    expect(matches.mock.calls[1][0].body).toMatchObject({
+      latitude: 47.378,
+      longitude: 8.523,
+      maxDistanceKm: 25,
+      nearMe: true,
+    });
+    expect(matches.mock.calls[1][0].body.postcode).toBeUndefined();
+    expect(trigger(el, 'Region').textContent).toContain('25 km um deinen Standort');
   });
 });

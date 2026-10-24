@@ -136,7 +136,7 @@ in the trigger when active:
 | Kategorie | radio list: "Alle" + `CATEGORIES` (translated via catalog messages) | the category |
 | Preis | one `zw-input--price` "bis", CHF | "bis 600" |
 | Zustand | checkboxes Neu, Wie neu, Gut, Gebraucht, Defekt (`CONDITION_LABELS`) | one → its label, several → the count |
-| Region | PLZ input; radius buttons 5 / 10 / 25 / 50 / 100 km / Ganze Schweiz (`aria-pressed`); ghost button "Mein Standort" / "Standort aktualisieren" | "25 km um 8001", "25 km um dich", "8001" |
+| Region | PLZ input; radius buttons 5 / 10 / 25 / 50 / 100 km / Ganze Schweiz (`aria-pressed`); ghost button "Mein Standort" / "Standort aktualisieren" | "25 km um 8001", "25 km um deinen Standort", "8001" |
 | Verkaufsart | checkbox "Auktion" (client-side filter as today) | "Auktion" |
 | Anforderungen | two lists Muss / Wäre schön; per row "→ Wäre schön" / "→ Muss" and a remove button; "Keine." when empty | the count |
 | Stichwort | text input, comma separated, help "Mehrere mit Komma trennen" | the count |
@@ -218,7 +218,7 @@ names), `maxp` and `plzp` (budget and region phrase, only when present). `FILTER
 - New strings in `i18n/messages/find.ts` (de keys with fr / it / en): Du suchst, the two hint
   lines, Dazu:, Filter, Alle entfernen, Zurücksetzen, Übernehmen, Alle, Zustand, Anforderungen,
   Stichwort, Passt, Möglich, Alternativen, alles belegt, Angaben fehlen, ausserhalb deiner Suche,
-  {km} km um dich, {label} nicht mehr verlangen, {label} wieder verlangen, {count} entfernt.
+  {label} nicht mehr verlangen, {label} wieder verlangen, {count} entfernt.
   Nochmals antippen, um es wieder zu verlangen.
 
 ### Error handling

@@ -182,7 +182,7 @@
             <button
               type="button"
               class="zw-chip"
-              [attr.aria-pressed]="radius() === km"
+              [attr.aria-pressed]="!off().has('region') && radius() === km"
               (click)="setRadius(km)"
             >
               {{ km }} km
@@ -191,7 +191,7 @@
           <button
             type="button"
             class="zw-chip"
-            [attr.aria-pressed]="radius() === null"
+            [attr.aria-pressed]="!off().has('region') && radius() === null"
             (click)="setRadius(null)"
           >
             {{ 'Ganze Schweiz' | t }}
@@ -284,6 +284,9 @@
     <div class="find__count">
       <span role="status" aria-live="polite">{{ countText() }}</span>
       @if (!busy()) {
+        @if (progress()) {
+          <span class="zw-help">{{ progress() }}</span>
+        }
         @if (shown(); as res) {
           <span class="zw-help">{{ '{count} verglichen' | t: { count: res.compared ?? 0 } }}</span>
         }

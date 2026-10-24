@@ -288,10 +288,10 @@ export class Find {
   protected readonly busy = computed(() => this.loading() || this.matching());
   protected readonly progress = signal('');
   /** The status line: what runs right now, else the count. */
-  protected readonly countText = computed(
-    () =>
-      this.progress() ||
-      this.i18n.t('{count} Inserate', { count: this.shown()?.matches?.length ?? 0 }),
+  protected readonly countText = computed(() =>
+    this.busy()
+      ? this.progress()
+      : this.i18n.t('{count} Inserate', { count: this.shown()?.matches?.length ?? 0 }),
   );
   /** The sentence's tokens: requirements, budget and region, with where they sit in the sentence. */
   protected readonly tokens = computed<Token[]>(() => {
@@ -631,6 +631,7 @@ export class Find {
     this.radius.set(null);
     this.position.set(null);
     this.nearMe = false;
+    this.dirty = false;
     this.showMatches();
   }
 
@@ -641,6 +642,7 @@ export class Find {
       this.position.set(null);
       this.radius.set(null);
       this.nearMe = false;
+      this.dirty = false;
       return this.showMatches(this.i18n.t(NO_POSITION));
     }
     this.position.set(position);
@@ -648,6 +650,7 @@ export class Find {
     if (this.radius() === null) this.radius.set(NEAR_ME_KM);
     this.nearMe = true;
     this.turnOn('region');
+    this.dirty = false;
     this.showMatches();
   }
 
@@ -698,8 +701,8 @@ export class Find {
       latitude: position?.latitude ?? null,
       longitude: position?.longitude ?? null,
       conditions: this.conditions(),
-      budgetPhrase: this.budgetPhrase(),
-      regionPhrase: this.regionPhrase(),
+      budgetPhrase: budget === null ? null : this.budgetPhrase(),
+      regionPhrase: on('region') ? this.regionPhrase() : null,
     };
   }
 
