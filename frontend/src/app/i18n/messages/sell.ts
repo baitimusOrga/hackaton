@@ -491,16 +491,6 @@ export const SELL_MESSAGES: Messages = {
     it: 'Riconoscimento in corso…',
     en: 'Recognising…',
   },
-  '1 Ding erkannt': {
-    fr: '1 élément reconnu',
-    it: '1 elemento riconosciuto',
-    en: '1 thing recognised',
-  },
-  '{n} Dinge erkannt': {
-    fr: '{n} éléments reconnus',
-    it: '{n} elementi riconosciuti',
-    en: '{n} things recognised',
-  },
   'Inserat ansehen': { fr: "Voir l'annonce", it: 'Vedi annuncio', en: 'View listing' },
   'Käufer in deiner Nähe sehen es ab jetzt. Wir melden uns, sobald jemand eine Frage stellt.': {
     fr: "Les acheteurs près de chez toi la voient dès maintenant. Nous te prévenons dès que quelqu'un pose une question.",

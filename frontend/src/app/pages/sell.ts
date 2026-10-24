@@ -842,8 +842,7 @@ export class Sell {
     if (this.busy()) return this.i18n.t('Foto wird hochgeladen…');
     if (this.analyzing())
       return this.i18n.t(this.detections().length ? 'Erkannt wird…' : 'Foto wird ausgewertet…');
-    const n = this.detections().length;
-    return n ? this.i18n.t(n === 1 ? '1 Ding erkannt' : '{n} Dinge erkannt', { n }) : '';
+    return '';
   });
   /** What the stage shows: which photo, whether it is still being scanned, and the boxes on it. */
   protected readonly stage = computed(() => {

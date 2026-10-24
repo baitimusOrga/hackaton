@@ -248,7 +248,7 @@ describe('Sell', () => {
       'Brand: Dell',
     );
     expect(element.querySelector('h1')!.textContent).toContain('Dell U2719D');
-    expect(element.textContent).toContain('1 Ding erkannt');
+    expect(element.textContent).not.toContain('erkannt');
     expect(element.textContent).toContain('Noch 3 Fragen');
 
     button(element, 'Weiter').click();
