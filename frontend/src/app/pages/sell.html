@@ -845,8 +845,13 @@
         } @else {
           <span class="push"></span>
         }
-        <button appButton variant="primary" size="sm" type="button" (click)="restored.set(false)">
-          {{ 'Weitermachen' | t }}
+        <button
+          type="button"
+          class="zw-link close"
+          [attr.aria-label]="'Hinweis schliessen' | t"
+          (click)="restored.set(false)"
+        >
+          <app-icon name="x" />
         </button>
       </div>
     </div>

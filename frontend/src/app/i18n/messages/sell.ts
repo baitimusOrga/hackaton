@@ -550,7 +550,7 @@ export const SELL_MESSAGES: Messages = {
     it: 'La tua bozza di prima è di nuovo qui.',
     en: 'Your draft from earlier is back.',
   },
-  Weitermachen: { fr: 'Continuer', it: 'Continua', en: 'Continue' },
+  'Hinweis schliessen': { fr: 'Fermer l’avis', it: 'Chiudi l’avviso', en: 'Dismiss notice' },
   'nicht bestätigt': { fr: 'non confirmé', it: 'non confermato', en: 'not confirmed' },
   'Anderes Foto': { fr: 'Autre photo', it: 'Altra foto', en: 'Different photo' },
   'Entwurf wirklich verwerfen?': {

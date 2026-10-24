@@ -186,7 +186,9 @@ describe('Sell', () => {
     expect(element.querySelector('header + .restored')!.textContent).toContain(
       'Dein Entwurf von vorhin ist wieder da.',
     );
-    button(element, 'Weitermachen').click();
+    element
+      .querySelector<HTMLButtonElement>('.restored [aria-label="Hinweis schliessen"]')!
+      .click();
     await fixture.whenStable();
     expect(element.querySelector('.restored')).toBeNull();
   });
