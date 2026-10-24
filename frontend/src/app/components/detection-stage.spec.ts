@@ -16,12 +16,12 @@ describe('DetectionStage', () => {
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelectorAll('.glass').length).toBe(4); // every box stays
-    expect(element.querySelector('.pill--above')!.textContent).toContain('Marke: Trek');
-    expect(
-      element.querySelector('.pill:not(.pill--above):not(.pill--inside)')!.textContent,
-    ).toContain('Federgabel');
-    expect(element.querySelector('.pill--inside')!.textContent).toContain('Rahmen');
+    expect(element.querySelectorAll('.mark').length).toBe(4); // every box stays
+    expect(element.querySelector('.tag--above')!.textContent).toContain('Marke: Trek');
+    expect(element.querySelector('.tag:not(.tag--above):not(.tag--inside)')!.textContent).toContain(
+      'Federgabel',
+    );
+    expect(element.querySelector('.tag--inside')!.textContent).toContain('Rahmen');
     expect(element.textContent).not.toContain('Kassette');
   });
 });

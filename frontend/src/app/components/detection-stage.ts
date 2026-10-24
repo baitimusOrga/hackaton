@@ -9,8 +9,9 @@ export interface StageMark {
 }
 
 /**
- * A photo with the AI's findings as in "Sell Erkennung v3": a glass sweep with sparks while it is
- * scanned, then the photo dims and glass boxes with labels appear one after the other.
+ * A photo with the AI's findings as in "Sell Erkennung v3" (style "Kurz"): a thin progress bar while
+ * it is scanned, then corner marks with labels flash up one after the other and fade out after a few
+ * seconds. Privacy marks and "photograph it here" hints stay.
  */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,46 +22,41 @@ export interface StageMark {
         <img [src]="src()" [alt]="alt()" />
         <div class="fx">
           @if (scanning()) {
-            <div class="sweep"></div>
-            @for (spark of sparks; track $index) {
-              <span
-                class="spark"
-                [style.left.%]="spark.x"
-                [style.top.%]="spark.y"
-                [style.animation-delay.ms]="spark.delay"
-              ></span>
-            }
-          } @else if (marks().length) {
-            <div class="dim"></div>
+            <div class="shade"></div>
+            <div class="load"><span></span></div>
+          } @else if (hasHint()) {
+            <div class="shade"></div>
           }
           @for (mark of placed(); track mark.label + $index; let i = $index) {
             <div
-              class="glass"
-              [class.glass--privacy]="mark.kind === 'privacy'"
-              [class.glass--hint]="mark.kind === 'hint'"
+              class="mark"
+              [class.mark--stay]="mark.kind !== 'detect'"
+              [class.mark--hint]="mark.kind === 'hint'"
+              [class.mark--privacy]="mark.kind === 'privacy'"
               [style.left.%]="mark.box[0] * 100"
               [style.top.%]="mark.box[1] * 100"
               [style.width.%]="mark.box[2] * 100"
               [style.height.%]="mark.box[3] * 100"
-              [style.animation-delay.ms]="i * 120"
+              [style.animation-delay.ms]="i * 450"
               [attr.data-testid]="mark.kind === 'detect' ? 'detection' : mark.kind"
             >
+              <span class="c c--tl"></span><span class="c c--tr"></span>
+              <span class="c c--bl"></span><span class="c c--br"></span>
               @if (mark.pill) {
                 <span
-                  class="pill"
-                  [class.pill--above]="mark.pill === 'above'"
-                  [class.pill--inside]="mark.pill === 'inside'"
-                  [style.animation-delay.ms]="i * 120 + 350"
+                  class="tag"
+                  [class.tag--above]="mark.pill === 'above'"
+                  [class.tag--inside]="mark.pill === 'inside'"
                 >
-                  <span class="pill__icon" aria-hidden="true">
-                    @if (mark.kind === 'hint') {
-                      <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /></svg>
-                    } @else if (mark.kind === 'privacy') {
-                      <svg viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.5" /></svg>
-                    } @else {
-                      <svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" /></svg>
-                    }
-                  </span>
+                  @if (mark.kind === 'hint') {
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+                    </svg>
+                  } @else if (mark.kind === 'privacy') {
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 4l9 16H3zM12 10v4M12 17v.5" />
+                    </svg>
+                  }
                   {{ mark.label }}
                 </span>
               }
@@ -98,196 +94,113 @@ export interface StageMark {
       pointer-events: none;
       z-index: 2;
     }
-    .dim {
+    .shade {
       position: absolute;
       inset: 0;
-      background: rgba(12, 16, 28, 0.38);
-      animation: zwDim 0.5s ease-out both;
+      background: rgba(30, 29, 26, 0.22);
+      animation: zwFade 0.3s linear both;
     }
-    .sweep {
+    .load {
       position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 3px;
+      background: rgba(30, 29, 26, 0.35);
+    }
+    .load span {
+      position: absolute;
+      inset: 0;
+      background: #fbfaf7;
+      transform-origin: left;
+      animation: zwLoad 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+    /* a detection flashes up, holds about 3 seconds and fades out */
+    .mark {
+      position: absolute;
+      animation: zwBlip 4s ease-out both;
+    }
+    .mark--stay {
+      animation: zwCorner 0.25s ease-out both;
+    }
+    .mark--hint .c {
+      animation: zwBlink 1.4s ease-in-out 0.4s infinite;
+    }
+    .c {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border: 0 solid #fbfaf7;
+    }
+    .mark--privacy .c {
+      border-color: #f3b4ba;
+    }
+    .c--tl {
       top: 0;
+      left: 0;
+      border-width: 2px 0 0 2px;
+    }
+    .c--tr {
+      top: 0;
+      right: 0;
+      border-width: 2px 2px 0 0;
+    }
+    .c--bl {
       bottom: 0;
       left: 0;
-      width: 42%;
-      background: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(200, 225, 255, 0.1) 55%,
-        rgba(255, 255, 255, 0.45) 96%,
-        rgba(255, 255, 255, 0.95) 99%,
-        rgba(255, 255, 255, 0) 100%
-      );
-      backdrop-filter: blur(10px) saturate(1.7) brightness(1.15);
-      mask-image: linear-gradient(90deg, transparent, #000 70%);
-      animation: zwSweep 1.7s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+      border-width: 0 0 2px 2px;
     }
-    .spark {
+    .c--br {
+      bottom: 0;
+      right: 0;
+      border-width: 0 2px 2px 0;
+    }
+    .tag {
       position: absolute;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #fff;
-      box-shadow: 0 0 10px 2px rgba(140, 200, 255, 0.9);
-      animation: zwSpark 0.9s ease-out infinite;
-    }
-    .glass {
-      position: absolute;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.06);
-      animation:
-        zwGlassIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both,
-        zwGlow 3s ease-in-out infinite;
-    }
-    .glass::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: linear-gradient(
-        115deg,
-        transparent 35%,
-        rgba(255, 255, 255, 0.65) 50%,
-        rgba(170, 210, 255, 0.35) 56%,
-        transparent 68%
-      );
-      background-size: 260% 100%;
-      animation: zwShimmer 1.1s ease-out 0.15s both;
-    }
-    .glass--hint {
-      animation:
-        zwGlassIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both,
-        zwGlow 1.6s ease-in-out infinite;
-    }
-    .glass--hint::before {
-      animation-iteration-count: infinite;
-    }
-    .glass--privacy {
-      background: rgba(163, 16, 30, 0.18);
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
-      animation: zwGlassIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-    .pill {
-      position: absolute;
-      top: calc(100% + 8px);
+      top: calc(100% + 6px);
       left: 0;
       display: inline-flex;
       align-items: center;
-      gap: var(--space-2);
-      padding: 4px 10px 4px 6px;
+      gap: 6px;
+      padding: 3px 8px;
       white-space: nowrap;
-      border-radius: 999px;
-      background: rgba(20, 22, 30, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      backdrop-filter: blur(14px) saturate(1.6);
-      color: #fff;
-      font: 600 13px/18px var(--font-sans);
-      animation: zwLabel 0.5s ease-out 0.35s both;
-    }
-    .pill--inside {
-      top: 8px;
-      left: 8px;
-    }
-    .pill--above {
-      top: auto;
-      bottom: calc(100% + 8px);
-    }
-    .pill__icon {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.9);
+      border-radius: 2px;
+      background: #fbfaf7;
       color: #1e1d1a;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      font: 600 13px/18px var(--font-sans);
     }
-    .pill__icon svg {
+    .tag--inside {
+      top: 6px;
+      left: 6px;
+    }
+    .tag--above {
+      top: auto;
+      bottom: calc(100% + 6px);
+    }
+    .tag svg {
+      width: 14px;
+      height: 14px;
       fill: none;
       stroke: currentColor;
       stroke-width: 2.2;
       stroke-linecap: round;
       stroke-linejoin: round;
-      width: 12px;
-      height: 12px;
     }
     @media (prefers-reduced-motion: reduce) {
-      .glass,
-      .glass::before,
-      .pill,
-      .dim {
+      .mark,
+      .mark--hint .c,
+      .shade {
         animation: none;
       }
-      .sweep,
-      .spark {
+      .mark:not(.mark--stay) {
         display: none;
       }
-    }
-    @keyframes zwSweep {
-      0% {
-        transform: translateX(-110%);
-      }
-      100% {
-        transform: translateX(260%);
+      .load span {
+        animation: none;
+        transform: scaleX(0.6);
       }
     }
-    @keyframes zwGlassIn {
-      0% {
-        opacity: 0;
-        transform: scale(1.06);
-        backdrop-filter: blur(18px) saturate(1) brightness(1);
-      }
-      55% {
-        opacity: 1;
-      }
-      100% {
-        opacity: 1;
-        transform: scale(1);
-        backdrop-filter: blur(0) saturate(1.5) brightness(1.28);
-      }
-    }
-    @keyframes zwGlow {
-      0%,
-      100% {
-        box-shadow:
-          0 0 0 1px rgba(255, 255, 255, 0.7),
-          0 0 22px 2px rgba(106, 149, 255, 0.55),
-          inset 0 0 22px rgba(255, 255, 255, 0.28);
-      }
-      50% {
-        box-shadow:
-          0 0 0 1px rgba(255, 255, 255, 0.9),
-          0 0 30px 4px rgba(140, 220, 255, 0.6),
-          inset 0 0 30px rgba(200, 230, 255, 0.38);
-      }
-    }
-    @keyframes zwLabel {
-      0% {
-        opacity: 0;
-        transform: translateY(6px);
-        filter: blur(4px);
-      }
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-        filter: blur(0);
-      }
-    }
-    @keyframes zwSpark {
-      0% {
-        opacity: 0;
-        transform: scale(0.2);
-      }
-      40% {
-        opacity: 1;
-        transform: scale(1);
-      }
-      100% {
-        opacity: 0;
-        transform: scale(0.6);
-      }
-    }
-    @keyframes zwDim {
+    @keyframes zwFade {
       from {
         opacity: 0;
       }
@@ -295,14 +208,50 @@ export interface StageMark {
         opacity: 1;
       }
     }
-    @keyframes zwShimmer {
+    @keyframes zwLoad {
       0% {
-        background-position: 160% 0;
+        transform: scaleX(0);
+      }
+      60% {
+        transform: scaleX(0.8);
+      }
+      100% {
+        transform: scaleX(1);
+      }
+    }
+    @keyframes zwBlip {
+      0% {
+        opacity: 0;
+        transform: scale(1.05);
+      }
+      5% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      85% {
         opacity: 1;
       }
       100% {
-        background-position: -60% 0;
         opacity: 0;
+      }
+    }
+    @keyframes zwCorner {
+      from {
+        opacity: 0;
+        transform: scale(1.06);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    @keyframes zwBlink {
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.35;
       }
     }
   `,
@@ -341,11 +290,7 @@ export class DetectionStage {
     });
   });
 
-  // fixed spread of the sparks in the scanning sweep, as in the design
-  protected readonly sparks = Array.from({ length: 14 }, (_, i) => {
-    const x = ((i * 37) % 92) + 4;
-    return { x, y: ((i * 53) % 88) + 6, delay: Math.round(x * 15) };
-  });
+  protected readonly hasHint = computed(() => this.marks().some((m) => m.kind === 'hint'));
 }
 
 type Pill = 'above' | 'below' | 'inside';
