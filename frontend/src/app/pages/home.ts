@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { ListingsService } from '../api/services';
+import { TranslatePipe } from '../i18n/i18n';
 import { HeroSearch } from '../shell/hero-search';
 import { Button } from '../ui/button';
 import { Chip } from '../ui/chip';
@@ -72,7 +73,17 @@ const SAMPLE_AUCTIONS = [
 /** Landing page: hero search, quick filters, categories, ending auctions, new listings, business band. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, Button, Chip, Icon, ListingCard, SectionHeading, SummaryCard],
+  imports: [
+    FormsModule,
+    RouterLink,
+    Button,
+    Chip,
+    Icon,
+    ListingCard,
+    SectionHeading,
+    SummaryCard,
+    TranslatePipe,
+  ],
   selector: 'app-home',
   host: { class: 'zw-bleed' },
   templateUrl: './home.html',

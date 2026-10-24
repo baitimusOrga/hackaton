@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { SearchService } from '../api/services';
 import { Requirement, SearchMatch, SearchRequirements, SearchResults } from '../api/models';
 import { CONDITION_LABELS } from '../conditions';
+import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
 import { chf } from '../ui/chf';
 import { Icon } from '../ui/icon';
@@ -28,7 +29,7 @@ const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube de
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-find',
-  imports: [FormsModule, Button, Icon, SummaryCard],
+  imports: [FormsModule, Button, Icon, SummaryCard, TranslatePipe],
   templateUrl: './find.html',
   styles: `
     .find__query {
@@ -156,6 +157,7 @@ const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube de
 })
 export class Find {
   private readonly search = inject(SearchService);
+  private readonly i18n = inject(I18n);
 
   protected readonly rows = [
     { key: 'mustHave', label: 'Muss', other: 'Wäre schön' },
@@ -207,7 +209,7 @@ export class Find {
     if (this.loading() || !this.text().trim()) return;
     const text = this.text();
     this.loading.set(true);
-    this.status('Lese deinen Wunsch…', 'Mache Anforderungen daraus…');
+    this.status(this.i18n.t('Lese deinen Wunsch…'), this.i18n.t('Mache Anforderungen daraus…'));
     this.search.create({ body: { text } }).subscribe({
       next: (req) => {
         this.initial = req;
@@ -228,7 +230,7 @@ export class Find {
     const text = this.adjust().trim();
     if (this.loading() || !text) return;
     this.loading.set(true);
-    this.status('Passe deine Suche an…');
+    this.status(this.i18n.t('Passe deine Suche an…'));
     const topListingIds = (this.results()?.matches ?? [])
       .slice(0, 5)
       .map((m) => m.listing?.id)
@@ -301,7 +303,7 @@ export class Find {
       this.position.set(null);
       this.radius.set(null);
       this.nearMe = false;
-      this.showMatches(NO_POSITION);
+      this.showMatches(this.i18n.t(NO_POSITION));
     };
     if (!navigator.geolocation) return failed();
     navigator.geolocation.getCurrentPosition(({ coords }) => {
@@ -325,7 +327,10 @@ export class Find {
     clearTimeout(this.debounce);
     const id = ++this.seq;
     this.matching.set(true);
-    this.status('Durchsuche die Inserate…', 'Vergleiche die Inserate mit deinen Anforderungen…');
+    this.status(
+      this.i18n.t('Durchsuche die Inserate…'),
+      this.i18n.t('Vergleiche die Inserate mit deinen Anforderungen…'),
+    );
     this.search.matches({ body: this.requirements() }).subscribe({
       next: (res) => {
         // a slower answer to an older request must not overwrite a newer one
@@ -383,24 +388,27 @@ export class Find {
   }
 
   protected budgetLabel(): string {
-    return `Bis ${chf(this.budget() ?? 0)}`;
+    return this.i18n.t('Bis {price}', { price: chf(this.budget() ?? 0) });
   }
 
   protected regionLabel(): string {
-    if (this.position()) return `${this.radius() ?? NEAR_ME_KM} km um deinen Standort`;
+    if (this.position())
+      return this.i18n.t('{km} km um deinen Standort', { km: this.radius() ?? NEAR_ME_KM });
     const pc = this.postcode().trim();
-    return this.radius() ? `${this.radius()} km um ${pc}` : pc;
+    return this.radius() ? this.i18n.t('{km} km um {pc}', { km: this.radius()!, pc }) : pc;
   }
 
   /** The card's line: score and fit, then why. */
   protected scoreLine(m: SearchMatch): string {
-    const fit = FITS[m.fit ?? ''] ?? '';
+    const fit = this.i18n.t(FITS[m.fit ?? ''] ?? '');
     return [`${m.score ?? 0} % · ${fit}`, m.reason].filter((x) => x).join(' — ');
   }
 
   protected details(m: SearchMatch): string[] {
     return [
-      ...(m.missingDetails?.length ? [`Nicht angegeben: ${m.missingDetails.join(', ')}`] : []),
+      ...(m.missingDetails?.length
+        ? [this.i18n.t('Nicht angegeben: {details}', { details: m.missingDetails.join(', ') })]
+        : []),
       ...(m.differences ?? []),
     ];
   }
