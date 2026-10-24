@@ -4,6 +4,7 @@
 import { KnownFact } from '../models/known-fact';
 export interface DraftTextRequest {
   category: string;
+  condition?: ('NEW' | 'LIKE_NEW' | 'GOOD' | 'USED' | 'DEFECTIVE' | null);
   description: string;
   facts: Array<KnownFact>;
   title: string;

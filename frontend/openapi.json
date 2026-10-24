@@ -1261,6 +1261,10 @@
             "maxLength" : 120,
             "minLength" : 0
           },
+          "condition" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
           "description" : {
             "type" : "string",
             "maxLength" : 4000,
@@ -1285,6 +1289,89 @@
           },
           "description" : {
             "type" : "string"
+          },
+          "price" : {
+            "$ref" : "#/components/schemas/PriceEstimate"
+          }
+        }
+      },
+      "PriceEstimate" : {
+        "type" : "object",
+        "properties" : {
+          "lowChf" : {
+            "type" : [ "number", "null" ]
+          },
+          "midChf" : {
+            "type" : [ "number", "null" ]
+          },
+          "highChf" : {
+            "type" : [ "number", "null" ]
+          },
+          "confidence" : {
+            "type" : "string",
+            "enum" : [ "LOW", "MEDIUM", "HIGH" ]
+          },
+          "provisional" : {
+            "type" : "boolean"
+          },
+          "evidence" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PriceEvidence"
+            }
+          },
+          "explanation" : {
+            "type" : "string"
+          },
+          "condition" : {
+            "type" : "string",
+            "description" : "Condition the range is adjusted to",
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "comparableCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "soldCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PriceEvidence" : {
+        "type" : "object",
+        "properties" : {
+          "listingId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "priceChf" : {
+            "type" : "number"
+          },
+          "similarity" : {
+            "type" : "string",
+            "enum" : [ "SAME_MODEL", "SAME_BRAND", "SIMILAR_TITLE" ]
+          },
+          "similarityPercent" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "condition" : {
+            "type" : "string",
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "sold" : {
+            "type" : "boolean"
+          },
+          "ageDays" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "adjustedPriceChf" : {
+            "type" : "number"
           }
         }
       },
@@ -1397,86 +1484,6 @@
             "items" : {
               "$ref" : "#/components/schemas/PrivacyWarning"
             }
-          }
-        }
-      },
-      "PriceEstimate" : {
-        "type" : "object",
-        "properties" : {
-          "lowChf" : {
-            "type" : [ "number", "null" ]
-          },
-          "midChf" : {
-            "type" : [ "number", "null" ]
-          },
-          "highChf" : {
-            "type" : [ "number", "null" ]
-          },
-          "confidence" : {
-            "type" : "string",
-            "enum" : [ "LOW", "MEDIUM", "HIGH" ]
-          },
-          "provisional" : {
-            "type" : "boolean"
-          },
-          "evidence" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/PriceEvidence"
-            }
-          },
-          "explanation" : {
-            "type" : "string"
-          },
-          "condition" : {
-            "type" : "string",
-            "description" : "Condition the range is adjusted to",
-            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
-          },
-          "comparableCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "soldCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }
-      },
-      "PriceEvidence" : {
-        "type" : "object",
-        "properties" : {
-          "listingId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "title" : {
-            "type" : "string"
-          },
-          "priceChf" : {
-            "type" : "number"
-          },
-          "similarity" : {
-            "type" : "string",
-            "enum" : [ "SAME_MODEL", "SAME_BRAND", "SIMILAR_TITLE" ]
-          },
-          "similarityPercent" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "condition" : {
-            "type" : "string",
-            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
-          },
-          "sold" : {
-            "type" : "boolean"
-          },
-          "ageDays" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "adjustedPriceChf" : {
-            "type" : "number"
           }
         }
       },

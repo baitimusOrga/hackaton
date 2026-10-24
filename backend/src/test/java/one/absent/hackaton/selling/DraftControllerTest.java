@@ -143,18 +143,21 @@ class DraftControllerTest {
     }
 
     @Test void rewritesTitleAndDescriptionFromTheFacts() throws Exception {
-        when(ai.ask(anyString(), anyString(), anyString(), anyList(), anyString(), eq(DraftController.DraftText.class)))
-                .thenReturn(new DraftController.DraftText("Dell U2719D 27\" monitor", "My Dell U2719D monitor."));
+        when(ai.ask(anyString(), anyString(), anyString(), anyList(), anyString(), eq(DraftController.AiText.class)))
+                .thenReturn(new DraftController.AiText("Dell U2719D 27\" monitor", "My Dell U2719D monitor."));
 
         mvc.perform(post("/api/listing-drafts/text").with(jwt().jwt(j -> j.subject("seller")))
                         .contentType(MediaType.APPLICATION_JSON).content("""
-                                {"category":"Monitors","title":"Dell monitor","description":"My monitor.",
+                                {"category":"Monitors","title":"Dell monitor","description":"My monitor.","condition":"GOOD",
                                  "facts":[{"name":"Model","value":"U2719D","source":"SELLER"}]}"""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Dell U2719D 27\" monitor"))
-                .andExpect(jsonPath("$.description").value("My Dell U2719D monitor."));
+                .andExpect(jsonPath("$.description").value("My Dell U2719D monitor."))
+                // re-estimated for the new title and the given condition
+                .andExpect(jsonPath("$.price.condition").value("GOOD"))
+                .andExpect(jsonPath("$.price.explanation").isNotEmpty());
         ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
-        verify(ai).ask(anyString(), anyString(), text.capture(), anyList(), anyString(), eq(DraftController.DraftText.class));
+        verify(ai).ask(anyString(), anyString(), text.capture(), anyList(), anyString(), eq(DraftController.AiText.class));
         assertThat(text.getValue()).contains("Model: U2719D (SELLER)", "Dell monitor");
     }
 
