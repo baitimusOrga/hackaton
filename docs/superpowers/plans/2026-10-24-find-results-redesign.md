@@ -2259,7 +2259,7 @@ Whole file:
       [text]="asked()"
       [tokens]="tokens()"
       [off]="off()"
-      (toggle)="toggleToken($event)"
+      (toggled)="toggleToken($event)"
     />
     @if (refinements().length) {
       <ul class="find__history" [attr.aria-label]="'Deine Anpassungen' | t">
