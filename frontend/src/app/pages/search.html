@@ -82,7 +82,7 @@
           inputmode="numeric"
           maxlength="4"
           [value]="filters().postcode ?? ''"
-          (change)="set('postcode', postcode.value)"
+          (change)="setPostcode(postcode.value)"
         />
         <div class="zw-radii" role="group" [attr.aria-label]="'Umkreis' | t">
           @for (km of radii; track km) {
@@ -109,7 +109,7 @@
           variant="ghost"
           size="sm"
           type="button"
-          (click)="nearMe(filters().radiusKm ?? 25)"
+          (click)="nearMe(filters().radiusKm ?? 25, true)"
         >
           <app-icon name="pin" [size]="16" />
           <span>{{ 'Mein Standort' | t }}</span>

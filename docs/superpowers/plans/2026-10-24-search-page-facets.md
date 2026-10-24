@@ -65,7 +65,7 @@ Move these rules out of the `styles:` of `frontend/src/app/pages/find.ts` into `
 | `.find__count`, `.find__count .zw-help` | `.zw-count`, … |
 | the `@media (max-width: 720px) { .find__bar { top: 0 } }` rule | same for `.zw-facetbar` |
 
-Then replace the class names in `find.html` (every occurrence, incl. `class="zw-caption find__opt-head"` → `class="zw-caption zw-option__head"` and `class="zw-help find__opt"` → `class="zw-help zw-option"`). Nothing else in find changes; `find.spec.ts` does not reference these classes. Checks must stay green (find.spec.ts 15 tests).
+Then replace the class names in `find.html` (every occurrence, incl. `class="zw-caption find__opt-head"` → `class="zw-caption zw-facet-option__head"` and `class="zw-help find__opt"` → `class="zw-help zw-facet-option"`). Nothing else in find changes; `find.spec.ts` does not reference these classes. Checks must stay green (find.spec.ts 15 tests).
 
 ### Task B (Opus): `/search` rebuilt
 

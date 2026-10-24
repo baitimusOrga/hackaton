@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
-import { map, switchMap } from 'rxjs';
+import { catchError, map, of, switchMap } from 'rxjs';
 import { ListingsService } from '../api/services';
 import { CATEGORIES } from '../categories';
 import { ListingMap } from '../components/listing-map';
@@ -78,7 +78,9 @@ export class Search {
     initialValue: filtersOf(this.route.snapshot.queryParamMap),
   });
   protected readonly listings = toSignal(
-    this.route.queryParamMap.pipe(switchMap((params) => this.api.list(filtersOf(params)))),
+    this.route.queryParamMap.pipe(
+      switchMap((params) => this.api.list(filtersOf(params)).pipe(catchError(() => of([])))),
+    ),
   );
   protected readonly hasActive = computed(() => {
     const f = this.filters();
@@ -112,21 +114,30 @@ export class Search {
     this.go({ [name]: value.trim() || null });
   }
 
+  protected setPostcode(value: string) {
+    this.go({ postcode: value.trim() || null, lat: null, lon: null });
+  }
+
   protected clearRegion() {
+    this.locationError.set('');
     this.go({ postcode: null, radiusKm: null, lat: null, lon: null });
   }
 
   protected clearAll() {
+    this.locationError.set('');
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
   }
 
-  /** Asks the browser for the position once and keeps it, rounded to ~100 m, in the URL with the range. */
-  protected nearMe(radiusKm: number | null) {
+  /**
+   * Asks the browser for the position once and keeps it, rounded to ~100 m, in the URL with the range.
+   * `ask` forces the question even when a full postcode or a known position would do (the "Mein Standort" button).
+   */
+  protected nearMe(radiusKm: number | null, ask = false) {
     this.locationError.set('');
     if (radiusKm === null) return this.go({ radiusKm: null, lat: null, lon: null });
     const km = String(radiusKm);
     // a full postcode is enough to measure from, no location permission needed
-    if (/^\d{4}$/.test(this.filters().postcode ?? ''))
+    if (!ask && /^\d{4}$/.test(this.filters().postcode ?? ''))
       return this.go({ radiusKm: km, lat: null, lon: null });
     const fail = () => {
       this.locationError.set(
@@ -134,6 +145,7 @@ export class Search {
       );
       this.go({ radiusKm: null, lat: null, lon: null });
     };
+    if (!ask && this.filters().lat !== undefined) return this.go({ radiusKm: km });
     if (!navigator.geolocation) return fail();
     navigator.geolocation.getCurrentPosition(
       ({ coords }) =>
@@ -141,6 +153,8 @@ export class Search {
           radiusKm: km,
           lat: coords.latitude.toFixed(3),
           lon: coords.longitude.toFixed(3),
+          // the position replaces a typed postcode, so the field and the summary match the search
+          ...(ask && { postcode: null }),
         }),
       fail,
     );
