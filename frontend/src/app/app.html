@@ -1,15 +1,6 @@
 <app-header />
 <main class="zw-main">
-  @if (errors.message(); as message) {
-    <div class="zw-container">
-      <div class="zw-error" role="alert">
-        <span>{{ message }}</span>
-        <button type="button" class="zw-btn zw-btn--sm" (click)="errors.dismiss()">
-          Schliessen
-        </button>
-      </div>
-    </div>
-  }
   <router-outlet />
 </main>
 <app-footer />
+<app-error-toast />
