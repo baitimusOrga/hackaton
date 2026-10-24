@@ -8,4 +8,5 @@ export { PurchasesService } from './services/purchases.service';
 export { AuctionsService } from './services/auctions.service';
 export { PlacesService } from './services/places.service';
 export { TradesService } from './services/trades.service';
+export { MyListingsService } from './services/my-listings.service';
 export { InfoService } from './services/info.service';

@@ -17,6 +17,10 @@ export const routes: Routes = [
     children: [
       { path: '', loadComponent: () => import('./pages/profile').then((m) => m.Profile) },
       {
+        path: 'listings',
+        loadComponent: () => import('./pages/profile-listings').then((m) => m.ProfileListings),
+      },
+      {
         path: 'trades',
         loadComponent: () => import('./pages/profile-trades').then((m) => m.ProfileTrades),
       },
