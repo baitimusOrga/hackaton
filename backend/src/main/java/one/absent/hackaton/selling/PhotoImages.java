@@ -1,6 +1,8 @@
 package one.absent.hackaton.selling;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -10,12 +12,51 @@ import java.nio.ByteOrder;
 
 import javax.imageio.ImageIO;
 
+import one.absent.hackaton.ai.AiClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Re-encodes uploaded photos so EXIF data (GPS, camera serial, ...) is never stored or served. */
 final class PhotoImages {
+    // what Claude reads at full detail; a bigger photo is scaled down by the API, and box pixels no longer match
+    static final int AI_MAX_EDGE = 2576;
+    static final long AI_MAX_PIXELS = 3_750_000;
+
+    /** A photo as sent to the AI, with its size in pixels; no size when it cannot be decoded (WebP). */
+    record AiPhoto(AiClient.Image image, Integer width, Integer height) {}
+
     private PhotoImages() {}
+
+    /** Scales a stored photo down to what the AI reads at full detail, so its box pixels match the photo. */
+    static AiPhoto forAi(byte[] data, String type) {
+        try {
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(data));
+            if (image == null) {
+                // shortcut: no ImageIO reader for WebP, so no size and no boxes on it; decode WebP if sellers use it
+                return new AiPhoto(new AiClient.Image(data, type), null, null);
+            }
+            int w = image.getWidth();
+            int h = image.getHeight();
+            double scale = Math.min(1, Math.min((double) AI_MAX_EDGE / Math.max(w, h),
+                    Math.sqrt((double) AI_MAX_PIXELS / ((long) w * h))));
+            if (scale >= 1) {
+                return new AiPhoto(new AiClient.Image(data, type), w, h);
+            }
+            int sw = (int) Math.floor(w * scale);
+            int sh = (int) Math.floor(h * scale);
+            var small = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = small.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g.drawImage(image, 0, 0, sw, sh, Color.WHITE, null);
+            g.dispose();
+            var out = new ByteArrayOutputStream();
+            ImageIO.write(small, "jpg", out);
+            return new AiPhoto(new AiClient.Image(out.toByteArray(), "image/jpeg"), sw, sh);
+        } catch (IOException e) {
+            return new AiPhoto(new AiClient.Image(data, type), null, null);
+        }
+    }
 
     static byte[] stripMetadata(byte[] data, String type) {
         boolean jpeg = "image/jpeg".equals(type);

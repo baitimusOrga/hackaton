@@ -5,7 +5,6 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,11 +22,10 @@ import one.absent.hackaton.listing.Categories;
 import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.selling.ListingDraft.DraftFact;
 import one.absent.hackaton.selling.ListingDraft.PriceEstimate;
-import one.absent.hackaton.photo.PhotoStorage;
+import one.absent.hackaton.selling.PhotoImages.AiPhoto;
 import one.absent.hackaton.selling.WebFactsController.KnownFact;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -74,13 +72,14 @@ public class DraftController {
             Answer only with JSON lines: one complete JSON object per line, no other text, no code fences.
             Write the lines in this order:
             1. One "detection" line per thing you recognise, most telling first, e.g.
-               {"type":"detection","photo":1,"box":[0.12,0.40,0.30,0.08],"label":"Brand: Trek","fact":{"name":"Brand","value":"Trek","source":"LABEL"}}
-               photo is the 1-based photo position. box is x, y (top-left corner), width, height as fractions
-               from 0 to 1 of the image. fact only when the detection gives one. At most 5 detections; label
-               2 to 4 words, e.g. "Marke: Trek", "Federgabel", "Zustand: gut".
+               {"type":"detection","photo":1,"box":[310,820,760,170],"label":"Brand: Trek","fact":{"name":"Brand","value":"Trek","source":"LABEL"}}
+               photo is the 1-based photo position. box is x, y (top-left corner), width, height in pixels of
+               that photo (its size is given in the message); fit the box tightly around the thing. fact only
+               when the detection gives one. At most 5 detections; label 2 to 4 words, e.g. "Marke: Trek",
+               "Federgabel", "Zustand: gut".
             2. One "privacy" line per area that shows a serial number, IMEI, MAC address, a person's name, address,
                phone number, a document, an employee or asset tag, or a screen with personal content, e.g.
-               {"type":"privacy","photo":2,"box":[0.5,0.6,0.2,0.05],"text":"Shows a serial number. Leave this photo out or cover it."}
+               {"type":"privacy","photo":2,"box":[1200,1500,480,90],"text":"Shows a serial number. Leave this photo out or cover it."}
                Never repeat the value.
             3. One "gap" line per key fact of the category that is not readable on a label and not confirmed by the
                seller, and one named "Condition" when condition is null, e.g.
@@ -100,6 +99,10 @@ public class DraftController {
             Rules:
             - facts: only text you can read on a label, type plate, screen or datasheet gets source LABEL.
               Everything you infer from appearance gets source SUGGESTION. Never use any other source.
+            - A brand or model name is LABEL only when every letter is clearly legible. A stylised, slanted,
+              small, partly hidden or blurry logo is a SUGGESTION (stylised lettering of different brands looks
+              alike), and the first gap is then a PHOTO gap for Brand asking for a close-up of the logo, with
+              its box on the logo.
             - Never invent internal specs (CPU, RAM, storage, ...) unless they are readable on a label or screen.
               Never claim working condition, ownership or included accessories.
             - Fact names only from the allowed list; values short and normalized (e.g. 27", 16 GB, 2560x1440).
@@ -122,7 +125,7 @@ public class DraftController {
                     .collect(Collectors.joining("\n")));
 
     /** The UI languages; every text the AI writes is in the seller's one. */
-    static final Map<String, String> LANGUAGES = Map.of("de", "Swiss German (ss, never ß)", "fr", "French",
+    static final Map<String, String> LANGUAGES = Map.of("de", "standard German as written in Switzerland (ss, never ß; no dialect)", "fr", "French",
             "it", "Italian", "en", "English");
 
     static String languageRule(String language) {
@@ -149,17 +152,15 @@ public class DraftController {
     /** {@code price} is estimated again: the corrected facts usually change what the item is worth. */
     public record DraftText(String title, String description, PriceEstimate price) {}
 
-    private final PhotoRepository photos;
-    private final PhotoStorage storage;
+    private final DraftPhotos photos;
     private final AiClient ai;
     private final PriceEstimator prices;
     private final JsonMapper json;
     private final String fastModel;
 
-    public DraftController(PhotoRepository photos, PhotoStorage storage, AiClient ai, PriceEstimator prices,
-                           JsonMapper json, @Value("${ai.search-model}") String fastModel) {
+    DraftController(DraftPhotos photos, AiClient ai, PriceEstimator prices, JsonMapper json,
+                    @Value("${ai.search-model}") String fastModel) {
         this.photos = photos;
-        this.storage = storage;
         this.ai = ai;
         this.prices = prices;
         this.json = json;
@@ -172,8 +173,9 @@ public class DraftController {
     @PostMapping(value = "/api/listing-drafts/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseEntity<SseEmitter> streamDraft(@Valid @RequestBody DraftRequest request,
                                                   @AuthenticationPrincipal Jwt seller) {
-        List<AiClient.Image> images = imagesOf(request.photoIds(), seller.getSubject());
-        String text = "Create the listing draft for the item in these photos." + (request.confirmedFacts().isEmpty()
+        List<AiPhoto> images = photos.forAi(request.photoIds(), seller.getSubject());
+        String text = "Create the listing draft for the item in these photos.\n" + DraftPhotos.sizes(images)
+                + (request.confirmedFacts().isEmpty()
                 ? "" : "\nThe seller confirmed:\n" + request.confirmedFacts().stream()
                         .map(f -> f.name() + ": " + f.value()).collect(Collectors.joining("\n")))
                 + languageRule(request.language());
@@ -182,8 +184,8 @@ public class DraftController {
         Consumer<DraftEvent> emit = event -> send(emitter, event);
         Thread.ofVirtual().start(() -> {
             try {
-                var lines = new DraftLines(json, images.size(), emit);
-                ai.streamLines(SYSTEM, text, images, lines);
+                var lines = new DraftLines(json, images, emit);
+                ai.streamLines(SYSTEM, text, images.stream().map(AiPhoto::image).toList(), lines);
                 lines.finish(request.photoIds(), prices);
             } catch (ResponseStatusException e) {
                 emit.accept(DraftEvent.error(e.getReason()));
@@ -214,20 +216,6 @@ public class DraftController {
                 .map(f -> new DraftFact(f.name(), f.value(), f.source(), null)).toList();
         return new DraftText(shortTitle(answer.title()), answer.description(),
                 prices.estimate(request.category(), answer.title(), facts, request.condition()));
-    }
-
-    /** The images of the seller's unpublished photos, in request order. */
-    private List<AiClient.Image> imagesOf(List<Long> ids, String sellerId) {
-        Map<Long, Photo> found = photos.findAllById(ids).stream()
-                .collect(Collectors.toMap(Photo::getId, Function.identity()));
-        return ids.stream().map(id -> {
-            Photo photo = found.get(id);
-            if (photo == null || !photo.getSellerId().equals(sellerId) || photo.getListingId() != null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown photo.");
-            }
-            byte[] data = photo.getStorageKey() == null ? photo.getData() : storage.get(photo.getStorageKey()).bytes();
-            return new AiClient.Image(data, photo.getContentType());
-        }).toList();
     }
 
     private static void send(SseEmitter emitter, DraftEvent event) {
