@@ -592,6 +592,15 @@
       />
     </div>
   </div>
+  <div>
+    <button appButton size="sm" type="button" [disabled]="locating()" (click)="useMyLocation()">
+      <app-icon name="pin" />
+      <span>{{ (locating() ? 'Standort wird ermittelt…' : 'Mein Standort') | t }}</span>
+    </button>
+  </div>
+  @if (locationNote()) {
+    <p class="zw-small" aria-live="polite">{{ locationNote() | t }}</p>
+  }
   <p class="zw-muted zw-small">{{ 'Nur PLZ und Ort sind öffentlich.' | t }}</p>
   <!-- TODO: pickup / shipping checkboxes ("Versand, Käufer zahlt CHF 35.–", "Im Preis inbegriffen"): CreateListingRequest has no delivery options yet. -->
 </ng-template>

@@ -10,6 +10,8 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { near } from '../fn/places/near';
+import { Near$Params } from '../fn/places/near';
 import { place } from '../fn/places/place';
 import { Place } from '../models/place';
 import { Place$Params } from '../fn/places/place';
@@ -42,6 +44,33 @@ export class PlacesService extends BaseService {
    */
   place(params: Place$Params, context?: HttpContext): Observable<Place> {
     const resp = this.place$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Place>): Place => r.body)
+    );
+  }
+
+  /** Path part for operation `near()` */
+  static readonly NearPath = '/api/places/near';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `near()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  near$Response(params: Near$Params, context?: HttpContext): Observable<StrictHttpResponse<Place>> {
+    const obs = near(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `near$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  near(params: Near$Params, context?: HttpContext): Observable<Place> {
+    const resp = this.near$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Place>): Place => r.body)
     );

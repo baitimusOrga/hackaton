@@ -22,6 +22,7 @@ import {
 } from '../api/models';
 import { PricePanel } from '../components/price-panel';
 import { Condition, CONDITION_LABELS } from '../conditions';
+import { devicePosition } from '../device-location';
 import { DraftStore } from '../draft-store';
 import { DraftStream } from '../draft-stream';
 import { ErrorBanner, HANDLES_ERRORS, translateError } from '../errors';
@@ -343,6 +344,8 @@ export class Sell {
   protected readonly shownPhoto = signal(0);
   protected readonly busy = signal(false);
   protected readonly dragging = signal(false);
+  protected readonly locating = signal(false);
+  protected readonly locationNote = signal('');
   protected readonly analyzing = signal(false);
   protected readonly streamFailed = signal(false);
   protected readonly detections = signal<Detection[]>([]);
@@ -766,6 +769,32 @@ export class Sell {
       const next = new Set(set);
       if (!next.delete(index)) next.add(index);
       return next;
+    });
+  }
+
+  /** Fills postcode and locality from the device position; both stay editable. */
+  protected async useMyLocation(): Promise<void> {
+    if (this.locating()) return;
+    this.locating.set(true);
+    this.locationNote.set('');
+    const position = await devicePosition();
+    if (!position) {
+      this.locating.set(false);
+      this.locationNote.set(
+        'Standort nicht verfügbar. Gib die PLZ ein oder erlaube den Standortzugriff.',
+      );
+      return;
+    }
+    this.places.near(position, new HttpContext().set(HANDLES_ERRORS, true)).subscribe({
+      next: (place) => {
+        this.postcode.set(place.postcode ?? '');
+        this.locality.set(place.locality ?? '');
+        this.locating.set(false);
+      },
+      error: () => {
+        this.locationNote.set('An deinem Standort finden wir keine Schweizer PLZ.');
+        this.locating.set(false);
+      },
     });
   }
 

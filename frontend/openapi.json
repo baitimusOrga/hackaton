@@ -575,6 +575,41 @@
         }
       }
     },
+    "/api/places/near" : {
+      "get" : {
+        "tags" : [ "Places" ],
+        "operationId" : "near",
+        "parameters" : [ {
+          "name" : "latitude",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        }, {
+          "name" : "longitude",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Place"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/photos/{id}" : {
       "get" : {
         "tags" : [ "Selling" ],

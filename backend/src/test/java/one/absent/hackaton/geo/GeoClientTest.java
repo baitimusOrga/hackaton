@@ -46,6 +46,23 @@ class GeoClientTest {
     }
 
     @Test
+    void findsThePostcodeAtCoordinates() {
+        server.expect(requestTo("https://geo.test/rest/services/api/MapServer/identify?geometry=7.152,46.802"
+                        + "&geometryType=esriGeometryPoint&layers=all:ch.swisstopo-vd.ortschaftenverzeichnis_plz"
+                        + "&sr=4326&tolerance=0&returnGeometry=false"))
+                .andRespond(withSuccess("{\"results\":[{\"attributes\":{\"plz\":1700,\"langtext\":\"Fribourg\"}}]}",
+                        MediaType.APPLICATION_JSON));
+
+        assertThat(client.placeAt(46.802, 7.152)).contains(new GeoClient.Place("1700", "Fribourg"));
+        server.verify();
+    }
+
+    @Test
+    void outsideSwitzerlandThereIsNoPostcode() {
+        assertThat(client.placeAt(48.85, 2.35)).isEmpty(); // Paris: no request at all
+    }
+
+    @Test
     void distanceZurichToZugIsAboutTwentyEightKm() {
         assertThat(new Coordinates(47.378, 8.5234).distanceKm(new Coordinates(47.167, 8.505)))
                 .isBetween(22.0, 25.0);

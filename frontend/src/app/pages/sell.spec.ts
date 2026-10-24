@@ -45,7 +45,7 @@ const button = (element: HTMLElement, text: string) =>
   Array.from(element.querySelectorAll('button')).find((b) => b.textContent!.includes(text))!;
 
 /** Opens the sell page, adds one photo and analyses it with the given stream behaviour. */
-async function analyse(runs: Run[], extra: object = {}, place = vi.fn()) {
+async function analyse(runs: Run[], extra: object = {}, place = vi.fn(), places: object = {}) {
   URL.createObjectURL = vi.fn().mockReturnValue('blob:photo');
   const uploadPhotos = vi.fn().mockReturnValue(of([7]));
   const run = vi.fn();
@@ -55,7 +55,7 @@ async function analyse(runs: Run[], extra: object = {}, place = vi.fn()) {
       provideRouter([{ path: '**', children: [] }]),
       { provide: SellingService, useValue: { uploadPhotos, rewriteText: () => of({}), ...extra } },
       { provide: ListingsService, useValue: { categories: () => of(CATEGORIES) } },
-      { provide: PlacesService, useValue: { place } },
+      { provide: PlacesService, useValue: { place, ...places } },
       { provide: DraftStream, useValue: { run } },
       { provide: DraftStore, useValue: store },
     ],
@@ -75,8 +75,8 @@ async function analyse(runs: Run[], extra: object = {}, place = vi.fn()) {
 }
 
 /** Analyses, skips the open questions and switches to the one-page view. */
-async function full(draft: ListingDraft, extra: object = {}, place = vi.fn()) {
-  const page = await analyse([streams(done(draft))], extra, place);
+async function full(draft: ListingDraft, extra: object = {}, place = vi.fn(), places: object = {}) {
+  const page = await analyse([streams(done(draft))], extra, place, places);
   button(page.element, 'Zur Übersicht')?.click();
   await page.fixture.whenStable();
   button(page.element, 'Alles auf einer Seite').click();
@@ -439,6 +439,40 @@ describe('Sell', () => {
     locality().dispatchEvent(new Event('input'));
     await fixture.whenStable();
     expect(locality().value).toBe('Villars-sur-Glâne');
+  });
+
+  it('fills postcode and locality from the device location', async () => {
+    const near = vi.fn().mockReturnValue(of({ postcode: '1700', locality: 'Fribourg' }));
+    vi.stubGlobal('navigator', {
+      geolocation: {
+        getCurrentPosition: (ok: PositionCallback) =>
+          ok({ coords: { latitude: 46.80187, longitude: 7.15123 } } as GeolocationPosition),
+      },
+    });
+    const { fixture, element } = await full(DRAFT, {}, vi.fn(), { near });
+
+    button(element, 'Mein Standort').click();
+    await fixture.whenStable();
+    vi.unstubAllGlobals();
+
+    expect(near.mock.calls[0][0]).toEqual({ latitude: 46.802, longitude: 7.151 });
+    expect(element.querySelector<HTMLInputElement>('input[name="postcode"]')!.value).toBe('1700');
+    expect(element.querySelector<HTMLInputElement>('input[name="locality"]')!.value).toBe(
+      'Fribourg',
+    );
+  });
+
+  it('asks for the postcode when the device location is denied', async () => {
+    vi.stubGlobal('navigator', {
+      geolocation: { getCurrentPosition: (_: PositionCallback, fail: () => void) => fail() },
+    });
+    const { fixture, element } = await full(DRAFT);
+
+    button(element, 'Mein Standort').click();
+    await fixture.whenStable();
+    vi.unstubAllGlobals();
+
+    expect(element.textContent).toContain('Standort nicht verfügbar.');
   });
 
   it('starts with the last location used', async () => {

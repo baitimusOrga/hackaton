@@ -57,6 +57,22 @@ export const SELL_MESSAGES: Messages = {
     it: 'Scatta o carica una foto',
     en: 'Take or upload a photo',
   },
+  'Mein Standort': { fr: 'Ma position', it: 'La mia posizione', en: 'My location' },
+  'Standort wird ermittelt…': {
+    fr: 'Localisation en cours…',
+    it: 'Rilevamento della posizione…',
+    en: 'Finding your location…',
+  },
+  'Standort nicht verfügbar. Gib die PLZ ein oder erlaube den Standortzugriff.': {
+    fr: "Position indisponible. Saisis le NPA ou autorise l'accès à la position.",
+    it: "Posizione non disponibile. Inserisci il NPA o consenti l'accesso alla posizione.",
+    en: 'Location not available. Enter the postcode or allow location access.',
+  },
+  'An deinem Standort finden wir keine Schweizer PLZ.': {
+    fr: 'Aucun NPA suisse trouvé à ta position.',
+    it: 'Nessun NPA svizzero trovato nella tua posizione.',
+    en: 'We found no Swiss postcode at your location.',
+  },
   'Entwurf wiederhergestellt.': {
     fr: 'Brouillon restauré.',
     it: 'Bozza ripristinata.',
