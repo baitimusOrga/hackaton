@@ -13,17 +13,19 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class CategoryControllerTest {
     final MockMvc mvc = MockMvcBuilders.standaloneSetup(new CategoryController()).build();
 
-    @Test void everyCategoryHasKeyFactsAndAllAreAllowedNames() {
-        assertThat(Categories.KEY_FACTS.keySet()).isEqualTo(Set.copyOf(Categories.ALL));
+    @Test void everyCategoryHasFieldsAndEveryFactCanBePublished() {
+        assertThat(Categories.FIELDS.keySet()).isEqualTo(Set.copyOf(Categories.ALL));
         Categories.KEY_FACTS.values().forEach(facts -> assertThat(Categories.FACT_NAMES).containsAll(facts));
         assertThat(Categories.FACT_NAMES).contains("Year", "Color");
+        assertThat(Attributes.ALL).containsAll(Categories.FACT_NAMES).contains("Condition");
     }
 
-    @Test void listsCategoriesWithKeyFactsInOrder() throws Exception {
+    @Test void listsCategoriesWithFieldsInOrder() throws Exception {
         mvc.perform(get("/api/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Computers"))
                 .andExpect(jsonPath("$[10].name").value("Bikes"))
-                .andExpect(jsonPath("$[10].keyFacts[2]").value("Frame size"));
+                .andExpect(jsonPath("$[10].fields[2].name").value("Frame size"))
+                .andExpect(jsonPath("$[0].fields[3].options[1]").value("8 GB"));
     }
 }

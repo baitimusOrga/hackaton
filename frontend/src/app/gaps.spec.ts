@@ -1,7 +1,11 @@
-import { Gap } from './api/models';
+import { CategoryField, Gap } from './api/models';
 import { CONDITION, completeness, openGaps } from './gaps';
 
 const BIKE = ['Brand', 'Model', 'Frame size', 'Wheel size', 'Gears', 'Brakes'];
+const BIKE_FIELDS: CategoryField[] = BIKE.map((name) => ({
+  name,
+  options: name === 'Brakes' ? ['Rim', 'Disc'] : [],
+}));
 const AI: Gap[] = [
   {
     fact: 'Model',
@@ -17,7 +21,7 @@ const AI: Gap[] = [
 describe('openGaps', () => {
   it('asks identity first, then condition, then the rest, up to the limit', () => {
     const cards = openGaps(
-      BIKE,
+      BIKE_FIELDS,
       [{ name: 'Brand', value: 'Trek', source: 'LABEL' }],
       '',
       AI,
@@ -41,12 +45,15 @@ describe('openGaps', () => {
     expect(cards[1]).toMatchObject({ kind: 'ASK', prompt: '' });
     expect(cards[2].options).toEqual(['M', 'L']);
     expect(cards[3]).toMatchObject({ kind: 'ASK', prompt: '', options: [] });
-    expect(openGaps(BIKE, [], '', AI, new Set(), 2).map((c) => c.fact)).toEqual(['Brand', 'Model']);
+    expect(openGaps(BIKE_FIELDS, [], '', AI, new Set(), 2).map((c) => c.fact)).toEqual([
+      'Brand',
+      'Model',
+    ]);
   });
 
   it('turns a suggestion into a confirm card and drops confirmed and skipped facts', () => {
     const cards = openGaps(
-      BIKE,
+      BIKE_FIELDS,
       [
         { name: 'Brand', value: 'Trek', source: 'SELLER' },
         { name: 'Model', value: 'Marlin 7', source: 'SUGGESTION' },
@@ -64,7 +71,8 @@ describe('openGaps', () => {
         options: [],
         value: 'Marlin 7',
       },
-      { fact: 'Brakes', kind: 'ASK', prompt: '', options: [] },
+      // the AI gave no options, so the card offers the field's own
+      { fact: 'Brakes', kind: 'ASK', prompt: '', options: ['Rim', 'Disc'] },
     ]);
   });
 });

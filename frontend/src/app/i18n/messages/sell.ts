@@ -227,6 +227,7 @@ export const SELL_MESSAGES: Messages = {
     en: 'Suggestion, please check',
   },
   'Von dir bestätigt': { fr: 'Confirmé par toi', it: 'Confermato da te', en: 'Confirmed by you' },
+  'Noch offen': { fr: 'Encore ouvert', it: 'Ancora aperto', en: 'Still open' },
   'Aus dem Web, bitte prüfen': {
     fr: 'Issu du web, à vérifier',
     it: 'Dal web, da controllare',

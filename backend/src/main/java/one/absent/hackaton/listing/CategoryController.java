@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class CategoryController {
 
-    public record CategoryInfo(String name, List<String> keyFacts) {}
+    public record CategoryInfo(String name, List<Categories.Field> fields) {}
 
     @GetMapping("/api/categories")
     public List<CategoryInfo> categories() {
-        return Categories.ALL.stream().map(c -> new CategoryInfo(c, Categories.KEY_FACTS.get(c))).toList();
+        return Categories.ALL.stream().map(c -> new CategoryInfo(c, Categories.FIELDS.get(c))).toList();
     }
 }

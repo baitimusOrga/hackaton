@@ -3,6 +3,7 @@
 
 export type { AuctionState } from './models/auction-state';
 export type { BidView } from './models/bid-view';
+export type { CategoryField } from './models/category-field';
 export type { CategoryInfo } from './models/category-info';
 export type { ConfirmedFact } from './models/confirmed-fact';
 export type { CreateListingRequest } from './models/create-listing-request';
