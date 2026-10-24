@@ -149,7 +149,7 @@ class AuctionControllerTest {
     }
 
     @Test void fixedPriceListingHasNoAuction() throws Exception {
-        mvc.perform(get("/api/listings/1001/auction")).andExpect(status().isConflict())
+        mvc.perform(get("/api/listings/2301/auction")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("This listing is not an auction."));
     }
 

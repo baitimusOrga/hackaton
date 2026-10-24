@@ -9,7 +9,8 @@ import java.util.stream.Stream;
 public final class Categories {
 
     public static final List<String> ALL = List.of("Computers", "Laptops", "Monitors", "Phones", "Tablets",
-            "Office furniture", "Office equipment", "Audio", "Cameras", "Household", "Bikes");
+            "Office furniture", "Office equipment", "Audio", "Cameras", "Household", "Bikes", "Gaming",
+            "TV & home cinema");
 
     /** Per category the facts a good listing needs, most important first; the sell flow asks for missing ones. */
     public static final Map<String, List<String>> KEY_FACTS = Map.ofEntries(
@@ -23,7 +24,9 @@ public final class Categories {
             Map.entry("Audio", List.of("Brand", "Model", "Connectivity")),
             Map.entry("Cameras", List.of("Brand", "Model", "Lens mount", "Sensor")),
             Map.entry("Household", List.of("Brand", "Model", "Dimensions")),
-            Map.entry("Bikes", List.of("Brand", "Model", "Frame size", "Wheel size", "Gears", "Brakes")));
+            Map.entry("Bikes", List.of("Brand", "Model", "Frame size", "Wheel size", "Gears", "Brakes")),
+            Map.entry("Gaming", List.of("Brand", "Model", "Storage")),
+            Map.entry("TV & home cinema", List.of("Brand", "Model", "Size", "Resolution")));
 
     /** Every fact name the AI may use: all key facts plus a few general ones. */
     public static final List<String> FACT_NAMES = Stream.concat(

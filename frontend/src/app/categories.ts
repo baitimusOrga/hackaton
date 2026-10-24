@@ -11,4 +11,6 @@ export const CATEGORIES = [
   'Cameras',
   'Household',
   'Bikes',
+  'Gaming',
+  'TV & home cinema',
 ];

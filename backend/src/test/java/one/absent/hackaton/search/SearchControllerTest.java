@@ -280,6 +280,17 @@ class SearchControllerTest {
     }
 
     @Test
+    void withoutCategoryOldListingsStillGetScored() {
+        Listing old = listing("Old turntable", "100", AUDIO, "8004", Map.of());
+        old.setCreatedAt(Instant.parse("2020-01-01T00:00:00Z"));
+        em.flush();
+        var req = new SearchRequirements(List.of(), List.of(), null, List.of("turntable"), null, null, null, false,
+                null, null);
+
+        assertThat(search.candidates(req)).extracting(ListingDetail::id).contains(old.getId());
+    }
+
+    @Test
     void thePositionIsTheOriginAndNeedsNoPostcode() {
         match.setLatitude(47.378);
         match.setLongitude(8.5234);

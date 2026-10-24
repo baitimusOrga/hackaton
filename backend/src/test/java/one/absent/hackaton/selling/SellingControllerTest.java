@@ -70,8 +70,8 @@ class SellingControllerTest {
     }
 
     @Test void demoListingsHaveNoSeller() throws Exception {
-        assertThat(listings.findById(1L).orElseThrow().getSellerId()).isNull();
-        mvc.perform(get("/api/listings/1")).andExpect(status().isOk())
+        assertThat(listings.findById(2301L).orElseThrow().getSellerId()).isNull();
+        mvc.perform(get("/api/listings/2301")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.sellerName").doesNotExist());
     }
 
