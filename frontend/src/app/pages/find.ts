@@ -10,7 +10,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
-import { SearchService } from '../api/services';
+import { SavedSearchesService, SearchService } from '../api/services';
 import { Requirement, SearchMatch, SearchRequirements, SearchResults } from '../api/models';
 import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
@@ -172,6 +172,7 @@ const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube de
 export class Find {
   private readonly search = inject(SearchService);
   private readonly i18n = inject(I18n);
+  private readonly savedSearches = inject(SavedSearchesService);
 
   protected readonly rows = [
     { key: 'mustHave', label: 'Muss', other: 'Wäre schön' },
@@ -196,6 +197,8 @@ export class Find {
   protected readonly matching = signal(false);
   protected readonly results = signal<SearchResults | null>(null);
   protected readonly progress = signal('');
+  protected readonly saving = signal(false);
+  protected readonly saved = signal(false);
   private readonly router = inject(Router);
   /** The text the filters were read from; it stays in the URL next to the filters. */
   private readonly asked = signal('');
@@ -394,6 +397,7 @@ export class Find {
 
   showMatches(message = ''): void {
     clearTimeout(this.debounce);
+    this.saved.set(false);
     const id = ++this.seq;
     this.matching.set(true);
     this.status(
@@ -414,6 +418,25 @@ export class Find {
         this.status(message);
       },
     });
+  }
+
+  /** "Suche speichern": stores the current requirements under the wish text (or the first filter). */
+  protected saveSearch(): void {
+    const text = this.asked();
+    const name =
+      text || this.keywords().trim() || this.category() || this.i18n.t('Suche speichern');
+    this.saving.set(true);
+    this.savedSearches
+      .save({
+        body: { name: name.slice(0, 120), text: text || null, requirements: this.requirements() },
+      })
+      .subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.saved.set(true);
+        },
+        error: () => this.saving.set(false),
+      });
   }
 
   private requirements(): SearchRequirements {

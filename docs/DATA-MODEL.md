@@ -37,6 +37,7 @@ Rules:
 | V14 | nullable `unit_price_chf` on `clearance_item` (the company's price per piece, used when publishing) |
 | V15 | 90 fictional demo listings for the buying assistant (ids 1201–1290, with attributes and postcode centroids) |
 | V16 | index on `listing (status, created_at desc)` for the search |
+| V17 | `saved_search` (a buyer's saved search: name, optional original text, requirements as JSON) |
 
 ## Backups
 

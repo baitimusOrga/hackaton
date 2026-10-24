@@ -11,6 +11,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/listing').then((m) => m.ListingPage),
   },
   {
+    path: 'saved-searches',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/saved-searches').then((m) => m.SavedSearches),
+  },
+  {
     path: 'messages',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/messages').then((m) => m.Messages),

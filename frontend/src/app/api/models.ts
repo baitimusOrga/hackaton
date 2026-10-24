@@ -30,6 +30,8 @@ export type { PublishRequest } from './models/publish-request';
 export type { RefineRequest } from './models/refine-request';
 export type { Requirement } from './models/requirement';
 export type { RouteOption } from './models/route-option';
+export type { SavedSearchResponse } from './models/saved-search-response';
+export type { SaveSearchRequest } from './models/save-search-request';
 export type { SearchMatch } from './models/search-match';
 export type { SearchRequest } from './models/search-request';
 export type { SearchRequirements } from './models/search-requirements';

@@ -1,0 +1,20 @@
+<section class="zw-section zw-section--last" aria-labelledby="h-saved">
+  <h1 id="h-saved">{{ 'Meine Suchen' | t }}</h1>
+  <ul class="zw-list">
+    @for (s of searches(); track s.id) {
+      <li class="zw-row">
+        <span class="ss-name">{{ s.name }}</span>
+        <button appButton variant="primary" size="sm" type="button" (click)="open(s)">
+          {{ 'Öffnen' | t }}
+        </button>
+        <button appButton variant="ghost" size="sm" type="button" (click)="remove(s)">
+          {{ 'Löschen' | t }}<span class="zw-sr-only"> {{ s.name }}</span>
+        </button>
+      </li>
+    } @empty {
+      @if (searches()) {
+        <li class="zw-muted">{{ 'Noch keine gespeicherten Suchen.' | t }}</li>
+      }
+    }
+  </ul>
+</section>

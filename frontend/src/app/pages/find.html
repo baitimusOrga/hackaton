@@ -66,9 +66,8 @@
       </button>
     }
     <span class="zw-help">{{ 'Antippen zum Entfernen, links alles im Detail.' | t }}</span>
-    <!-- TODO: "Suche speichern" needs a saved-search/alert API (immediate, daily, weekly; dedup of relists). -->
-    <button appButton variant="primary" type="button" disabled>
-      {{ 'Suche speichern' | t }}
+    <button appButton variant="primary" type="button" [disabled]="saving()" (click)="saveSearch()">
+      {{ (saved() ? 'Gespeichert' : 'Suche speichern') | t }}
     </button>
   </div>
 

@@ -206,6 +206,53 @@
         }
       }
     },
+    "/api/saved-searches" : {
+      "get" : {
+        "tags" : [ "SavedSearches" ],
+        "operationId" : "listMine",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SavedSearchResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "SavedSearches" ],
+        "operationId" : "save",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SaveSearchRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SavedSearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/photos" : {
       "post" : {
         "tags" : [ "Selling" ],
@@ -774,6 +821,26 @@
           }
         }
       }
+    },
+    "/api/saved-searches/{id}" : {
+      "delete" : {
+        "tags" : [ "SavedSearches" ],
+        "operationId" : "delete",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
     }
   },
   "components" : {
@@ -1206,6 +1273,47 @@
           "compared" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "SaveSearchRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "text" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "requirements" : {
+            "$ref" : "#/components/schemas/SearchRequirements"
+          }
+        },
+        "required" : [ "name", "requirements" ]
+      },
+      "SavedSearchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "text" : {
+            "type" : [ "string", "null" ]
+          },
+          "requirements" : {
+            "$ref" : "#/components/schemas/SearchRequirements"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       },

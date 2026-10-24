@@ -3,6 +3,7 @@
 
 export { ClearanceService } from './services/clearance.service';
 export { SearchService } from './services/search.service';
+export { SavedSearchesService } from './services/saved-searches.service';
 export { SellingService } from './services/selling.service';
 export { ListingsService } from './services/listings.service';
 export { PlacesService } from './services/places.service';
