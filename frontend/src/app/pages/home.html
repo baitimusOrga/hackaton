@@ -21,8 +21,8 @@
     </button>
   </form>
   <div class="zw-hero__chips" role="group" [attr.aria-label]="'Schnellfilter' | t">
-    @for (filter of quickFilters; track filter) {
-      <app-chip (click)="quickFilter(filter)">{{ filter | t }}</app-chip>
+    @for (filter of quickFilters; track filter[0]) {
+      <app-chip (click)="quickFilter(filter[1])">{{ filter[0] | t }}</app-chip>
     }
   </div>
   <p class="zw-hero__hint">

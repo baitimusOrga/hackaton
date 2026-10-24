@@ -106,4 +106,18 @@ describe('Home', () => {
     expect(hrefs).toContain('/search?category=TV%20%26%20home%20cinema');
     expect(hrefs.at(-1)).toBe('/search');
   });
+
+  it('opens /search with the chosen quick filter and the typed text', async () => {
+    const { harness, element } = await setup([]);
+    const chips = [...element.querySelectorAll('.zw-hero__chips button')] as HTMLButtonElement[];
+    expect(chips.map((c) => c.textContent!.trim())).toEqual([
+      'Nur Auktionen',
+      'Unter CHF 50',
+      'Endet heute',
+    ]);
+    TestBed.inject(HeroSearch).query.set(' iMac ');
+    chips[1].click();
+    await harness.fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/search?maxPrice=50&q=iMac');
+  });
 });

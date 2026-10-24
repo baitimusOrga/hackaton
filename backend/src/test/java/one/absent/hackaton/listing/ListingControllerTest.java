@@ -80,6 +80,12 @@ class ListingControllerTest {
     }
 
     @Test
+    void endsBeforeKeepsOnlyAuctionsEndingEarlier() throws Exception {
+        mvc.perform(get("/api/listings").param("endsBefore", java.time.Instant.now().plusSeconds(12 * 3600).toString()))
+                .andExpect(jsonPath("$[*].id").value(contains(1301)));
+    }
+
+    @Test
     void maxPriceIsInclusive() throws Exception {
         mvc.perform(get("/api/listings").param("maxPrice", "70"))
                 .andExpect(jsonPath("$[*].priceChf").value(everyItem(lessThanOrEqualTo(70.0))))

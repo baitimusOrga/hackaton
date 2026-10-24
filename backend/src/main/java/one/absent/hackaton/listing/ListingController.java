@@ -1,6 +1,7 @@
 package one.absent.hackaton.listing;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -40,19 +41,21 @@ public class ListingController {
                                      @RequestParam(required = false) Double radiusKm,
                                      @RequestParam(required = false) Double lat,
                                      @RequestParam(required = false) Double lon,
-                                     @RequestParam(required = false) SaleMode saleMode) {
-        List<ListingSummary> found = find(q, category, maxPrice, postcode, radiusKm, lat, lon, saleMode);
+                                     @RequestParam(required = false) SaleMode saleMode,
+                                     @RequestParam(required = false) Instant endsBefore) {
+        List<ListingSummary> found = find(q, category, maxPrice, postcode, radiusKm, lat, lon, saleMode, endsBefore);
         return saleMode == SaleMode.AUCTION
                 ? found.stream().sorted(Comparator.comparing(ListingSummary::endsAt)).toList() : found;
     }
 
     private List<ListingSummary> find(String q, String category, BigDecimal maxPrice, String postcode,
-                                      Double radiusKm, Double lat, Double lon, SaleMode saleMode) {
+                                      Double radiusKm, Double lat, Double lon, SaleMode saleMode,
+                                      Instant endsBefore) {
         String code = postcode == null || postcode.isBlank() ? null : postcode.strip();
         boolean here = lat != null && lon != null; // the buyer's position wins over the postcode
         if (radiusKm == null || (code == null && !here)) {
             return listings.search(contains(q), lower(category), maxPrice, code == null ? null : code + "%",
-                    saleMode, null, null, null, null).stream().map(listing -> listing.detail().summary()).toList();
+                    saleMode, endsBefore, null, null, null, null).stream().map(listing -> listing.detail().summary()).toList();
         }
         if (radiusKm <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The radius must be more than 0 km.");
@@ -61,7 +64,7 @@ public class ListingController {
                 () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Postcode " + code + " not found."));
         double latSpan = Coordinates.latitudeSpan(radiusKm);
         double lonSpan = origin.longitudeSpan(radiusKm);
-        return listings.search(contains(q), lower(category), maxPrice, null, saleMode,
+        return listings.search(contains(q), lower(category), maxPrice, null, saleMode, endsBefore,
                         origin.latitude() - latSpan, origin.latitude() + latSpan,
                         origin.longitude() - lonSpan, origin.longitude() + lonSpan)
                 .stream().map(Listing::detail)

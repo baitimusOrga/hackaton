@@ -223,6 +223,14 @@
             "type" : "string",
             "enum" : [ "FIXED", "AUCTION" ]
           }
+        }, {
+          "name" : "endsBefore",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
         } ],
         "responses" : {
           "200" : {
