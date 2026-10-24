@@ -43,6 +43,8 @@ export type { Get$Params as Get$Params } from './fn/listings/get';
 export { get as get } from './fn/listings/get';
 export type { Categories$Params as Categories$Params } from './fn/listings/categories';
 export { categories as categories } from './fn/listings/categories';
+export type { Buy$Params as Buy$Params } from './fn/purchases/buy';
+export { buy as buy } from './fn/purchases/buy';
 export type { PlaceBid$Params as PlaceBid$Params } from './fn/auctions/place-bid';
 export { placeBid as placeBid } from './fn/auctions/place-bid';
 export type { GetAuction$Params as GetAuction$Params } from './fn/auctions/get-auction';

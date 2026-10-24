@@ -140,12 +140,15 @@ class AuctionControllerTest {
     @Test void closeJobMarksSoldOrEnded() throws Exception {
         var sold = auction(Duration.ofDays(1));
         bid(sold, "a", 150);
+        bid(sold, "b", 100);
         sold.setEndsAt(Instant.now().minusSeconds(1));
         var unsold = auction(Duration.ofSeconds(-1));
         listings.flush();
         auctions.closeDue();
         assertThat(listings.findById(sold.getId()).orElseThrow().getStatus()).isEqualTo(ListingStatus.SOLD);
+        assertThat(listings.findById(sold.getId()).orElseThrow().getBuyerId()).isEqualTo("a");
         assertThat(listings.findById(unsold.getId()).orElseThrow().getStatus()).isEqualTo(ListingStatus.ENDED);
+        assertThat(listings.findById(unsold.getId()).orElseThrow().getBuyerId()).isNull();
     }
 
     @Test void fixedPriceListingHasNoAuction() throws Exception {

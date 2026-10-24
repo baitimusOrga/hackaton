@@ -44,6 +44,7 @@ Rules:
 | V19 | `image_url` for the V18 demo listings that have an AI-generated photo in `frontend/public/demo/<id>.jpg` |
 | V20 | 200 more messy demo listings (ids 2601–2800) and 60 SOLD price-evidence listings (ids 2801–2860), with attributes and postcode centroids |
 | V21 | removes the older demo listings without photos (V4 ids 1–3, V6 1001–1020, V15 1201–1290) where still untouched (no seller, photo, bid or clearance item); V10 price evidence and V17 auctions stay |
+| V22 | `listing.buyer_id`: the user who bought a fixed-price listing (null otherwise; auction winners come from `bid`) |
 
 ## Backups
 

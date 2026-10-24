@@ -9,9 +9,9 @@ export const PROFILE_MESSAGES: Messages = {
   },
   Gekauft: { fr: 'Acheté', it: 'Acquistato', en: 'Bought' },
   'Noch nichts gekauft. Gewonnene Auktionen erscheinen hier.': {
-    fr: 'Rien acheté pour l’instant. Les enchères remportées apparaissent ici.',
-    it: 'Ancora nessun acquisto. Le aste vinte appaiono qui.',
-    en: 'Nothing bought yet. Auctions you win show up here.',
+    fr: 'Rien acheté pour l’instant. Les achats et les enchères remportées apparaissent ici.',
+    it: 'Ancora nessun acquisto. Acquisti e aste vinte appaiono qui.',
+    en: 'Nothing bought yet. Purchases and auctions you win show up here.',
   },
   'Noch nichts verkauft.': {
     fr: 'Rien vendu pour l’instant.',

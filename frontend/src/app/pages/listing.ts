@@ -16,7 +16,7 @@ import {
   timer,
 } from 'rxjs';
 import { AuctionState, ListingDetail } from '../api/models';
-import { AuctionsService, ListingsService } from '../api/services';
+import { AuctionsService, ListingsService, PurchasesService } from '../api/services';
 import { Auth } from '../auth/auth';
 import { conditionLabel, metaLine } from '../conditions';
 import { HANDLES_ERRORS, messageOf } from '../errors';
@@ -254,6 +254,7 @@ interface BidStatus {
 export class ListingPage {
   private readonly api = inject(ListingsService);
   private readonly auctions = inject(AuctionsService);
+  private readonly purchases = inject(PurchasesService);
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
   private readonly i18n = inject(I18n);
@@ -319,6 +320,27 @@ export class ListingPage {
   /** The bid count right after the own bid; the status explains that bid until a poll shows newer bids. */
   private readonly ownBidCount = signal<number | null>(null);
   protected readonly bidding = signal(false);
+  protected readonly buying = signal(false);
+  protected readonly bought = signal(false);
+  protected readonly buyError = signal('');
+
+  protected buy(id: number): void {
+    if (this.buying()) return;
+    if (!this.auth.user()) return this.signIn();
+    this.buying.set(true);
+    this.buyError.set('');
+    this.purchases.buy({ id }, new HttpContext().set(HANDLES_ERRORS, true)).subscribe({
+      next: () => {
+        this.bought.set(true);
+        this.buying.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.buying.set(false);
+        if (err.status === 401) return this.signIn();
+        this.buyError.set(messageOf(err, this.i18n));
+      },
+    });
+  }
 
   /** The minimum (above the own maximum while leading) and the next two steps, so a bid needs no typing. */
   protected suggestions(a: AuctionState): number[] {
