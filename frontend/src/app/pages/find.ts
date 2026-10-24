@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { SearchService } from '../api/services';
 import { Requirement, SearchMatch, SearchRequirements } from '../api/models';
 import { CONDITION_LABELS } from '../conditions';
+import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
 import { chf } from '../ui/chf';
 import { Icon } from '../ui/icon';
@@ -19,7 +20,7 @@ type Results = Record<'confirmed' | 'possible' | 'alternatives', SearchMatch[]> 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-find',
-  imports: [FormsModule, Button, Icon, SummaryCard],
+  imports: [FormsModule, Button, Icon, SummaryCard, TranslatePipe],
   templateUrl: './find.html',
   styles: `
     .find__query {
@@ -129,6 +130,7 @@ type Results = Record<'confirmed' | 'possible' | 'alternatives', SearchMatch[]> 
 })
 export class Find {
   private readonly search = inject(SearchService);
+  private readonly i18n = inject(I18n);
 
   protected readonly rows = [
     { key: 'mustHave', label: 'Muss', other: 'Wäre schön' },
@@ -182,7 +184,7 @@ export class Find {
   find(): void {
     if (this.loading() || !this.text().trim()) return;
     this.loading.set(true);
-    this.status('Lese deinen Wunsch…', 'Mache Anforderungen daraus…');
+    this.status(this.i18n.t('Lese deinen Wunsch…'), this.i18n.t('Mache Anforderungen daraus…'));
     this.search.create({ body: { text: this.text() } }).subscribe({
       next: (req) => {
         this.initial = req;
@@ -233,7 +235,10 @@ export class Find {
   showMatches(): void {
     if (this.matching()) return;
     this.matching.set(true);
-    this.status('Durchsuche die Inserate…', 'Vergleiche die Inserate mit deinen Anforderungen…');
+    this.status(
+      this.i18n.t('Durchsuche die Inserate…'),
+      this.i18n.t('Vergleiche die Inserate mit deinen Anforderungen…'),
+    );
     const body = {
       mustHave: this.mustHave(),
       niceToHave: this.niceToHave(),
@@ -282,12 +287,12 @@ export class Find {
   }
 
   protected budgetLabel(): string {
-    return `Bis ${chf(this.budget() ?? 0)}`;
+    return this.i18n.t('Bis {price}', { price: chf(this.budget() ?? 0) });
   }
 
   protected regionLabel(): string {
     const pc = this.postcode().trim();
-    return this.radius() ? `${this.radius()} km um ${pc}` : pc;
+    return this.radius() ? this.i18n.t('{km} km um {pc}', { km: this.radius()!, pc }) : pc;
   }
 
   protected total(res: Results): number {
@@ -297,7 +302,7 @@ export class Find {
   /** The card's extra line: why it is in this group. */
   protected why(m: SearchMatch, group: keyof Omit<Results, 'compared'>): string {
     if (group === 'possible' && m.missingDetails?.length)
-      return `Nicht angegeben: ${m.missingDetails.join(', ')}`;
+      return this.i18n.t('Nicht angegeben: {details}', { details: m.missingDetails.join(', ') });
     if (group === 'alternatives' && m.differences?.length) return m.differences.join(', ');
     return m.reason ?? '';
   }

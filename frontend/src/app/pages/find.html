@@ -1,5 +1,5 @@
 <form class="find__query" role="search" (ngSubmit)="find()">
-  <label for="find-text" class="zw-sr-only">Was suchst du?</label>
+  <label for="find-text" class="zw-sr-only">{{ 'Was suchst du?' | t }}</label>
   <textarea
     id="find-text"
     name="text"
@@ -10,21 +10,21 @@
     required
     maxlength="500"
     rows="2"
-    placeholder="z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich"
+    [placeholder]="'z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich' | t"
     aria-describedby="find-tip"
   ></textarea>
   <button appButton type="submit" [disabled]="loading() || !text().trim()">
     <app-icon name="search" />
-    <span>{{ loading() ? 'Suche läuft…' : 'Suchen' }}</span>
+    <span>{{ (loading() ? 'Suche läuft…' : 'Suchen') | t }}</span>
   </button>
 </form>
-<p id="find-tip" class="zw-help">Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter</p>
+<p id="find-tip" class="zw-help">{{ 'Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter' | t }}</p>
 
 <p role="status" aria-live="polite" class="zw-help">{{ progress() }}</p>
 
 @if (searched()) {
   <div class="find__strip">
-    <span class="zw-help">Aus deinem Satz übernommen:</span>
+    <span class="zw-help">{{ 'Aus deinem Satz übernommen:' | t }}</span>
     @for (row of rows; track row.key) {
       @for (r of list(row.key); track r.attribute + r.value) {
         <button
@@ -36,33 +36,41 @@
           @if (row.key === 'mustHave') {
             <app-icon name="check" [size]="16" />
           }
-          <span>{{ label(r) }}<span class="zw-sr-only"> entfernen</span></span>
+          <span
+            >{{ label(r) }}<span class="zw-sr-only"> {{ 'entfernen' | t }}</span></span
+          >
         </button>
       }
     }
     @if (budget() !== null) {
       <button type="button" class="zw-chip" aria-pressed="true" (click)="budget.set(null)">
         <app-icon name="check" [size]="16" />
-        <span>{{ budgetLabel() }}<span class="zw-sr-only"> entfernen</span></span>
+        <span
+          >{{ budgetLabel() }}<span class="zw-sr-only"> {{ 'entfernen' | t }}</span></span
+        >
       </button>
     }
     @if (postcode().trim()) {
       <button type="button" class="zw-chip" aria-pressed="true" (click)="clearRegion()">
         <app-icon name="check" [size]="16" />
-        <span>{{ regionLabel() }}<span class="zw-sr-only"> entfernen</span></span>
+        <span
+          >{{ regionLabel() }}<span class="zw-sr-only"> {{ 'entfernen' | t }}</span></span
+        >
       </button>
     }
-    <span class="zw-help">Antippen zum Entfernen, links alles im Detail.</span>
+    <span class="zw-help">{{ 'Antippen zum Entfernen, links alles im Detail.' | t }}</span>
     <!-- TODO: "Suche speichern" needs a saved-search/alert API (immediate, daily, weekly; dedup of relists). -->
-    <button appButton variant="primary" type="button" disabled>Suche speichern</button>
+    <button appButton variant="primary" type="button" disabled>
+      {{ 'Suche speichern' | t }}
+    </button>
   </div>
 
   <div class="find__cols">
-    <form class="find__filters" aria-label="Filter" (ngSubmit)="showMatches()">
+    <form class="find__filters" [attr.aria-label]="'Filter' | t" (ngSubmit)="showMatches()">
       <div class="find__f">
-        <span class="zw-label">Anforderungen</span>
+        <span class="zw-label">{{ 'Anforderungen' | t }}</span>
         @for (row of rows; track row.key) {
-          <span class="zw-help">{{ row.label }}</span>
+          <span class="zw-help">{{ row.label | t }}</span>
           <ul class="zw-list find__reqs" [attr.data-testid]="row.key">
             @for (r of list(row.key); track r.attribute + r.value) {
               <li class="zw-row">
@@ -73,42 +81,45 @@
                   size="sm"
                   type="button"
                   (click)="move(r, row.key)"
-                  [attr.aria-label]="r.attribute + ' zu ' + row.other + ' verschieben'"
+                  [attr.aria-label]="
+                    '{attribute} zu {other} verschieben'
+                      | t: { attribute: r.attribute, other: row.other | t }
+                  "
                 >
-                  → {{ row.other }}
+                  → {{ row.other | t }}
                 </button>
               </li>
             } @empty {
-              <li class="zw-help">Keine.</li>
+              <li class="zw-help">{{ 'Keine.' | t }}</li>
             }
           </ul>
         }
       </div>
       <div class="find__f">
-        <label class="zw-label" for="find-cat">Kategorie</label>
+        <label class="zw-label" for="find-cat">{{ 'Kategorie' | t }}</label>
         <input id="find-cat" name="category" class="zw-input" [(ngModel)]="category" />
       </div>
       <!-- TODO: brand filter; the backend has no brand field in SearchRequirements. -->
       <fieldset class="zw-fieldset find__f" disabled>
-        <label class="zw-label" for="find-brand">Marke</label>
+        <label class="zw-label" for="find-brand">{{ 'Marke' | t }}</label>
         <select id="find-brand" class="zw-input">
-          <option>Alle Marken</option>
+          <option>{{ 'Alle Marken' | t }}</option>
         </select>
       </fieldset>
       <div class="find__f">
-        <label class="zw-label" for="find-keywords">Modell, Stichwort</label>
+        <label class="zw-label" for="find-keywords">{{ 'Modell, Stichwort' | t }}</label>
         <input id="find-keywords" name="keywords" class="zw-input" [(ngModel)]="keywords" />
-        <span class="zw-help">Mehrere mit Komma trennen</span>
+        <span class="zw-help">{{ 'Mehrere mit Komma trennen' | t }}</span>
       </div>
       <fieldset class="zw-fieldset find__f">
-        <legend class="zw-label">Preis</legend>
+        <legend class="zw-label">{{ 'Preis' | t }}</legend>
         <div class="find__pair">
           <!-- TODO: minimum price; the backend only knows a maximum budget. -->
           <input
             class="zw-input zw-input--price"
             type="number"
-            placeholder="von"
-            aria-label="Preis von"
+            [placeholder]="'von' | t"
+            [attr.aria-label]="'Preis von' | t"
             disabled
           />
           <input
@@ -116,87 +127,97 @@
             type="number"
             min="0"
             name="budget"
-            placeholder="bis"
-            aria-label="Preis bis"
+            [placeholder]="'bis' | t"
+            [attr.aria-label]="'Preis bis' | t"
             [(ngModel)]="budget"
           />
         </div>
         <!-- TODO: total price incl. shipping; listings have no shipping cost yet. -->
-        <label class="zw-check"><input type="checkbox" disabled />Gesamtpreis inkl. Versand</label>
+        <label class="zw-check"
+          ><input type="checkbox" disabled />{{ 'Gesamtpreis inkl. Versand' | t }}</label
+        >
       </fieldset>
       <fieldset class="zw-fieldset find__f">
-        <legend class="zw-label">Region</legend>
+        <legend class="zw-label">{{ 'Region' | t }}</legend>
         <div class="find__pair">
           <input
             class="zw-input"
             name="postcode"
             inputmode="numeric"
             maxlength="4"
-            aria-label="PLZ"
+            [attr.aria-label]="'PLZ' | t"
             [(ngModel)]="postcode"
           />
-          <select class="zw-input" name="radius" aria-label="Umkreis" [(ngModel)]="radius">
-            <option [ngValue]="null">Ganze Schweiz</option>
+          <select
+            class="zw-input"
+            name="radius"
+            [attr.aria-label]="'Umkreis' | t"
+            [(ngModel)]="radius"
+          >
+            <option [ngValue]="null">{{ 'Ganze Schweiz' | t }}</option>
             @for (km of radii; track km) {
               <option [ngValue]="km">{{ km }} km</option>
             }
           </select>
         </div>
         <!-- TODO: pickup / shipping filter; listings have no delivery options yet. -->
-        <label class="zw-check"><input type="checkbox" disabled />Abholung</label>
-        <label class="zw-check"><input type="checkbox" disabled />Versand</label>
+        <label class="zw-check"><input type="checkbox" disabled />{{ 'Abholung' | t }}</label>
+        <label class="zw-check"><input type="checkbox" disabled />{{ 'Versand' | t }}</label>
       </fieldset>
       <!-- TODO: condition, sale mode and "Nur" filters are not in SearchRequirements yet. -->
       <fieldset class="zw-fieldset find__f" disabled>
-        <legend class="zw-label">Zustand</legend>
+        <legend class="zw-label">{{ 'Zustand' | t }}</legend>
         @for (c of conditionOptions; track c) {
-          <label class="zw-check"><input type="checkbox" />{{ c }}</label>
+          <label class="zw-check"><input type="checkbox" />{{ c | t }}</label>
         }
       </fieldset>
       <fieldset class="zw-fieldset find__f" disabled>
-        <legend class="zw-label">Verkaufsart</legend>
+        <legend class="zw-label">{{ 'Verkaufsart' | t }}</legend>
         @for (m of modeOptions; track m) {
-          <label class="zw-check"><input type="checkbox" />{{ m }}</label>
+          <label class="zw-check"><input type="checkbox" />{{ m | t }}</label>
         }
       </fieldset>
       <fieldset class="zw-fieldset find__f">
-        <legend class="zw-label">Nur</legend>
+        <legend class="zw-label">{{ 'Nur' | t }}</legend>
         @for (o of onlyOptions; track o) {
-          <label class="zw-check"><input type="checkbox" disabled />{{ o }}</label>
+          <label class="zw-check"><input type="checkbox" disabled />{{ o | t }}</label>
         }
         <label class="zw-check">
           <input type="checkbox" name="acceptUnknown" [(ngModel)]="acceptUnknown" />
-          Auch Inserate mit fehlenden Angaben
+          {{ 'Auch Inserate mit fehlenden Angaben' | t }}
         </label>
       </fieldset>
       <button appButton type="submit" [disabled]="matching()">
-        {{ matching() ? 'Suche läuft…' : results() ? 'Treffer aktualisieren' : 'Treffer zeigen' }}
+        {{
+          (matching() ? 'Suche läuft…' : results() ? 'Treffer aktualisieren' : 'Treffer zeigen') | t
+        }}
       </button>
       <button appButton variant="ghost" size="sm" type="button" (click)="reset()">
-        Filter zurücksetzen
+        {{ 'Filter zurücksetzen' | t }}
       </button>
     </form>
 
     <div class="find__results">
       @if (results(); as res) {
         <div class="find__bar">
-          <span>{{ total(res) }} Inserate</span>
-          <span class="zw-help">{{ res.compared }} verglichen</span>
+          <span>{{ '{count} Inserate' | t: { count: total(res) } }}</span>
+          <span class="zw-help">{{ '{count} verglichen' | t: { count: res.compared } }}</span>
           <!-- TODO: sort order; the backend returns a fixed best-fit order. -->
-          <label for="find-sort">Sortieren</label>
+          <label for="find-sort">{{ 'Sortieren' | t }}</label>
           <select id="find-sort" class="zw-input" disabled>
-            <option>Beste Passung</option>
+            <option>{{ 'Beste Passung' | t }}</option>
           </select>
         </div>
         <!-- TODO: "Letzter Scan" line; the backend does not expose when listings were last scanned. -->
 
         @if (!total(res)) {
-          <p>Noch nichts Passendes.</p>
+          <p>{{ 'Noch nichts Passendes.' | t }}</p>
         } @else {
           @for (group of groups; track group.key) {
             <section class="find__grp" [attr.aria-labelledby]="'find-' + group.key">
               <h2 [id]="'find-' + group.key">
-                {{ group.title }} <span>{{ res[group.key].length }} · {{ group.note }}</span>
+                {{ group.title | t }}
+                <span>{{ res[group.key].length }} · {{ group.note | t }}</span>
               </h2>
               @if (res[group.key].length) {
                 <div class="zw-grid">
@@ -214,19 +235,19 @@
                   }
                 </div>
               } @else {
-                <p class="zw-muted">{{ group.empty }}</p>
+                <p class="zw-muted">{{ group.empty | t }}</p>
               }
             </section>
           }
         }
 
         <p class="zw-help">
-          Nichts dabei?
+          {{ 'Nichts dabei?' | t }}
           <!-- TODO: "Gesuch aufgeben" needs a wanted-listing API; the buyer's budget must stay private. -->
           <button appButton variant="ghost" size="sm" type="button" disabled>
-            Gesuch aufgeben
+            {{ 'Gesuch aufgeben' | t }}
           </button>
-          Verkäufer sehen, dass jemand sucht. Dein Budget bleibt privat.
+          {{ 'Verkäufer sehen, dass jemand sucht. Dein Budget bleibt privat.' | t }}
         </p>
       }
     </div>

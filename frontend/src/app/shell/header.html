@@ -3,12 +3,12 @@
     <a routerLink="/" class="zw-wordmark">
       <span class="zw-wordmark__name">Zweit.</span>
       @if (!docked()) {
-        <span class="zw-wordmark__tagline">Gut, günstig, grün.</span>
+        <span class="zw-wordmark__tagline">{{ 'Gut, günstig, grün.' | t }}</span>
       }
     </a>
     @if (docked()) {
       <form class="zw-dock" role="search" (ngSubmit)="hero.open(query())">
-        <label for="header-q" class="zw-sr-only">Suche</label>
+        <label for="header-q" class="zw-sr-only">{{ 'Suche' | t }}</label>
         <input
           id="header-q"
           class="zw-input"
@@ -17,7 +17,7 @@
           [ngModel]="query()"
           (ngModelChange)="query.set($event)"
         />
-        <button type="button" class="zw-chip zw-chip--location" [attr.aria-label]="locationLabel">
+        <button type="button" class="zw-chip zw-chip--location" [attr.aria-label]="locationLabel()">
           <app-icon name="pin" [size]="16" />
           <span>{{ location.radius }}</span>
         </button>
@@ -25,32 +25,38 @@
           appButton
           [variant]="hero.active() ? 'primary' : 'default'"
           type="submit"
-          aria-label="Suchen"
+          [attr.aria-label]="'Suchen' | t"
         >
           <app-icon name="search" />
         </button>
       </form>
     } @else {
-      <button type="button" class="zw-chip zw-chip--location" [attr.aria-label]="locationLabel">
+      <button type="button" class="zw-chip zw-chip--location" [attr.aria-label]="locationLabel()">
         <app-icon name="pin" [size]="16" />
         <span>{{ location.place }} · {{ location.radius }}</span>
       </button>
     }
-    <nav class="zw-nav" aria-label="Hauptnavigation">
+    <nav class="zw-nav" [attr.aria-label]="'Hauptnavigation' | t">
       @if (docked()) {
-        <a routerLink="/find" aria-label="Meine Suchen"><app-icon name="bookmark" /></a>
-        <a routerLink="/messages" aria-label="Nachrichten"><app-icon name="message" /></a>
+        <a routerLink="/find" [attr.aria-label]="'Meine Suchen' | t"
+          ><app-icon name="bookmark"
+        /></a>
+        <a routerLink="/messages" [attr.aria-label]="'Nachrichten' | t"
+          ><app-icon name="message"
+        /></a>
       } @else {
-        <a routerLink="/find"><app-icon name="bookmark" />Meine Suchen</a>
-        <a routerLink="/messages"><app-icon name="message" />Nachrichten</a>
+        <a routerLink="/find"><app-icon name="bookmark" />{{ 'Meine Suchen' | t }}</a>
+        <a routerLink="/messages"><app-icon name="message" />{{ 'Nachrichten' | t }}</a>
       }
-      <a appButton routerLink="/sell"><app-icon name="camera" /><span>Verkaufen</span></a>
+      <a appButton routerLink="/sell"
+        ><app-icon name="camera" /><span>{{ 'Verkaufen' | t }}</span></a
+      >
       @if (auth.user()) {
         <button type="button" class="zw-link" [disabled]="signingOut()" (click)="logout()">
-          Abmelden
+          {{ 'Abmelden' | t }}
         </button>
       } @else {
-        <a routerLink="/login">Anmelden</a>
+        <a routerLink="/login">{{ 'Anmelden' | t }}</a>
       }
     </nav>
   </div>

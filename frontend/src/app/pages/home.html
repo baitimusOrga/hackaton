@@ -1,7 +1,9 @@
 <section class="zw-container zw-hero" aria-labelledby="hero-label">
-  <label id="hero-label" for="hero-q" class="zw-hero__title">Was suchst du?</label>
+  <label id="hero-label" for="hero-q" class="zw-hero__title">{{ 'Was suchst du?' | t }}</label>
   <p class="zw-hero__lead">
-    Schreib es in deinen Worten. Wir suchen nur auf Zweit, in deiner Nähe und schweizweit.
+    {{
+      'Schreib es in deinen Worten. Wir suchen nur auf Zweit, in deiner Nähe und schweizweit.' | t
+    }}
   </p>
   <form #heroForm class="zw-hero__form" role="search" (ngSubmit)="hero.open(query())">
     <input
@@ -9,26 +11,28 @@
       name="q"
       class="zw-input"
       type="search"
-      placeholder="z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich"
+      [attr.placeholder]="'z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich' | t"
       [ngModel]="query()"
       (ngModelChange)="query.set($event)"
     />
     <button appButton variant="primary" type="submit">
       <app-icon name="search" />
-      <span>Suchen</span>
+      <span>{{ 'Suchen' | t }}</span>
     </button>
   </form>
-  <div class="zw-hero__chips" role="group" aria-label="Schnellfilter">
+  <div class="zw-hero__chips" role="group" [attr.aria-label]="'Schnellfilter' | t">
     @for (filter of quickFilters; track filter) {
-      <app-chip>{{ filter }}</app-chip>
+      <app-chip>{{ filter | t }}</app-chip>
     }
   </div>
-  <p class="zw-hero__hint">Oder speichere die Suche und wir melden uns, sobald etwas passt.</p>
-  <nav class="zw-cats" aria-label="Kategorien">
+  <p class="zw-hero__hint">
+    {{ 'Oder speichere die Suche und wir melden uns, sobald etwas passt.' | t }}
+  </p>
+  <nav class="zw-cats" [attr.aria-label]="'Kategorien' | t">
     @for (category of categories; track category.label) {
       <a class="zw-cat" routerLink="/find">
         <app-icon [name]="category.icon" [size]="28" />
-        <span>{{ category.label }}</span>
+        <span>{{ category.label | t }}</span>
       </a>
     }
   </nav>
@@ -50,7 +54,7 @@
         [price]="auction.bid"
         [bids]="auction.bids"
         [endsAt]="auction.endsAt"
-        [meta]="auction.meta"
+        [meta]="auction.meta | t"
       />
     }
   </div>
@@ -71,7 +75,7 @@
         }
       </div>
     } @else {
-      <p class="zw-muted">Noch keine Inserate in deiner Nähe.</p>
+      <p class="zw-muted">{{ 'Noch keine Inserate in deiner Nähe.' | t }}</p>
     }
   } @else {
     <div class="zw-grid" aria-hidden="true">
@@ -85,26 +89,32 @@
 <section class="zw-biz" aria-labelledby="h-biz">
   <div class="zw-container zw-biz__inner">
     <div class="zw-biz__intro">
-      <span class="zw-caption">Für Firmen</span>
-      <h2 id="h-biz">Büro, Lager oder Werkstatt räumen?</h2>
+      <span class="zw-caption">{{ 'Für Firmen' | t }}</span>
+      <h2 id="h-biz">{{ 'Büro, Lager oder Werkstatt räumen?' | t }}</h2>
       <p>
-        Zeig uns, was weg muss, nenn uns den Termin und wähl, wie viel Arbeit wir übernehmen. Ein
-        Projekt, eine Abrechnung.
+        {{
+          'Zeig uns, was weg muss, nenn uns den Termin und wähl, wie viel Arbeit wir übernehmen. Ein Projekt, eine Abrechnung.'
+            | t
+        }}
       </p>
-      <div><a appButton routerLink="/business">Projekt starten</a></div>
+      <div>
+        <a appButton routerLink="/business">{{ 'Projekt starten' | t }}</a>
+      </div>
     </div>
     <div>
       <div class="zw-row zw-biz__row">
-        <span>Selbst verkaufen</span>
-        <span>Du behältst die Kontrolle. Keine Gebühren, keine Provision.</span>
+        <span>{{ 'Selbst verkaufen' | t }}</span>
+        <span>{{ 'Du behältst die Kontrolle. Keine Gebühren, keine Provision.' | t }}</span>
       </div>
       <div class="zw-row zw-biz__row">
-        <span>Wir verkaufen</span>
-        <span>Bewertung, Inserate und Abholung durch uns. Pauschale vorab vereinbart.</span>
+        <span>{{ 'Wir verkaufen' | t }}</span>
+        <span>{{
+          'Bewertung, Inserate und Abholung durch uns. Pauschale vorab vereinbart.' | t
+        }}</span>
       </div>
       <div class="zw-row zw-biz__row">
-        <span>Wir kaufen</span>
-        <span>Festes Angebot nach Besichtigung. Wir holen ab, du bist fertig.</span>
+        <span>{{ 'Wir kaufen' | t }}</span>
+        <span>{{ 'Festes Angebot nach Besichtigung. Wir holen ab, du bist fertig.' | t }}</span>
       </div>
     </div>
   </div>

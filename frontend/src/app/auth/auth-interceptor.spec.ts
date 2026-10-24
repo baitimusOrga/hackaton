@@ -58,6 +58,6 @@ describe('API JWT interceptor', () => {
     backend
       .expectOne('/api/listings/123')
       .flush({ detail: 'Listing not found.' }, { status: 404, statusText: 'Not Found' });
-    expect(TestBed.inject(ErrorBanner).message()).toBe('Listing not found.');
+    expect(TestBed.inject(ErrorBanner).message()).toBe('Inserat nicht gefunden.');
   });
 });

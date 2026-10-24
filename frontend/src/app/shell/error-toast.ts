@@ -1,22 +1,23 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ErrorBanner } from '../errors';
+import { TranslatePipe } from '../i18n/i18n';
 import { Icon } from '../ui/icon';
 
 /** The app-wide error message, bottom right: a paper panel with a line-soft edge, "Fehler" in danger. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon],
+  imports: [Icon, TranslatePipe],
   selector: 'app-error-toast',
   template: `@if (errors.message(); as message) {
     <div class="toast" role="alert">
       <div class="toast__text">
-        <span class="zw-caption toast__label">Fehler</span>
+        <span class="zw-caption toast__label">{{ 'Fehler' | t }}</span>
         <p>{{ message }}</p>
       </div>
       <button
         type="button"
         class="toast__close"
-        aria-label="Meldung schliessen"
+        [attr.aria-label]="'Meldung schliessen' | t"
         (click)="errors.dismiss()"
       >
         <app-icon name="x" />
