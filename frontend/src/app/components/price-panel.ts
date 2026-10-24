@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   model,
@@ -164,7 +165,7 @@ const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW
               name="price-choice"
               required
               [checked]="!own() && price() === s.amount"
-              (change)="choose(s.amount)"
+              (change)="choose(s.amount, $index)"
             />
             <span>
               <span class="zw-option__title">{{ s.label | t }}</span>
@@ -300,13 +301,28 @@ export class PricePanel {
         : this.i18n.t('letzte {days} Tage', { days });
   }
 
-  protected choose(amount: number): void {
+  // the chosen suggestion (0 Schnell, 1 Ausgewogen, 2 Hoch); null while the seller types an own price
+  private chosen: number | null = null;
+
+  constructor() {
+    // The wizard starts on "Ausgewogen"; a new estimate (e.g. after the model is confirmed) keeps the choice.
+    effect(() => {
+      const strategies = this.strategies();
+      if (this.compact() || this.own() || !strategies.length) return;
+      if (this.chosen === null && this.price() === null) this.chosen = 1;
+      if (this.chosen !== null) this.price.set(strategies[this.chosen].amount);
+    });
+  }
+
+  protected choose(amount: number, index: number): void {
     this.own.set(false);
+    this.chosen = index;
     this.price.set(amount);
   }
 
   protected typeOwn(value: number): void {
     const amount = Number.isNaN(value) ? null : value;
+    this.chosen = null;
     this.own.set(true);
     this.ownValue.set(amount);
     this.price.set(amount);

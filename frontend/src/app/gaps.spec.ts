@@ -3,7 +3,14 @@ import { CONDITION, completeness, openGaps } from './gaps';
 
 const BIKE = ['Brand', 'Model', 'Frame size', 'Wheel size', 'Gears', 'Brakes'];
 const AI: Gap[] = [
-  { fact: 'Model', kind: 'PHOTO', prompt: 'Photograph the model lettering', options: [] },
+  {
+    fact: 'Model',
+    kind: 'PHOTO',
+    prompt: 'Photograph the model lettering',
+    options: [],
+    photo: 1,
+    box: [0.38, 0.38, 0.3, 0.16],
+  },
   { fact: 'Frame size', kind: 'ASK', prompt: 'What frame size?', options: ['M', 'L'] },
 ];
 
@@ -24,7 +31,12 @@ describe('openGaps', () => {
       'Wheel size',
       'Gears',
     ]);
-    expect(cards[0]).toMatchObject({ kind: 'PHOTO', prompt: 'Photograph the model lettering' });
+    expect(cards[0]).toMatchObject({
+      kind: 'PHOTO',
+      prompt: 'Photograph the model lettering',
+      hint: { photo: 1, box: [0.38, 0.38, 0.3, 0.16] },
+    });
+    expect(cards[1].hint).toBeUndefined();
     expect(cards[1].kind).toBe('PHOTO');
     expect(cards[2].options).toEqual(['M', 'L']);
     expect(cards[3]).toMatchObject({ kind: 'ASK', prompt: 'Wheel size?', options: [] });

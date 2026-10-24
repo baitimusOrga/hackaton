@@ -69,17 +69,21 @@ async function analyse(runs: Run[], extra: object = {}, place = vi.fn(), places:
   });
   input.dispatchEvent(new Event('change'));
   await fixture.whenStable();
-  button(element, 'Weiter').click();
-  await fixture.whenStable();
   return { fixture, element, uploadPhotos, run, place };
 }
 
-/** Analyses, skips the open questions and switches to the one-page view. */
+/** Analyses and goes on to the first question. */
+async function questions(runs: Run[], extra: object = {}) {
+  const page = await analyse(runs, extra);
+  button(page.element, 'Weiter').click();
+  await page.fixture.whenStable();
+  return page;
+}
+
+/** Analyses and opens the one-page form ("Alles bearbeiten"). */
 async function full(draft: ListingDraft, extra: object = {}, place = vi.fn(), places: object = {}) {
   const page = await analyse([streams(done(draft))], extra, place, places);
-  button(page.element, 'Zur Übersicht')?.click();
-  await page.fixture.whenStable();
-  button(page.element, 'Alles auf einer Seite').click();
+  button(page.element, 'Alles bearbeiten').click();
   await page.fixture.whenStable();
   return page;
 }
@@ -113,14 +117,20 @@ describe('Sell', () => {
   });
   afterEach(() => localStorage.clear());
 
-  it('shows every section of the one-page form before the photos are analysed', async () => {
-    const { fixture, element } = await reopen(undefined);
-    button(element, 'Alles auf einer Seite').click();
-    await fixture.whenStable();
+  it('starts with one big photo button and the hint that one photo is enough', async () => {
+    const { element } = await reopen(undefined);
+
+    expect(element.querySelector('h1')!.textContent).toContain('Was verkaufst du?');
+    expect(element.textContent).toContain('Ein Foto genügt');
+    expect(element.querySelector('label.shoot input[capture]')).not.toBeNull();
+    expect(element.textContent).toContain('1 von 4');
+  });
+
+  it('opens every section of the one-page form with "Alles bearbeiten"', async () => {
+    const { element } = await full(DRAFT);
 
     const headings = Array.from(element.querySelectorAll('h2')).map((h) => h.textContent!.trim());
     expect(headings).toEqual(['Fotos', 'Artikel', 'Zustand', 'Preis', 'Übergabe']);
-    expect(button(element, 'Veröffentlichen').disabled).toBe(true);
   });
 
   it('closes the dialog on Escape and unlocks the page behind it', async () => {
@@ -138,7 +148,7 @@ describe('Sell', () => {
     await analyse([streams(done(DRAFT))]);
 
     const saved = store.save.mock.lastCall![0];
-    expect(saved).toMatchObject({ draft: { title: 'Dell U2719D' }, gapsActive: true, step: 1 });
+    expect(saved).toMatchObject({ draft: { title: 'Dell U2719D' }, step: 1 });
     expect(saved.photos[0]).toMatchObject({ id: 7 });
     expect(saved.photos[0].file).toBeInstanceOf(File);
   });
@@ -170,7 +180,8 @@ describe('Sell', () => {
       privacyMarks: [],
     });
 
-    expect(element.textContent).toContain('3 von 5');
+    expect(element.textContent).toContain('3 von 4');
+    expect(element.textContent).toContain('Zu welchem Preis?');
     expect(element.textContent).toContain('Entwurf wiederhergestellt.');
   });
 
@@ -178,7 +189,7 @@ describe('Sell', () => {
     const { element } = await reopen({ savedAt: Date.now() - 21 * 60 * 60 * 1000, draft: DRAFT });
 
     expect(store.clear).toHaveBeenCalled();
-    expect(element.textContent).toContain('1 von 5');
+    expect(element.textContent).toContain('1 von 4');
     expect(element.textContent).not.toContain('Entwurf wiederhergestellt.');
   });
 
@@ -218,8 +229,8 @@ describe('Sell', () => {
     expect(fixture.componentInstance['photos']()).toHaveLength(2);
   });
 
-  it('uploads once, marks detections on the photo and asks for the model first', async () => {
-    const { element, uploadPhotos, run } = await analyse([
+  it('analyses right after the photo, shows the findings, then asks for the model first', async () => {
+    const { fixture, element, uploadPhotos, run } = await analyse([
       streams(detection('Brand: Dell'), done(DRAFT)),
     ]);
 
@@ -228,27 +239,44 @@ describe('Sell', () => {
     expect(element.querySelector('[data-testid="detection"]')!.textContent).toContain(
       'Brand: Dell',
     );
+    expect(element.querySelector('h1')!.textContent).toContain('Dell U2719D');
+    expect(element.textContent).toContain('1 Ding erkannt');
+    expect(element.textContent).toContain('Noch 3 Fragen');
+
+    button(element, 'Weiter').click();
+    await fixture.whenStable();
     expect(element.querySelector('[data-testid="gap"]')!.textContent).toContain('Model?');
-    expect(element.textContent).toContain('Frage 1 von 3');
+    expect(element.textContent).toContain('2 von 4');
   });
 
-  it('answers, confirms and skips the open questions, then continues with the details', async () => {
-    const { fixture, element } = await analyse([streams(done(DRAFT))]);
+  it('shows the live preview of the listing beside the steps', async () => {
+    const { element } = await analyse([streams(done(DRAFT))]);
+    const aside = element.querySelector('aside')!;
+
+    expect(aside.textContent).toContain('Dell U2719D');
+    expect(aside.textContent).toContain('Bildschirme'); // the category, translated
+    expect(aside.textContent).toContain('Marke');
+    expect(aside.textContent).toContain('Dell');
+  });
+
+  it('answers, confirms and skips the questions, then goes on to the price', async () => {
+    const { fixture, element } = await questions([streams(done(DRAFT))]);
 
     const answer = element.querySelector<HTMLInputElement>('#gap-answer')!;
     answer.value = 'U2719D';
     answer.dispatchEvent(new Event('input'));
     await fixture.whenStable();
-    button(element, 'Speichern').click();
+    button(element, 'Übernehmen').click();
     await fixture.whenStable();
     expect(element.querySelector('[data-testid="gap"]')!.textContent).toContain('Size: 27"?');
     button(element, 'Stimmt').click();
     await fixture.whenStable();
-    button(element, 'Überspringen').click();
+    button(element, 'Weiss ich nicht').click();
     await fixture.whenStable();
 
-    expect(element.textContent).toContain('2 von 5');
-    expect(element.textContent).toContain('Noch offen: Resolution');
+    expect(element.textContent).toContain('3 von 4');
+    expect(element.textContent).toContain('Zu welchem Preis?');
+    expect(element.querySelector('aside')!.textContent).toContain('nicht bestätigt');
     expect(
       fixture.componentInstance['facts']().map((f: { name: string; source: string }) => [
         f.name,
@@ -266,7 +294,7 @@ describe('Sell', () => {
       type: 'GAP',
       gap: { fact: 'Model', kind: 'PHOTO', prompt: 'Fotografiere das Typenschild', options: [] },
     };
-    const { fixture, element, uploadPhotos, run } = await analyse([
+    const { fixture, element, uploadPhotos, run } = await questions([
       streams(photoGap, done(DRAFT)),
       streams(done({ ...DRAFT, photoIds: [7, 8] })),
     ]);
@@ -275,9 +303,7 @@ describe('Sell', () => {
       'Fotografiere das Typenschild',
     );
 
-    const input = element.querySelector<HTMLInputElement>(
-      '[data-testid="gap"] input[type="file"]',
-    )!;
+    const input = element.querySelector<HTMLInputElement>('.foot2 input[type="file"]')!;
     Object.defineProperty(input, 'files', {
       value: [new File(['y'], 'label.png', { type: 'image/png' })],
     });
@@ -304,7 +330,45 @@ describe('Sell', () => {
 
     expect(uploadPhotos).toHaveBeenCalledOnce();
     expect(run).toHaveBeenCalledTimes(2);
-    expect(element.querySelector('[data-testid="gap"]')).not.toBeNull();
+    expect(button(element, 'Weiter').disabled).toBe(false);
+  });
+
+  it('points at where to photograph and shows what the new photo read', async () => {
+    const photoGap: DraftEvent = {
+      type: 'GAP',
+      gap: {
+        fact: 'Model',
+        kind: 'PHOTO',
+        prompt: 'Fotografiere den Modellnamen',
+        options: [],
+        photo: 1,
+        box: [0.3, 0.3, 0.3, 0.2],
+      },
+    };
+    const read = {
+      ...DRAFT,
+      photoIds: [7, 8],
+      facts: [...DRAFT.facts!, { name: 'Model', value: 'U2719D', source: 'LABEL' as const }],
+    };
+    const { fixture, element, uploadPhotos } = await questions([
+      streams(photoGap, done(DRAFT)),
+      streams(done(read)),
+    ]);
+    expect(element.querySelector('[data-testid="hint"]')!.textContent).toContain('Modell hier');
+
+    uploadPhotos.mockReturnValue(of([8]));
+    const input = element.querySelector<HTMLInputElement>('.foot2 input[type="file"]')!;
+    Object.defineProperty(input, 'files', {
+      value: [new File(['y'], 'label.png', { type: 'image/png' })],
+    });
+    input.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+
+    expect(element.querySelector('h1')!.textContent).toContain('U2719D.');
+    expect(element.textContent).toContain('Vom Foto gelesen');
+    button(element, 'Weiter').click();
+    await fixture.whenStable();
+    expect(element.querySelector('[data-testid="gap"]')!.textContent).toContain('Size: 27"?');
   });
 
   it('rewrites title, description and price once when the questions are done', async () => {
@@ -312,19 +376,19 @@ describe('Sell', () => {
     const rewriteText = vi
       .fn()
       .mockReturnValue(of({ title: 'Dell U2719D', description: 'My Dell U2719D monitor.', price }));
-    const { fixture, element } = await analyse([streams(done(DRAFT))], { rewriteText });
+    const { fixture, element } = await questions([streams(done(DRAFT))], { rewriteText });
 
     const answer = element.querySelector<HTMLInputElement>('#gap-answer')!;
     answer.value = 'U2719D';
     answer.dispatchEvent(new Event('input'));
     await fixture.whenStable();
-    button(element, 'Speichern').click();
+    button(element, 'Übernehmen').click();
     await fixture.whenStable();
     button(element, 'Stimmt').click();
     await fixture.whenStable();
     expect(rewriteText).not.toHaveBeenCalled(); // not while answering
 
-    button(element, 'Zur Übersicht').click();
+    button(element, 'Weiss ich nicht').click();
     await fixture.whenStable();
 
     expect(rewriteText).toHaveBeenCalledOnce();
@@ -344,10 +408,13 @@ describe('Sell', () => {
 
   it('skipping every question needs no rewrite', async () => {
     const rewriteText = vi.fn();
-    const { fixture, element } = await analyse([streams(done(DRAFT))], { rewriteText });
+    const { fixture, element } = await questions([streams(done(DRAFT))], { rewriteText });
 
-    button(element, 'Zur Übersicht').click();
-    await fixture.whenStable();
+    for (let i = 0; i < 3; i++) {
+      button(element, 'Weiss ich nicht').click();
+      await fixture.whenStable();
+    }
+    expect(element.textContent).toContain('Zu welchem Preis?');
 
     expect(rewriteText).not.toHaveBeenCalled();
   });
@@ -520,6 +587,11 @@ describe('Sell', () => {
     element.querySelector('form')!.dispatchEvent(new Event('submit'));
 
     expect(store.clear).toHaveBeenCalled();
+    await fixture.whenStable();
+    expect(element.textContent).toContain('Dein Inserat ist online.');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    button(element, 'Inserat ansehen').click();
+    expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ['listings', 1], modal: null } }]);
     expect(publish.mock.calls[0][0].body).toEqual({
       title: 'Dell U2719D',
       description: 'A monitor.',

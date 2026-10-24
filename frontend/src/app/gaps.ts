@@ -17,7 +17,14 @@ export interface GapCard {
   options: string[];
   /** the suggested value of a CONFIRM card */
   value?: string;
+  /** where on an existing photo (1-based) the missing detail likely is: x, y, width, height as fractions */
+  hint?: { photo: number; box: number[] };
 }
+
+const hintOf = (gap: Gap | undefined): GapCard['hint'] =>
+  gap?.kind === 'PHOTO' && gap.photo && gap.box?.length === 4
+    ? { photo: gap.photo, box: gap.box }
+    : undefined;
 
 const confirmed = (fact: KnownFact | undefined) =>
   !!fact?.value.trim() && (fact.source === 'LABEL' || fact.source === 'SELLER');
@@ -46,6 +53,7 @@ export function openGaps(
           kind: 'PHOTO',
           prompt: ai?.prompt ?? 'Fotografiere den ganzen Artikel, damit man den Zustand sieht',
           options: [],
+          hint: hintOf(ai),
         });
       continue;
     }
@@ -66,6 +74,7 @@ export function openGaps(
         kind,
         prompt: ai?.prompt ?? `${name}?`,
         options: ai?.options ?? [],
+        ...(kind === 'PHOTO' && hintOf(ai) ? { hint: hintOf(ai) } : {}),
       });
     }
   }

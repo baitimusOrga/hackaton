@@ -1,5 +1,6 @@
 import type { Messages } from './i18n';
 import { BUSINESS_MESSAGES } from './messages/business';
+import { CATALOG_MESSAGES } from './messages/catalog';
 import { ERROR_MESSAGES } from './messages/errors';
 import { FIND_MESSAGES } from './messages/find';
 import { SELL_MESSAGES } from './messages/sell';
@@ -12,4 +13,5 @@ export const MESSAGES: Messages = {
   ...FIND_MESSAGES,
   ...BUSINESS_MESSAGES,
   ...ERROR_MESSAGES,
+  ...CATALOG_MESSAGES,
 };

@@ -109,4 +109,25 @@ describe('PricePanel', () => {
     fixture.detectChanges();
     expect(strategies()[1].closest('label')!.textContent).toContain('CHF 85.–');
   });
+
+  it('starts on "Ausgewogen" and keeps the choice when the range changes', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(PricePanel);
+    fixture.componentRef.setInput('estimate', ESTIMATE);
+    await fixture.whenStable();
+    expect(fixture.componentInstance.price()).toBe(100);
+
+    const radios = fixture.nativeElement.querySelectorAll('input[type="radio"]');
+    radios[2].click(); // Hoch
+    await fixture.whenStable();
+    fixture.componentRef.setInput('estimate', {
+      ...ESTIMATE,
+      lowChf: 600,
+      midChf: 700,
+      highChf: 800,
+    });
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.price()).toBe(800);
+  });
 });

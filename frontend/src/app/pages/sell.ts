@@ -7,6 +7,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpContext } from '@angular/common/http';
@@ -20,8 +21,10 @@ import {
   DraftEvent,
   Gap,
   ListingDraft,
+  PriceEstimate,
   PrivacyMark,
 } from '../api/models';
+import { DetectionStage, StageMark } from '../components/detection-stage';
 import { PricePanel } from '../components/price-panel';
 import { Condition, CONDITION_LABELS } from '../conditions';
 import { devicePosition } from '../device-location';
@@ -46,7 +49,7 @@ interface SellPhoto {
 }
 
 const MAX_PHOTOS = 5;
-const STEPS = 5;
+const STEPS = 4;
 // per-browser default for the next listing
 const LAST_LOCATION = 'sell.lastLocation';
 // draft photos are deleted on the server after 24 h (PhotoCleanup); an older draft could not be published
@@ -94,13 +97,24 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
 }));
 
 /**
- * Sell wizard (Sell1–Sell5) and the one-page form (SellFull); both views share the same signals.
- * Step 1 streams the AI's detections onto the photos, then asks for what is missing, one card at a time.
+ * Sell flow as in "Sell Erkennung v3": photo and live detection (1), one question at a time (2),
+ * price (3) and handover (4) beside a live preview of the listing, then a success screen. "Alles
+ * bearbeiten" shows the one-page form (SellFull); both views share the same signals.
  */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-sell',
-  imports: [NgTemplateOutlet, RouterLink, PricePanel, Button, ChfPipe, Chip, Icon, TranslatePipe],
+  imports: [
+    NgTemplateOutlet,
+    RouterLink,
+    DetectionStage,
+    PricePanel,
+    Button,
+    ChfPipe,
+    Chip,
+    Icon,
+    TranslatePipe,
+  ],
   templateUrl: './sell.html',
   host: {
     '[class.sell--full]': "view() === 'full'",
@@ -109,43 +123,372 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
     '(window:paste)': 'onPaste($event)',
   },
   styles: `
-    /* Steps: a dialog on the overlay scrim over the page it was opened from. Full: a page of its own. */
+    /* Steps and the one-page form both cover the page they were opened from. */
     :host {
       position: fixed;
       inset: 0;
       z-index: 30;
       display: block;
       overflow-y: auto;
-      background: var(--overlay);
-    }
-    /* The form fills the scrim and centres the dialog both ways; a tall dialog scrolls. */
-    form {
-      display: flex;
-      min-height: 100%;
-      padding: var(--space-12) var(--space-4);
-    }
-    :host(.sell--full) {
       background: var(--bg-000);
     }
-    :host(.sell--full) form {
-      display: block;
-      padding: 0;
+    .sell {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
-    .dlg {
+    .bar {
+      position: relative;
+      border-bottom: var(--border-1) solid var(--line-soft);
+    }
+    .bar__in {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      min-height: 72px;
+    }
+    .bar__step {
+      margin-left: auto;
+      white-space: nowrap;
+    }
+    .progress {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 2px;
+      background: var(--line-soft);
+    }
+    .progress > div {
+      height: 100%;
+      background: var(--ink);
+      transition: width 480ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .main {
+      flex: 1;
       width: 100%;
-      max-width: 600px;
-      margin: auto;
-      padding: var(--space-8) var(--space-6) var(--space-8);
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-8) var(--space-6) 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 40px;
+    }
+    .dragging .main {
+      outline: 2px dashed var(--blue);
+      outline-offset: -8px;
+    }
+    .col {
+      flex: 1 1 400px;
+      max-width: 680px;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       gap: var(--space-8);
-      background: var(--bg-000);
-      border: var(--border-1) solid var(--line-soft);
-      border-radius: var(--radius-1);
     }
-    @media (min-width: 720px) {
-      .dlg {
-        padding: var(--space-8) 40px 40px;
+    .col--center {
+      margin-inline: auto;
+    }
+    .q {
+      font-size: 32px;
+      line-height: 36px;
+      font-weight: 700;
+      letter-spacing: -0.005em;
+      text-wrap: pretty;
+    }
+    .shoot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      width: 100%;
+      min-height: 220px;
+      padding: var(--space-6);
+      font-size: 18px;
+      line-height: 24px;
+      font-weight: 600;
+      border: var(--border-1) solid var(--line);
+      border-radius: var(--radius-1);
+      background: var(--bg-900);
+      color: var(--ink-inverse);
+      cursor: pointer;
+    }
+    .shoot:hover {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .upload {
+      align-self: center;
+      text-align: center;
+    }
+    .foot2 {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+      min-height: 76px;
+      padding: var(--space-4) 0;
+      background: var(--bg-000);
+      border-top: var(--border-1) solid var(--line-soft);
+    }
+    .push {
+      margin-left: auto;
+    }
+    .choice {
+      min-width: 64px;
+      height: 56px;
+      padding: 0 var(--space-4);
+      font: 600 18px/24px var(--font-sans);
+      border: var(--border-1) solid var(--line);
+      border-radius: var(--radius-1);
+      background: var(--bg-000);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .choice:hover,
+    .choice:focus-visible {
+      background: var(--bg-900);
+      color: var(--ink-inverse);
+    }
+    .manual {
+      display: flex;
+      gap: var(--space-2);
+    }
+    .manual .zw-input {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .read {
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 500;
+      color: var(--green-text);
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      min-height: 20px;
+    }
+    /* Live preview of the listing, the design's "Fläche" variant */
+    .aside {
+      flex: 0 0 360px;
+      min-width: 280px;
+      margin-top: calc(-1 * var(--space-8));
+      padding: var(--space-8) var(--space-6) 0;
+      background: var(--bg-100);
+    }
+    .aside__in {
+      position: sticky;
+      top: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      margin-bottom: var(--space-8);
+    }
+    .aside__photo,
+    .card__photo {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      background: var(--bg-000) center / cover no-repeat;
+      overflow: hidden;
+    }
+    .aside__photo--empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--ink-muted);
+    }
+    .aside__title,
+    .card__title {
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 600;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+      padding: 0 6px;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: var(--border-1) solid var(--line);
+      border-radius: var(--radius-1);
+      align-self: flex-start;
+    }
+    .fact-row {
+      position: relative;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--space-3);
+      min-height: 40px;
+      padding: var(--space-2) 0;
+      border-bottom: var(--border-1) solid var(--line-soft);
+      font-size: 14px;
+      line-height: 20px;
+    }
+    .fact-row__name {
+      font-weight: 600;
+    }
+    .fact-row > :nth-child(2) {
+      text-align: right;
+    }
+    .flashable {
+      position: relative;
+    }
+    .flash {
+      position: absolute;
+      inset: -4px -8px;
+      pointer-events: none;
+      border-radius: 8px;
+      animation: zwFlash 1.4s ease-out both;
+    }
+    .flash--row {
+      inset: 0 -8px;
+    }
+    .flash--wide {
+      inset: -6px -10px;
+    }
+    /* Success */
+    .done {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-6);
+      padding-top: var(--space-6);
+      text-align: center;
+    }
+    .done__text {
+      align-items: center;
+      max-width: 440px;
+    }
+    .done__acts {
+      justify-content: center;
+    }
+    .check {
+      width: 72px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--green-text);
+      border: 2px solid var(--green-text);
+      border-radius: var(--radius-1);
+      animation: zwDim 0.2s linear both;
+    }
+    .check svg {
+      width: 36px;
+      height: 36px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.75;
+      stroke-linecap: square;
+    }
+    .check path {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: zwDraw 0.45s ease-out 0.15s forwards;
+    }
+    .card {
+      width: 100%;
+      max-width: 280px;
+      padding-bottom: var(--space-12);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      text-align: left;
+    }
+    .card__photo::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        115deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.75) 50%,
+        rgba(170, 210, 255, 0.4) 56%,
+        transparent 70%
+      );
+      background-size: 260% 100%;
+      animation: zwShimmer 1.2s ease-out 0.5s both;
+    }
+    @media (max-width: 900px) {
+      .aside {
+        flex-basis: 100%;
+        margin-top: 0;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .flash,
+      .check,
+      .check path,
+      .card__photo::after {
+        animation: none;
+      }
+      .check path {
+        stroke-dashoffset: 0;
+      }
+      .flash {
+        display: none;
+      }
+      .progress > div {
+        transition: none;
+      }
+    }
+    @keyframes zwDim {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    @keyframes zwShimmer {
+      0% {
+        background-position: 160% 0;
+        opacity: 1;
+      }
+      100% {
+        background-position: -60% 0;
+        opacity: 0;
+      }
+    }
+    @keyframes zwFlash {
+      0% {
+        opacity: 0;
+        background: rgba(160, 200, 255, 0);
+        box-shadow: none;
+      }
+      25% {
+        opacity: 1;
+        background: rgba(170, 205, 255, 0.28);
+        box-shadow:
+          0 0 0 1px rgba(106, 149, 255, 0.5),
+          0 0 22px rgba(106, 149, 255, 0.45);
+      }
+      100% {
+        opacity: 0;
+        background: rgba(160, 200, 255, 0);
+        box-shadow: none;
+      }
+    }
+    @keyframes zwDraw {
+      to {
+        stroke-dashoffset: 0;
       }
     }
     .page-head {
@@ -182,14 +525,6 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       flex-wrap: wrap;
       gap: var(--space-2);
     }
-    .top {
-      display: flex;
-      align-items: center;
-      gap: var(--space-4);
-    }
-    .top .zw-btn {
-      margin-left: auto;
-    }
     .close {
       width: 44px;
       height: 44px;
@@ -198,10 +533,6 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       justify-content: center;
       margin-right: -12px;
       color: var(--ink);
-    }
-    .q--sm {
-      font-size: 24px;
-      line-height: 28px;
     }
     .stack {
       display: flex;
@@ -225,18 +556,7 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
     .link--muted {
       color: var(--ink-muted);
     }
-    .drop {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-3);
-      padding: var(--space-12) var(--space-6);
-      background: var(--bg-100);
-      border-radius: var(--radius-1);
-      text-align: center;
-      cursor: pointer;
-    }
-    .drop:focus-within,
+    .shoot:focus-within,
     .add:focus-within,
     .file:focus-within {
       outline: var(--border-2) solid var(--focus);
@@ -275,18 +595,6 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       font-weight: 600;
       cursor: pointer;
     }
-    .thumb {
-      width: 96px;
-      height: 96px;
-      flex: none;
-      object-fit: cover;
-      background: var(--bg-100);
-    }
-    .head {
-      display: flex;
-      gap: 20px;
-      align-items: center;
-    }
     .fact {
       display: grid;
       grid-template-columns: minmax(0, 8rem) minmax(0, 1fr);
@@ -314,65 +622,12 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
         grid-template-columns: 8rem minmax(0, 1fr);
       }
     }
-    .preview {
-      display: flex;
-      gap: var(--space-4);
-      align-items: center;
-      padding: var(--space-4);
-      background: var(--bg-100);
-    }
-    .preview img {
-      width: 72px;
-      height: 72px;
-      flex: none;
-      object-fit: cover;
-    }
-    .preview__text {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-    .ellipsis {
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
     .sec {
       display: flex;
       flex-direction: column;
       gap: var(--space-4);
       padding: var(--space-8) 0;
       border-bottom: var(--border-1) solid var(--line-soft);
-    }
-    .scan {
-      position: relative;
-    }
-    .scan img {
-      width: 100%;
-      border-radius: var(--radius-1);
-    }
-    .mark {
-      position: absolute;
-      border: 2px solid var(--accent, #0f766e);
-      border-radius: 4px;
-    }
-    .mark--privacy {
-      border-color: var(--danger, #be123c);
-    }
-    .mark span {
-      position: absolute;
-      bottom: 100%;
-      left: 0;
-      white-space: nowrap;
-      background: var(--bg-000);
-      padding: 0 var(--space-1, 4px);
-      font-size: 0.8125rem;
-    }
-    .dragging .dlg {
-      outline: 2px dashed var(--accent, #0f766e);
-      outline-offset: 4px;
     }
     .chips {
       display: flex;
@@ -390,9 +645,26 @@ export class Sell {
   private readonly i18n = inject(I18n);
   private readonly store = inject(DraftStore);
   protected readonly restored = signal(false);
+  // after a photo answered a photo question: what was read from it, shown before the next question
+  protected readonly readFact = signal<{ fact: string; value: string } | null>(null);
+  protected readonly published = signal<{
+    id: number;
+    title: string;
+    price: number;
+    photo?: string;
+    meta: string;
+  } | null>(null);
+  // the price range on screen; moves smoothly to a new estimate (e.g. after the model is confirmed)
+  protected readonly shownEstimate = signal<PriceEstimate | null>(null);
+  // bumped when the range moves, so the highlight plays again
+  protected readonly priceRun = signal(0);
 
   protected close(): void {
     void this.router.navigate([{ outlets: { modal: null } }]);
+  }
+
+  protected openListing(id: number): void {
+    void this.router.navigate([{ outlets: { primary: ['listings', id], modal: null } }]);
   }
 
   protected readonly maxPhotos = MAX_PHOTOS;
@@ -474,14 +746,90 @@ export class Sell {
   protected readonly canContinue = computed(() => {
     switch (this.step()) {
       case 1:
-        return this.photos().length > 0 && !this.busy() && !this.analyzing();
+        return !!this.draft() && !this.busy() && !this.analyzing();
       case 3:
-        return !!this.fields().condition;
-      case 4:
         return this.price() !== null && this.price()! > 0;
       default:
         return true;
     }
+  });
+  protected readonly progress = computed(() => {
+    if (this.published()) return 100;
+    const step = this.step();
+    if (step === 1) return this.draft() && !this.analyzing() ? 30 : this.photos().length ? 15 : 0;
+    if (step === 2) {
+      const total = this.answered() + this.cards().length;
+      return 42 + Math.round((23 * this.answered()) / Math.max(1, total));
+    }
+    return step === 3 ? 82 : 94;
+  });
+  protected readonly remaining = computed(() => {
+    const n = this.cards().length;
+    if (this.step() > 2) return this.i18n.t('Fast fertig');
+    return n === 0
+      ? ''
+      : n === 1
+        ? this.i18n.t('Noch 1 Frage')
+        : this.i18n.t('Noch {n} Fragen', { n });
+  });
+  protected readonly analyzeStatus = computed(() => {
+    if (this.busy()) return this.i18n.t('Foto wird hochgeladen…');
+    if (this.analyzing())
+      return this.i18n.t(this.detections().length ? 'Erkannt wird…' : 'Foto wird ausgewertet…');
+    const n = this.detections().length;
+    return n ? this.i18n.t(n === 1 ? '1 Ding erkannt' : '{n} Dinge erkannt', { n }) : '';
+  });
+  /** What the stage shows: which photo, whether it is still being scanned, and the boxes on it. */
+  protected readonly stage = computed(() => {
+    const card = this.currentCard();
+    const last = this.photos().length - 1;
+    const waiting = this.busy() || this.analyzing();
+    const hint = this.step() === 2 && !waiting && !this.readFact() ? card?.hint : undefined;
+    const index = hint ? hint.photo - 1 : this.step() === 2 ? last : this.shownPhoto();
+    const marks: StageMark[] = hint
+      ? [
+          {
+            box: hint.box,
+            label: this.i18n.t('{name} hier', { name: this.i18n.t(card!.fact) }),
+            kind: 'hint',
+          },
+        ]
+      : this.marksOn(index + 1).map((m) => ({ ...m, kind: m.privacy ? 'privacy' : 'detect' }));
+    return { index, photo: this.photos()[index], scanning: waiting && !marks.length, marks };
+  });
+  protected readonly asideTitle = computed(() =>
+    this.draft() ? this.fields().title : this.i18n.t('Wird aus dem Foto erkannt'),
+  );
+  protected readonly asideMeta = computed(() =>
+    this.draft()
+      ? [this.conditionLabel(), this.locality()].filter(Boolean).join(' · ')
+      : this.i18n.t('Zustand und Ort folgen'),
+  );
+  /** The live preview's facts: category, the category's key facts, condition and handover. */
+  protected readonly asideFacts = computed(() => {
+    if (!this.draft()) return [];
+    const t = (key: string) => this.i18n.t(key);
+    const rows = [{ name: t('Kategorie'), value: t(this.fields().category), muted: false }];
+    for (const name of this.keyFacts()) {
+      const fact = this.facts().find((f) => f.name === name && f.value.trim());
+      if (fact)
+        rows.push({
+          name: t(name),
+          value: fact.value,
+          muted: fact.source === 'SUGGESTION' || fact.source === 'WEB',
+        });
+      else if (this.skipped().has(name))
+        rows.push({ name: t(name), value: t('nicht bestätigt'), muted: true });
+    }
+    if (this.fields().condition)
+      rows.push({ name: t('Zustand'), value: this.conditionLabel(), muted: false });
+    if (this.step() === 4 && this.postcode())
+      rows.push({
+        name: t('Übergabe'),
+        value: `${this.postcode()} ${this.locality()}`.trim(),
+        muted: false,
+      });
+    return rows;
   });
   // fields the seller typed in keep their value when the draft is re-run
   private readonly sellerFields = new Set<Field>();
@@ -524,6 +872,41 @@ export class Sell {
       const snapshot = this.snapshot();
       if (snapshot) void this.store.save({ ...snapshot, savedAt: Date.now() });
     });
+    effect(() => this.moveEstimate(this.draft()?.price ?? null));
+  }
+
+  private frame = 0;
+
+  /** Shows a new estimate; an updated range glides from the old numbers to the new ones. */
+  private moveEstimate(to: PriceEstimate | null): void {
+    const from = untracked(this.shownEstimate);
+    if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(this.frame);
+    const still =
+      typeof requestAnimationFrame !== 'function' ||
+      (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (!to || !from || from.midChf == null || to.midChf == null || still) {
+      this.shownEstimate.set(to);
+      return;
+    }
+    if (from.lowChf === to.lowChf && from.midChf === to.midChf && from.highChf === to.highChf) {
+      this.shownEstimate.set(to);
+      return;
+    }
+    this.priceRun.update((n) => n + 1);
+    const start = performance.now();
+    const lerp = (a: number | null | undefined, b: number | null | undefined, k: number) =>
+      a == null || b == null ? b : Math.round(a + (b - a) * k);
+    const tick = (now: number) => {
+      const k = 1 - Math.pow(1 - Math.min(1, (now - start) / 900), 3);
+      this.shownEstimate.set({
+        ...to,
+        lowChf: lerp(from.lowChf, to.lowChf, k),
+        midChf: lerp(from.midChf, to.midChf, k),
+        highChf: lerp(from.highChf, to.highChf, k),
+      });
+      if (k < 1) this.frame = requestAnimationFrame(tick);
+    };
+    this.frame = requestAnimationFrame(tick);
   }
 
   private restore(saved: SavedDraft): void {
@@ -561,14 +944,24 @@ export class Sell {
   protected next(): void {
     if (!this.canContinue()) return;
     if (this.step() === 1) {
-      const fresh = this.photos().some((p) => p.id === undefined);
-      if (this.draft() && !fresh) this.step.set(2);
-      else this.analyse();
+      if (this.cards().length) {
+        this.step.set(2);
+        this.gapsActive.set(true);
+      } else this.finishGaps();
     } else this.step.update((s) => Math.min(STEPS, s + 1));
   }
 
   protected back(): void {
-    this.step.update((s) => Math.max(1, s - 1));
+    if (this.step() === 3 && this.cards().length) {
+      this.step.set(2);
+      this.gapsActive.set(true);
+    } else this.step.update((s) => Math.max(1, s - 1));
+  }
+
+  /** After the "read" moment of a photo question: on to the next question, or the price. */
+  protected continueAfterRead(): void {
+    this.readFact.set(null);
+    if (!this.cards().length) this.finishGaps();
   }
 
   protected marksOn(photo: number): { box: number[]; label: string; privacy: boolean }[] {
@@ -676,10 +1069,11 @@ export class Sell {
     if (drafted || hadDraft) {
       // a failed re-run keeps the previous draft; the photo card counts as skipped
       if (!drafted && photoGap) this.skip(photoGap);
-      if (this.view() === 'steps') {
-        this.gapsActive.set(true);
-        if (!this.cards().length) this.finishGaps();
-      }
+      const read = photoGap && this.facts().find((f) => f.name === photoGap.fact && f.value.trim());
+      if (drafted && read && this.step() === 2) {
+        this.readFact.set({ fact: read.name, value: read.value });
+        this.textStale = true;
+      } else if (this.step() === 2 && !this.cards().length) this.finishGaps();
     } else {
       this.streamFailed.set(true);
     }
@@ -758,12 +1152,13 @@ export class Sell {
     this.answered.update((n) => n + 1);
     this.typing.set(false);
     this.draftAnswer.set('');
-    if (this.gapsActive() && !this.cards().length) this.finishGaps();
+    if (this.step() === 2 && !this.cards().length) this.finishGaps();
   }
 
   protected finishGaps(): void {
     this.gapsActive.set(false);
-    this.step.set(2);
+    this.readFact.set(null);
+    this.step.set(3);
     if (this.textStale) this.rewriteText();
   }
 
@@ -771,7 +1166,7 @@ export class Sell {
     this.skipped.set(new Set());
     this.answered.set(0);
     this.view.set('steps');
-    this.step.set(1);
+    this.step.set(this.cards().length ? 2 : 1);
     this.gapsActive.set(true);
   }
 
@@ -915,6 +1310,7 @@ export class Sell {
     event.preventDefault();
     // Enter inside a wizard step means "Weiter", never publish
     if (this.view() === 'steps' && this.step() < STEPS) return this.next();
+    if (!this.fields().condition) return;
     const draft = this.draft();
     const price = this.price();
     const fields = this.fields();
@@ -939,9 +1335,16 @@ export class Sell {
       next: (listing) => {
         void this.store.clear();
         saveLastLocation(body.postcode, body.locality);
-        void this.router.navigate([
-          { outlets: { primary: ['listings', listing.id], modal: null } },
-        ]);
+        this.busy.set(false);
+        // the success screen lives in the step view, also when published from the one-page form
+        this.view.set('steps');
+        this.published.set({
+          id: listing.id!,
+          title: body.title,
+          price: body.priceChf,
+          photo: this.previewPhoto(),
+          meta: [this.conditionLabel(), body.locality].filter(Boolean).join(' · '),
+        });
       },
       error: () => this.busy.set(false),
     });
