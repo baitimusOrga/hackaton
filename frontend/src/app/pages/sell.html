@@ -649,7 +649,7 @@
       {{ 'Veröffentlicht wird nur, was vom Etikett stammt oder du bestätigst.' | t }}
     </p>
     <div>
-      @for (fact of facts(); track fact.name; let i = $index) {
+      @for (fact of factRows(); track fact.name; let i = $index) {
         <div class="fact" data-testid="fact">
           <label class="zw-label" [for]="'fact-' + i">{{ fact.name | t }}</label>
           <input
@@ -657,34 +657,46 @@
             [id]="'fact-' + i"
             maxlength="500"
             [value]="fact.value"
-            (input)="editFact(i, $any($event.target).value)"
+            [attr.list]="fact.options.length ? 'fact-options-' + i : null"
+            (input)="setFact(fact.name, $any($event.target).value)"
             (change)="rewriteText()"
           />
-          <span class="zw-muted zw-small" data-testid="marker">{{ markers[fact.source] | t }}</span>
+          @if (fact.options.length) {
+            <datalist [id]="'fact-options-' + i">
+              @for (option of fact.options; track option) {
+                <option [value]="option"></option>
+              }
+            </datalist>
+          }
+          <span class="zw-muted zw-small" data-testid="marker">{{
+            (fact.value.trim() ? markers[fact.source] : 'Noch offen') | t
+          }}</span>
           <div class="fact__acts">
             @if (fact.source === 'WEB' && fact.sourceUrl) {
               <a [href]="fact.sourceUrl" target="_blank" rel="noopener noreferrer">{{
                 'Quelle' | t
               }}</a>
             }
-            @if (fact.source === 'SUGGESTION' || fact.source === 'WEB') {
+            @if (fact.value.trim() && (fact.source === 'SUGGESTION' || fact.source === 'WEB')) {
               <label class="zw-check">
                 <input
                   type="checkbox"
                   [attr.aria-label]="'{name} stimmt' | t: { name: fact.name }"
-                  (change)="confirmFact(i)"
+                  (change)="confirmFact(fact.name)"
                 />
                 {{ 'Stimmt' | t }}
               </label>
             }
-            <button
-              type="button"
-              class="zw-link"
-              [attr.aria-label]="'{name} entfernen' | t: { name: fact.name }"
-              (click)="removeFact(i)"
-            >
-              {{ 'Entfernen' | t }}
-            </button>
+            @if (fact.value.trim()) {
+              <button
+                type="button"
+                class="zw-link"
+                [attr.aria-label]="'{name} entfernen' | t: { name: fact.name }"
+                (click)="removeFact(fact.name)"
+              >
+                {{ 'Entfernen' | t }}
+              </button>
+            }
           </div>
         </div>
       } @empty {

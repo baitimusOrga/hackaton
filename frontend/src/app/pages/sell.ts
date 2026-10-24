@@ -772,13 +772,28 @@ export class Sell {
   protected readonly rewriting = signal(false);
   // 0-based indexes of photos the seller leaves out of the listing
   protected readonly excluded = signal(new Set<number>());
-  protected readonly keyFacts = computed(
-    () => this.categories().find((c) => c.name === this.fields().category)?.keyFacts ?? [],
+  protected readonly categoryFields = computed(
+    () => this.categories().find((c) => c.name === this.fields().category)?.fields ?? [],
   );
+  protected readonly keyFacts = computed(() => this.categoryFields().map((f) => f.name ?? ''));
+  // one row per field of the category (empty when unknown), then the facts outside the category
+  protected readonly factRows = computed<(Fact & { options: string[] })[]>(() => [
+    ...this.categoryFields().map((field) => ({
+      ...(this.facts().find((f) => f.name === field.name) ?? {
+        name: field.name ?? '',
+        value: '',
+        source: 'SELLER' as const,
+      }),
+      options: field.options ?? [],
+    })),
+    ...this.facts()
+      .filter((f) => !this.keyFacts().includes(f.name))
+      .map((f) => ({ ...f, options: [] })),
+  ]);
   // at most MAX_CARDS questions per round, so "Noch N Fragen" goes down with every answer
   protected readonly cards = computed(() =>
     openGaps(
-      this.keyFacts(),
+      this.categoryFields(),
       this.facts(),
       this.fields().condition,
       this.aiGaps(),
@@ -1410,14 +1425,9 @@ export class Sell {
       this.textStale ||= this.fields().condition !== value;
       this.setField('condition', value);
     } else {
-      const fact: Fact = { name: card.fact, value: value.trim(), source: 'SELLER' };
       const before = this.facts().find((f) => f.name === card.fact);
-      const changed = before?.value !== fact.value;
-      this.facts.update((facts) =>
-        facts.some((f) => f.name === card.fact)
-          ? facts.map((f) => (f.name === card.fact ? fact : f))
-          : [fact, ...facts],
-      );
+      const changed = before?.value !== value.trim();
+      this.setFact(card.fact, value.trim());
       // brand and model change what the item is: title and price follow right away (also a confirmed guess), the rest at the end
       const identity = card.fact === 'Brand' || card.fact === 'Model';
       if (identity && (changed || before?.source !== 'SELLER')) this.rewriteText();
@@ -1506,14 +1516,18 @@ export class Sell {
     this.fields.update((fields) => ({ ...fields, [field]: value }));
   }
 
-  protected editFact(index: number, value: string): void {
+  /** Sets a fact as the seller's own, adding it when it is still missing. */
+  protected setFact(name: string, value: string): void {
+    const fact: Fact = { name, value, source: 'SELLER' };
     this.facts.update((facts) =>
-      facts.map((f, i) => (i === index ? { ...f, value, source: 'SELLER' } : f)),
+      facts.some((f) => f.name === name)
+        ? facts.map((f) => (f.name === name ? fact : f))
+        : [fact, ...facts],
     );
   }
 
-  protected confirmFact(index: number): void {
-    this.editFact(index, this.facts()[index].value);
+  protected confirmFact(name: string): void {
+    this.setFact(name, this.facts().find((f) => f.name === name)?.value ?? '');
   }
 
   protected toggleExcluded(index: number): void {
@@ -1590,8 +1604,8 @@ export class Sell {
     });
   }
 
-  protected removeFact(index: number): void {
-    this.facts.update((facts) => facts.filter((_, i) => i !== index));
+  protected removeFact(name: string): void {
+    this.facts.update((facts) => facts.filter((f) => f.name !== name));
   }
 
   /** Shows the listing as buyers will see it, before it goes online. */

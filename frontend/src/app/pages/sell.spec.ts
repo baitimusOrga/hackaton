@@ -21,7 +21,18 @@ const DRAFT: ListingDraft = {
   price: { lowChf: 100, midChf: 120, highChf: 140, provisional: true, evidence: [] },
   privacyWarnings: [],
 };
-const CATEGORIES = [{ name: 'Monitors', keyFacts: ['Brand', 'Model', 'Size', 'Resolution'] }];
+const CATEGORIES = [
+  {
+    name: 'Monitors',
+    fields: [
+      { name: 'Brand', options: [] },
+      { name: 'Model', options: [] },
+      { name: 'Size', options: ['24"', '27"'] },
+      { name: 'Resolution', options: [] },
+    ],
+  },
+  { name: 'Bikes', fields: [{ name: 'Frame size', options: ['M', 'L'] }] },
+];
 
 const detection = (label: string): DraftEvent => ({
   type: 'DETECTION',
@@ -595,12 +606,50 @@ describe('Sell', () => {
       Array.from(element.querySelectorAll('[data-testid="marker"]')).map((m) =>
         m.textContent!.trim(),
       );
-    expect(markers()).toEqual(['Vom Etikett gelesen', 'Vorschlag, bitte prüfen']);
+    expect(markers()).toEqual([
+      'Vom Etikett gelesen',
+      'Noch offen',
+      'Vorschlag, bitte prüfen',
+      'Noch offen',
+    ]);
     expect(element.textContent).toContain('Vorläufig');
 
     element.querySelector<HTMLInputElement>('[data-testid="fact"] input[type="checkbox"]')!.click();
     await fixture.whenStable();
-    expect(markers()).toEqual(['Vom Etikett gelesen', 'Von dir bestätigt']);
+    expect(markers()).toEqual([
+      'Vom Etikett gelesen',
+      'Noch offen',
+      'Von dir bestätigt',
+      'Noch offen',
+    ]);
+  });
+
+  it('shows one row per category field and fills an empty one as the seller', async () => {
+    const { fixture, element } = await full(DRAFT);
+    const sell = fixture.componentInstance;
+    const rows = () => Array.from(element.querySelectorAll<HTMLElement>('[data-testid="fact"]'));
+    expect(rows().map((r) => r.querySelector('label')!.textContent!.trim())).toEqual([
+      'Marke',
+      'Modell',
+      'Grösse',
+      'Auflösung',
+    ]);
+    expect(rows()[2].querySelectorAll('datalist option').length).toBe(2);
+
+    const model = rows()[1].querySelector('input')!;
+    model.value = 'U2719D';
+    model.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    expect(sell['facts']()).toContainEqual({ name: 'Model', value: 'U2719D', source: 'SELLER' });
+
+    sell['setField']('category', 'Bikes');
+    await fixture.whenStable();
+    expect(rows().map((r) => r.querySelector('label')!.textContent!.trim())).toEqual([
+      'Rahmengrösse',
+      'Modell',
+      'Marke',
+      'Grösse',
+    ]);
   });
 
   it("asks the seller to choose the condition when the photos don't show it", async () => {
@@ -659,7 +708,7 @@ describe('Sell', () => {
     const inputs = element.querySelectorAll<HTMLInputElement>(
       '[data-testid="fact"] input:not([type=checkbox])',
     );
-    expect(inputs.length).toBe(2);
+    expect(inputs.length).toBe(4);
     for (const input of Array.from(inputs)) {
       expect(element.querySelector(`label[for="${input.id}"]`)).not.toBeNull();
     }

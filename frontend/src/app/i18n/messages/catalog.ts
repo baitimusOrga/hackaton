@@ -32,6 +32,13 @@ export const CATALOG_MESSAGES: Messages = {
   Resolution: { de: 'Auflösung', fr: 'Résolution', it: 'Risoluzione', en: 'Resolution' },
   CPU: { de: 'Prozessor', fr: 'Processeur', it: 'Processore', en: 'CPU' },
   RAM: { de: 'Arbeitsspeicher', fr: 'Mémoire vive', it: 'RAM', en: 'RAM' },
+  GPU: { de: 'Grafikkarte', fr: 'Carte graphique', it: 'Scheda grafica', en: 'GPU' },
+  'Operating system': {
+    de: 'Betriebssystem',
+    fr: "Système d'exploitation",
+    it: 'Sistema operativo',
+    en: 'Operating system',
+  },
   Storage: { de: 'Speicher', fr: 'Stockage', it: 'Memoria', en: 'Storage' },
   Material: { de: 'Material', fr: 'Matériau', it: 'Materiale', en: 'Material' },
   Dimensions: { de: 'Masse', fr: 'Dimensions', it: 'Dimensioni', en: 'Dimensions' },

@@ -113,10 +113,12 @@ public class DraftController {
               to you; only type plates and product labels count as LABEL.
             Allowed categories: %s
             Allowed fact names: %s
-            Key facts per category:
+            Key facts per category (common values in brackets; use them when they fit):
             %s
             """.formatted(TEXT_RULES, Categories.JSON, String.join(", ", Categories.FACT_NAMES),
-            Categories.ALL.stream().map(c -> c + ": " + String.join(", ", Categories.KEY_FACTS.get(c)))
+            Categories.ALL.stream().map(c -> c + ": " + Categories.FIELDS.get(c).stream()
+                    .map(f -> f.options().isEmpty() ? f.name() : f.name() + " (" + String.join(", ", f.options()) + ")")
+                    .collect(Collectors.joining(", ")))
                     .collect(Collectors.joining("\n")));
 
     /** The UI languages; every text the AI writes is in the seller's one. */

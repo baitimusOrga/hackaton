@@ -1,4 +1,4 @@
-import { Gap } from './api/models';
+import { CategoryField, Gap } from './api/models';
 
 /** Not a fact, but asked for like one. */
 export const CONDITION = 'Condition';
@@ -35,13 +35,14 @@ const confirmed = (fact: KnownFact | undefined) =>
  * condition when it is unknown. Brand and Model first, then condition, then catalog order.
  */
 export function openGaps(
-  keyFacts: string[],
+  fields: CategoryField[],
   facts: KnownFact[],
   condition: string,
   aiGaps: Gap[],
   skipped: ReadonlySet<string>,
   limit = MAX_CARDS,
 ): GapCard[] {
+  const keyFacts = fields.map((f) => f.name ?? '');
   const identity: string[] = keyFacts.filter((name) => name === 'Brand' || name === 'Model');
   const rest = keyFacts.filter((name) => !identity.includes(name));
   const cards: GapCard[] = [];
@@ -70,7 +71,9 @@ export function openGaps(
         fact: name,
         kind,
         prompt: ai?.prompt ?? '',
-        options: ai?.options ?? [],
+        options: ai?.options?.length
+          ? ai.options
+          : (fields.find((f) => f.name === name)?.options ?? []),
         ...(kind === 'PHOTO' && hintOf(ai) ? { hint: hintOf(ai) } : {}),
       });
     }
