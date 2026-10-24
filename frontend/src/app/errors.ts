@@ -60,6 +60,10 @@ const ERROR_PATTERNS: [RegExp, string][] = [
     'Your maximum must be at least CHF {amount}.',
   ],
   [
+    /^You already lead with a maximum of CHF (?<amount>[\d.]+)\.$/,
+    'You already lead with a maximum of CHF {amount}.',
+  ],
+  [
     /^Please confirm the quantity of (?<name>.+) first\.$/,
     'Please confirm the quantity of {name} first.',
   ],

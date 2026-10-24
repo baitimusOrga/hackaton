@@ -104,6 +104,12 @@ describe('ListingPage', () => {
       expect(placeBid.mock.calls[0][0]).toEqual({ id: 9, body: { maxChf: 400 } });
       expect(element.textContent).toContain('Du führst mit CHF 305.–');
       expect(element.textContent).not.toContain('überboten');
+
+      // the mock keeps answering with the state from before the bid: a stale poll must not undo it
+      await vi.advanceTimersByTimeAsync(5000);
+      fixture.detectChanges();
+      expect(getAuction).toHaveBeenCalledTimes(3);
+      expect(element.textContent).toContain('Du führst mit CHF 305.–');
     } finally {
       vi.useRealTimers();
     }

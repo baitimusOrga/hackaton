@@ -39,22 +39,28 @@ public class AuctionService {
     @Transactional(readOnly = true)
     public AuctionState get(long listingId, String viewerId) {
         Listing listing = auction(listings.findById(listingId).orElse(null));
-        return state(listing, bids.findByListingIdOrderByCreatedAtAscIdAsc(listingId), viewerId, Instant.now());
+        return state(listing, bids.findByListingIdOrderByIdAsc(listingId), viewerId, Instant.now());
     }
 
     @Transactional
     public AuctionState placeBid(long listingId, Jwt bidder, BigDecimal maxChf) {
-        Instant now = Instant.now();
-        // the row lock serialises concurrent bids on the same listing
+        // the row lock serialises concurrent bids on the same listing; the clock is read once we hold it,
+        // so bid ids and times follow the order in which bids were accepted
         Listing listing = auction(listings.findForUpdate(listingId).orElse(null));
+        Instant now = Instant.now();
         if (ended(listing, now)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This auction has ended.");
         }
         if (bidder.getSubject().equals(listing.getSellerId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot bid on your own listing.");
         }
-        List<Bid> all = new ArrayList<>(bids.findByListingIdOrderByCreatedAtAscIdAsc(listingId));
-        BigDecimal minimum = state(listing, all, bidder.getSubject(), now).minimumNextBidChf();
+        List<Bid> all = new ArrayList<>(bids.findByListingIdOrderByIdAsc(listingId));
+        AuctionState before = state(listing, all, bidder.getSubject(), now);
+        if (before.leading() && maxChf.compareTo(before.myMaxChf()) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already lead with a maximum of CHF "
+                    + before.myMaxChf().stripTrailingZeros().toPlainString() + ".");
+        }
+        BigDecimal minimum = before.minimumNextBidChf();
         if (maxChf.compareTo(minimum) < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Your maximum must be at least CHF " + minimum.stripTrailingZeros().toPlainString() + ".");
@@ -75,10 +81,9 @@ public class AuctionService {
     @Transactional
     public void closeDue() {
         Instant now = Instant.now();
-        for (Listing due : listings.findBySaleModeAndStatusAndEndsAtBefore(SaleMode.AUCTION, ListingStatus.AVAILABLE,
-                now)) {
-            // re-read under the lock so a bid committed meanwhile is not overwritten
-            Listing listing = listings.findForUpdate(due.getId()).orElseThrow();
+        for (long id : listings.findDueAuctionIds(now)) {
+            // load under the lock (ids only above, so nothing stale is cached) to see a bid committed meanwhile
+            Listing listing = listings.findForUpdate(id).orElseThrow();
             if (ended(listing, now)) {
                 listing.setStatus(listing.getBidCount() > 0 ? ListingStatus.SOLD : ListingStatus.ENDED);
             }

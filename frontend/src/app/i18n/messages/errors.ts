@@ -92,6 +92,12 @@ export const ERROR_MESSAGES: Messages = {
     it: 'Il tuo massimo deve essere almeno CHF {amount}.–.',
     en: 'Your maximum must be at least CHF {amount}.',
   },
+  'You already lead with a maximum of CHF {amount}.': {
+    de: 'Du führst bereits mit einem Maximum von CHF {amount}.–.',
+    fr: 'Tu mènes déjà avec un maximum de CHF {amount}.–.',
+    it: 'Sei già in testa con un massimo di CHF {amount}.–.',
+    en: 'You already lead with a maximum of CHF {amount}.',
+  },
   'Listing not found.': {
     de: 'Inserat nicht gefunden.',
     fr: 'Annonce introuvable.',

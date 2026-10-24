@@ -34,5 +34,10 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
     @Query("select l from Listing l where l.id = :id")
     Optional<Listing> findForUpdate(long id);
 
-    List<Listing> findBySaleModeAndStatusAndEndsAtBefore(SaleMode saleMode, ListingStatus status, Instant now);
+    @Query("""
+            select l.id from Listing l
+            where l.saleMode = one.absent.hackaton.listing.SaleMode.AUCTION
+              and l.status = one.absent.hackaton.listing.ListingStatus.AVAILABLE and l.endsAt <= :now
+            """)
+    List<Long> findDueAuctionIds(Instant now);
 }

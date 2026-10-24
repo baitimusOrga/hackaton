@@ -95,6 +95,17 @@ class AuctionControllerTest {
                 .andExpect(jsonPath("$.detail").value(containsString("CHF 105")));
     }
 
+    @Test void leaderCanRaiseButNotRepeatOrLowerTheirMaximum() throws Exception {
+        var listing = auction(Duration.ofDays(1));
+        bid(listing, "a", 300).andExpect(status().isOk());
+        bid(listing, "a", 250).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("You already lead with a maximum of CHF 300."));
+        bid(listing, "a", 300).andExpect(status().isBadRequest());
+        bid(listing, "a", 400).andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentBidChf").value(100)).andExpect(jsonPath("$.myMaxChf").value(400))
+                .andExpect(jsonPath("$.bidCount").value(1));
+    }
+
     @Test void lateBidExtendsBy2Minutes() throws Exception {
         var listing = auction(Duration.ofSeconds(90));
         bid(listing, "a", 150).andExpect(status().isOk());

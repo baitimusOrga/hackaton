@@ -269,12 +269,29 @@ export class ListingPage {
               .pipe(catchError(() => EMPTY)),
           ),
           takeWhile((state) => !state.ended, true),
+          map((state) => ({ id: item.id, state })),
         ),
       ),
     ),
   );
-  /** The latest poll, or the answer to the own bid until the next poll replaces it. */
-  protected readonly auction = linkedSignal<AuctionState | undefined>(() => this.polled());
+  /** The latest poll, or the answer to the own bid until a newer poll replaces it. */
+  protected readonly auction = linkedSignal<
+    { id?: number; state: AuctionState } | undefined,
+    AuctionState | undefined
+  >({
+    source: this.polled,
+    // a poll sent before the own bid can arrive after its answer; never step back on the same listing
+    computation: (next, previous) => {
+      const shown = previous?.value;
+      const stale =
+        !!next &&
+        !!shown &&
+        previous.source?.id === next.id &&
+        ((next.state.bidCount ?? 0) < (shown.bidCount ?? 0) ||
+          (next.state.myMaxChf ?? 0) < (shown.myMaxChf ?? 0));
+      return stale ? shown : next?.state;
+    },
+  });
   protected readonly maxChf = signal<number | null>(null);
   protected readonly bidError = signal('');
   protected readonly bidding = signal(false);
