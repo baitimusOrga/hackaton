@@ -31,7 +31,14 @@ const CATEGORIES = [
       { name: 'Resolution', options: [] },
     ],
   },
-  { name: 'Bikes', fields: [{ name: 'Frame size', options: ['M', 'L'] }] },
+  {
+    name: 'Bikes',
+    fields: [
+      { name: 'Brand', options: [] },
+      { name: 'Model', options: [] },
+      { name: 'Frame size', options: ['M', 'L'] },
+    ],
+  },
 ];
 
 const detection = (label: string): DraftEvent => ({
@@ -642,14 +649,18 @@ describe('Sell', () => {
     await fixture.whenStable();
     expect(sell['facts']()).toContainEqual({ name: 'Model', value: 'U2719D', source: 'SELLER' });
 
+    sell['setFact']('Size', '27"');
     sell['setField']('category', 'Bikes');
     await fixture.whenStable();
+    // the monitor's size belongs to another category: hidden and not published, back when switching back
     expect(rows().map((r) => r.querySelector('label')!.textContent!.trim())).toEqual([
-      'Rahmengrösse',
-      'Modell',
       'Marke',
-      'Grösse',
+      'Modell',
+      'Rahmengrösse',
     ]);
+    expect(sell['publishedFacts']()).toEqual({ Brand: 'Dell', Model: 'U2719D' });
+    sell['setField']('category', 'Monitors');
+    expect(sell['publishedFacts']()).toEqual({ Brand: 'Dell', Model: 'U2719D', Size: '27"' });
   });
 
   it("asks the seller to choose the condition when the photos don't show it", async () => {
