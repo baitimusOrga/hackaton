@@ -583,11 +583,13 @@ In `frontend/src/components.css` add a new section right before `/* Sections */`
     border-top: var(--border-1) solid var(--line-soft);
     padding-bottom: env(safe-area-inset-bottom);
   }
-  .zw-main {
+  .zw-shell {
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 }
 ```
+
+(The padding sits on `.zw-shell`, not `.zw-main`: the footer comes after `main`, so only the shell's padding keeps the footer clear of the bar.)
 
 In `frontend/src/app/shell/error-toast.ts` change the 720px block to:
 
@@ -1227,7 +1229,7 @@ In the `styles` of `frontend/src/app/pages/sell.ts` change `.sell { … min-heig
 
 - [ ] **Step 4: Global phone rules**
 
-In `frontend/src/components.css`, inside the `@media (max-width: 720px)` block that sets `.zw-main { padding-bottom … }` (Task 4), add:
+In `frontend/src/components.css`, inside the `@media (max-width: 720px)` block that sets `.zw-shell { padding-bottom … }` (Task 4), add:
 
 ```css
   /* Long titles and prices must not widen a phone page. */

@@ -806,7 +806,7 @@ textarea.zw-input {
     border-top: var(--border-1) solid var(--line-soft);
     padding-bottom: env(safe-area-inset-bottom);
   }
-  .zw-main {
+  .zw-shell {
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 }
