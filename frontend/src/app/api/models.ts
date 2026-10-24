@@ -3,7 +3,6 @@
 
 export type { AuctionState } from './models/auction-state';
 export type { BidView } from './models/bid-view';
-export type { Candidate } from './models/candidate';
 export type { CategoryField } from './models/category-field';
 export type { CategoryInfo } from './models/category-info';
 export type { ConfirmedFact } from './models/confirmed-fact';
@@ -15,8 +14,6 @@ export type { DraftRequest } from './models/draft-request';
 export type { DraftText } from './models/draft-text';
 export type { DraftTextRequest } from './models/draft-text-request';
 export type { Gap } from './models/gap';
-export type { IdentityCheck } from './models/identity-check';
-export type { IdentityRequest } from './models/identity-request';
 export type { Info } from './models/info';
 export type { KnownFact } from './models/known-fact';
 export type { ListingDetail } from './models/listing-detail';

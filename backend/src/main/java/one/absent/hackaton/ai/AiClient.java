@@ -77,12 +77,7 @@ public class AiClient {
      * parsed leniently.
      */
     public <T> T askWithWebSearch(String system, String text, Class<T> type) {
-        return askWithWebSearch(system, text, List.of(), type);
-    }
-
-    /** Like {@link #askWithWebSearch(String, String, Class)}, with images Claude compares the search results to. */
-    public <T> T askWithWebSearch(String system, String text, List<Image> images, Class<T> type) {
-        return send(request(model, system, text, images, null, true), type);
+        return send(request(model, system, text, List.of(), null, true), type);
     }
 
     /**

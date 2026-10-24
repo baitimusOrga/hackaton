@@ -71,15 +71,7 @@ async function analyse(runs: Run[], extra: object = {}, place = vi.fn(), places:
   TestBed.configureTestingModule({
     providers: [
       provideRouter([{ path: '**', children: [] }]),
-      {
-        provide: SellingService,
-        useValue: {
-          uploadPhotos,
-          rewriteText: () => of({}),
-          checkIdentity: () => of({ verdict: 'CONFIRMED', note: '', candidates: [] }),
-          ...extra,
-        },
-      },
+      { provide: SellingService, useValue: { uploadPhotos, rewriteText: () => of({}), ...extra } },
       { provide: ListingsService, useValue: { categories: () => of(CATEGORIES) } },
       { provide: PlacesService, useValue: { place, ...places } },
       { provide: DraftStream, useValue: { run } },
@@ -598,48 +590,6 @@ describe('Sell', () => {
       title: 'My own title',
       description: 'AI description.',
     });
-  });
-
-  it('asks for the brand with the web candidates when the web doubts the reading', async () => {
-    const checkIdentity = vi.fn().mockReturnValue(
-      of({
-        verdict: 'DOUBTFUL',
-        note: 'Das Logo passt eher zu Naloo.',
-        candidates: [
-          {
-            brand: 'Naloo',
-            model: 'Bonfire',
-            reason: 'Kinder-Fully',
-            url: 'https://www.naloo.example/x',
-          },
-          { brand: 'Norco', model: null, reason: 'Ähnliche Schrift', url: 'https://norco.example' },
-        ],
-      }),
-    );
-    const rewriteText = vi.fn().mockReturnValue(of({ title: 'Naloo Bonfire', description: 'x' }));
-    const { fixture, element } = await questions([streams(done(DRAFT))], {
-      checkIdentity,
-      rewriteText,
-    });
-
-    expect(checkIdentity.mock.calls[0][0].body).toMatchObject({
-      photoIds: [7],
-      category: 'Monitors',
-      brand: 'Dell',
-    });
-    // the label reading became a suggestion, so the brand is asked first
-    const identity = element.querySelector('[data-testid="identity"]')!;
-    expect(element.querySelector('[data-testid="gap"]')!.textContent).toContain('Dell');
-    expect(identity.textContent).toContain('Das Logo passt eher zu Naloo.');
-    expect(identity.textContent).toContain('naloo.example');
-
-    button(element, 'Naloo Bonfire').click();
-    await fixture.whenStable();
-
-    const facts = fixture.componentInstance['facts']();
-    expect(facts).toContainEqual({ name: 'Brand', value: 'Naloo', source: 'SELLER' });
-    expect(facts).toContainEqual({ name: 'Model', value: 'Bonfire', source: 'SUGGESTION' });
-    expect(rewriteText).toHaveBeenCalled();
   });
 
   it('rewrites the text when a guessed model is confirmed as it is', async () => {
