@@ -82,6 +82,8 @@ public class DraftController {
                kind: PHOTO when a photo would show it (the prompt says exactly what to photograph, e.g.
                "Please photograph the type plate on the back"), CONFIRM when you suggested a value, otherwise ASK.
                options: 2 to 6 short typical answers for this very item, or [] when free text fits better.
+               A PHOTO gap may add "photo" and "box" (as for detections) marking where on an existing photo the
+               missing detail most likely is, e.g. the spot on the frame where the model name is printed.
                Identity first: Brand and Model, then Condition, then the rest. Write prompt and options in Swiss
                German (ss, never ß); they are shown to the seller as is.
             4. Last, exactly one "draft" line:
