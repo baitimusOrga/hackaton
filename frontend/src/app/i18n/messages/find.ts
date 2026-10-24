@@ -199,6 +199,13 @@ export const FIND_MESSAGES: Messages = {
   Kaufen: { fr: 'Acheter', it: 'Acquista', en: 'Buy' },
   Details: { fr: 'Détails', it: 'Dettagli', en: 'Details' },
   'Frage stellen': { fr: 'Poser une question', it: 'Fai una domanda', en: 'Ask a question' },
+  Gemerkt: { fr: 'Mis de côté', it: 'Salvato', en: 'Saved' },
+  Merkliste: { fr: 'Mes favoris', it: 'Salvati', en: 'Saved listings' },
+  'Du hast noch nichts gemerkt.': {
+    fr: 'Tu n’as encore rien mis de côté.',
+    it: 'Non hai ancora salvato nulla.',
+    en: 'You have not saved anything yet.',
+  },
   Merken: { fr: 'Mettre de côté', it: 'Salva', en: 'Save' },
   '{name} (eigene Angabe)': {
     fr: '{name} (indication personnelle)',

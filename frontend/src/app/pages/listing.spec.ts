@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { ListingsService } from '../api/services';
+import { BookmarksService, ListingsService } from '../api/services';
+import { Auth } from '../auth/auth';
 import { ListingPage } from './listing';
 
 describe('ListingPage', () => {
@@ -49,6 +50,40 @@ describe('ListingPage', () => {
       const fixture = TestBed.createComponent(ListingPage);
       await fixture.whenStable();
       expect(fixture.nativeElement.querySelector('[role="region"]') !== null).toBe(shown);
+    });
+  }
+
+  for (const [saved, label, call] of [
+    [false, 'Merken', 'add'],
+    [true, 'Gemerkt', 'remove'],
+  ] as const) {
+    it('shows "' + label + '" and calls ' + call + ' on click', async () => {
+      const bookmarks = {
+        mine: vi.fn().mockReturnValue(of(saved ? [{ id: 4 }] : [])),
+        add: vi.fn().mockReturnValue(of(undefined)),
+        remove: vi.fn().mockReturnValue(of(undefined)),
+      };
+      const user = { id: 'u' };
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: '4' })) } },
+          {
+            provide: ListingsService,
+            useValue: { get: () => of({ id: 4, title: 'Desk' }), list: () => of([]) },
+          },
+          { provide: BookmarksService, useValue: bookmarks },
+          { provide: Auth, useValue: { user: () => user, restore: () => Promise.resolve(user) } },
+        ],
+      });
+      const fixture = TestBed.createComponent(ListingPage);
+      await fixture.whenStable();
+      const button = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
+        (b) => b.textContent!.trim() === label,
+      )!;
+      button.click();
+      await fixture.whenStable();
+      expect(bookmarks[call]).toHaveBeenCalledWith({ id: 4 });
+      expect(button.textContent!.trim()).toBe(saved ? 'Merken' : 'Gemerkt');
     });
   }
 });

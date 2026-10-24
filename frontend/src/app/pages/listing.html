@@ -32,9 +32,16 @@
           {{ 'Kaufen' | t }}
         </button>
         <div class="links">
-          <!-- TODO: backend has no public Q&A or watchlist; enable these once it does. -->
+          <!-- TODO: backend has no public Q&A; enable "Frage stellen" once it does. -->
           <button type="button" class="zw-link" disabled>{{ 'Frage stellen' | t }}</button>
-          <button type="button" class="zw-link" disabled>{{ 'Merken' | t }}</button>
+          <button
+            type="button"
+            class="zw-link"
+            [attr.aria-pressed]="bookmarked()"
+            (click)="toggleBookmark(item)"
+          >
+            {{ (bookmarked() ? 'Gemerkt' : 'Merken') | t }}
+          </button>
         </div>
       </div>
 

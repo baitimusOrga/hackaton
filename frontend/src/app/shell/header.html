@@ -41,11 +41,15 @@
         <a routerLink="/find" [attr.aria-label]="'Meine Suchen' | t"
           ><app-icon name="bookmark"
         /></a>
+        <a routerLink="/bookmarks" [attr.aria-label]="'Merkliste' | t"
+          ><app-icon name="bookmark"
+        /></a>
         <a routerLink="/messages" [attr.aria-label]="'Nachrichten' | t"
           ><app-icon name="message"
         /></a>
       } @else {
         <a routerLink="/find"><app-icon name="bookmark" />{{ 'Meine Suchen' | t }}</a>
+        <a routerLink="/bookmarks"><app-icon name="bookmark" />{{ 'Merkliste' | t }}</a>
         <a routerLink="/messages"><app-icon name="message" />{{ 'Nachrichten' | t }}</a>
       }
       <a appButton [routerLink]="[{ outlets: { modal: ['sell'] } }]"

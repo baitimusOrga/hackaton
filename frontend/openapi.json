@@ -7,6 +7,44 @@
     "url" : "/"
   } ],
   "paths" : {
+    "/api/listings/{id}/bookmark" : {
+      "put" : {
+        "tags" : [ "Bookmarks" ],
+        "operationId" : "add",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "Bookmarks" ],
+        "operationId" : "remove",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/api/clearance/projects/{id}/route" : {
       "put" : {
         "tags" : [ "Clearance" ],
@@ -767,6 +805,27 @@
                   "type" : "array",
                   "items" : {
                     "$ref" : "#/components/schemas/CategoryInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bookmarks" : {
+      "get" : {
+        "tags" : [ "Bookmarks" ],
+        "operationId" : "mine",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ListingSummary"
                   }
                 }
               }

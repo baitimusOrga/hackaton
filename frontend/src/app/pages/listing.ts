@@ -1,10 +1,20 @@
 import { DatePipe, KeyValuePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
-import { catchError, distinctUntilChanged, filter, map, of, shareReplay, switchMap } from 'rxjs';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
+import {
+  catchError,
+  distinctUntilChanged,
+  filter,
+  from,
+  map,
+  of,
+  shareReplay,
+  switchMap,
+} from 'rxjs';
 import { ListingDetail } from '../api/models';
-import { ListingsService } from '../api/services';
+import { BookmarksService, ListingsService } from '../api/services';
+import { Auth } from '../auth/auth';
 import { conditionLabel, metaLine } from '../conditions';
 import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Badge } from '../ui/badge';
@@ -152,6 +162,9 @@ import { SummaryCard } from '../ui/summary-card';
 })
 export class ListingPage {
   private readonly api = inject(ListingsService);
+  private readonly bookmarks = inject(BookmarksService);
+  private readonly auth = inject(Auth);
+  private readonly router = inject(Router);
   private readonly i18n = inject(I18n);
   private readonly listing$ = inject(ActivatedRoute).paramMap.pipe(
     map((params) => Number(params.get('id'))),
@@ -173,6 +186,36 @@ export class ListingPage {
     ),
     { initialValue: [] },
   );
+
+  protected readonly bookmarked = signal(false);
+
+  constructor() {
+    // The session may not be restored yet on a direct visit, so ask the auth service first.
+    this.listing$
+      .pipe(
+        switchMap((item) =>
+          from(this.auth.restore().catch(() => null)).pipe(
+            switchMap((user) => (user ? this.bookmarks.mine() : of([]))),
+            map((saved) => saved.some((other) => other.id === item.id)),
+            catchError(() => of(false)),
+          ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe((saved) => this.bookmarked.set(saved));
+  }
+
+  protected toggleBookmark(item: ListingDetail): void {
+    if (!this.auth.user()) {
+      void this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    const id = item.id ?? 0;
+    const save = !this.bookmarked();
+    (save ? this.bookmarks.add({ id }) : this.bookmarks.remove({ id })).subscribe(() =>
+      this.bookmarked.set(save),
+    );
+  }
 
   protected meta(item: ListingDetail): string {
     return metaLine(
