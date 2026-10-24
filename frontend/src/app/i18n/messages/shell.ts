@@ -1,6 +1,23 @@
 import type { Messages } from '../i18n';
 
 export const SHELL_MESSAGES: Messages = {
+  Fehler: { fr: 'Erreur', it: 'Errore', en: 'Error' },
+  'Meldung schliessen': { fr: 'Fermer le message', it: 'Chiudi il messaggio', en: 'Close message' },
+  'Der Server ist gerade nicht erreichbar. Versuch es in einem Moment nochmals.': {
+    fr: "Le serveur n'est pas joignable pour le moment. Réessaie dans un instant.",
+    it: 'Il server al momento non è raggiungibile. Riprova tra un attimo.',
+    en: 'The server is not reachable right now. Try again in a moment.',
+  },
+  'Das haben wir nicht gefunden.': {
+    fr: "Nous n'avons pas trouvé cela.",
+    it: 'Non abbiamo trovato questo.',
+    en: "We couldn't find that.",
+  },
+  'Etwas ist schiefgelaufen. Versuch es nochmals.': {
+    fr: 'Une erreur est survenue. Réessaie.',
+    it: 'Qualcosa è andato storto. Riprova.',
+    en: 'Something went wrong. Try again.',
+  },
   'Der Server ist gerade nicht erreichbar.': {
     fr: 'Le serveur est actuellement inaccessible.',
     it: 'Il server al momento non è raggiungibile.',

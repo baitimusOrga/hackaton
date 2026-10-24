@@ -34,6 +34,20 @@ describe('errorInterceptor', () => {
     expect(failed).toBe(true);
   });
 
+  it('says the server is unreachable instead of the raw gateway error', () => {
+    http.get('/api/listings').subscribe({ error: () => undefined });
+    backend
+      .expectOne('/api/listings')
+      .flush('<html>Bad Gateway</html>', { status: 502, statusText: 'Bad Gateway' });
+    expect(banner.message()).toContain('nicht erreichbar');
+  });
+
+  it('falls back to a plain message for a 404 without problem details', () => {
+    http.get('/api/nope').subscribe({ error: () => undefined });
+    backend.expectOne('/api/nope').flush('Not Found', { status: 404, statusText: 'Not Found' });
+    expect(banner.message()).toBe('Das haben wir nicht gefunden.');
+  });
+
   it('stays quiet when the caller handles the error itself', () => {
     http
       .get('/api/teams', { context: new HttpContext().set(HANDLES_ERRORS, true) })

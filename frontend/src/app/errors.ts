@@ -38,13 +38,16 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   );
 };
 
+const UNREACHABLE = 'Der Server ist gerade nicht erreichbar. Versuch es in einem Moment nochmals.';
+
+/** The user-facing text for a failed request; never the raw "Http failure response …" message. */
 export function messageOf(err: HttpErrorResponse, i18n: I18n): string {
-  if (err.status === 0) {
-    return i18n.t('Der Server ist gerade nicht erreichbar.');
-  }
-  const problem = (err.error ?? {}) as Problem;
-  const text = problem.detail ?? problem.title ?? err.message;
-  return problem.detail ? translateError(text, i18n) : text;
+  // 0: no connection; 502–504: the proxy is up but the backend is not.
+  if (err.status === 0 || (err.status >= 502 && err.status <= 504)) return i18n.t(UNREACHABLE);
+  const problem = typeof err.error === 'object' && err.error ? (err.error as Problem) : {};
+  if (problem.detail) return translateError(problem.detail, i18n);
+  if (err.status === 404) return i18n.t('Das haben wir nicht gefunden.');
+  return i18n.t('Etwas ist schiefgelaufen. Versuch es nochmals.');
 }
 
 // Backend and auth errors are English sentences, some with a variable part.
