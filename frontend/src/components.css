@@ -948,8 +948,8 @@ textarea.zw-input {
   background: linear-gradient(
     115deg,
     transparent 30%,
-    rgba(255, 255, 255, 0.75) 50%,
-    rgba(170, 210, 255, 0.4) 56%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(170, 210, 255, 0.25) 56%,
     transparent 70%
   );
   background-size: 260% 100%;

@@ -157,15 +157,13 @@
               @case (2) {
                 @if (readFact(); as read) {
                   <div class="stack">
+                    <app-badge variant="green" class="tag">{{ 'Vom Foto gelesen' | t }}</app-badge>
                     <h1 id="sell-q" class="q">{{ read.value }}.</h1>
                     <p class="zw-muted">
                       {{ 'Damit finden wir die passenden Vergleichspreise.' | t }}
                     </p>
                   </div>
-                  <div class="stack">
-                    <ng-container *ngTemplateOutlet="stageTpl" />
-                    <span class="read">{{ 'Vom Foto gelesen' | t }}</span>
-                  </div>
+                  <ng-container *ngTemplateOutlet="stageTpl" />
                   <div class="foot2">
                     <span class="push"></span>
                     <button appButton variant="primary" type="button" (click)="continueAfterRead()">
@@ -839,9 +837,14 @@
     <div class="restored" role="status">
       <div class="restored__in">
         <span>{{ 'Dein Entwurf von vorhin ist wieder da.' | t }}</span>
-        <button type="button" class="zw-link push" (click)="startOver()">
-          {{ 'Neu beginnen' | t }}
-        </button>
+        <!-- step 1 has its own "Neu beginnen" in the footer -->
+        @if (step() !== 1) {
+          <button type="button" class="zw-link push" (click)="startOver()">
+            {{ 'Neu beginnen' | t }}
+          </button>
+        } @else {
+          <span class="push"></span>
+        }
         <button appButton variant="primary" size="sm" type="button" (click)="restored.set(false)">
           {{ 'Weitermachen' | t }}
         </button>

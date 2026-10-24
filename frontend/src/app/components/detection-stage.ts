@@ -84,7 +84,8 @@ export interface StageMark {
     .stage__frame img {
       display: block;
       max-width: 100%;
-      max-height: 60vh;
+      max-height: min(60vh, calc(100vh - 380px));
+      min-height: 200px;
     }
     .stage--compact .stage__frame img {
       max-height: 32vh;

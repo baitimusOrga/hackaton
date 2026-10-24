@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.listing.Categories;
@@ -45,20 +46,21 @@ public class DraftController {
 
     /** Shared by the draft and the rewrite after the seller changed facts. */
     static final String TEXT_RULES = """
-            - title: at most 60 characters, brand + model + one distinguishing variant (size or year). Name the
-              brand once. A clear defect (e.g. broken display) stays in the title. No CPU, RAM, storage or part
+            - title: at most 60 characters, product type + brand + model + one distinguishing variant (size or
+              year), e.g. "Mountainbike Trek Marlin 7, Grösse M". Name the brand once. A clear defect (e.g. broken display) stays in the title. No CPU, RAM, storage or part
               numbers in the title; those belong in facts.
             - description: written as the seller, first person, 2 to 3 sentences: what it is, known model
               details, visible wear. Never mention photos, pictures, images or labels ("The photo shows..." is
               wrong). Never claim it works, is complete, or includes accessories. No marketing language, no
-              hedging and no filler such as "more details on request" or "I will add details later".
+              hedging and no filler such as "more details on request" or "I will add details later". Only what
+              the photos and facts show: no claims about use, history or plans ("I ride it myself" is wrong).
             """;
 
     static final String TEXT_SYSTEM = """
             You rewrite the title and description of a Swiss secondhand listing after the seller corrected facts.
             Facts with source LABEL or SELLER are true and win over the current text. SUGGESTION and WEB facts are
             unconfirmed: leave them out rather than hedge ("vermutlich", "nach meiner Einschätzung" are wrong).
-            Keep what the current description says about visible wear. Write in Swiss German (ss, never ß).
+            Keep what the current description says about visible wear.
             Rules:
             %s""".formatted(TEXT_RULES);
 
@@ -75,7 +77,7 @@ public class DraftController {
                {"type":"detection","photo":1,"box":[0.12,0.40,0.30,0.08],"label":"Brand: Trek","fact":{"name":"Brand","value":"Trek","source":"LABEL"}}
                photo is the 1-based photo position. box is x, y (top-left corner), width, height as fractions
                from 0 to 1 of the image. fact only when the detection gives one. At most 5 detections; label
-               2 to 4 words in Swiss German (ss, never ß), e.g. "Marke: Trek", "Federgabel", "Zustand: gut".
+               2 to 4 words, e.g. "Marke: Trek", "Federgabel", "Zustand: gut".
             2. One "privacy" line per area that shows a serial number, IMEI, MAC address, a person's name, address,
                phone number, a document, an employee or asset tag, or a screen with personal content, e.g.
                {"type":"privacy","photo":2,"box":[0.5,0.6,0.2,0.05],"text":"Shows a serial number. Leave this photo out or cover it."}
@@ -91,8 +93,8 @@ public class DraftController {
                plate, label). A PHOTO gap may add "photo" and "box" (as for detections) marking where on an
                existing photo the missing detail most likely is, e.g. the spot on the frame where the model name
                is printed.
-               Identity first: Brand and Model, then Condition, then the rest. Write prompt and options in Swiss
-               German (ss, never ß); they are shown to the seller as is.
+               Identity first: Brand and Model, then Condition, then the rest. Prompt and options are shown to
+               the seller as is.
             4. Last, exactly one "draft" line:
                {"type":"draft","category":"Bikes","title":"...","description":"...","condition":null,"facts":[...]}
             Rules:
@@ -117,13 +119,25 @@ public class DraftController {
             Categories.ALL.stream().map(c -> c + ": " + String.join(", ", Categories.KEY_FACTS.get(c)))
                     .collect(Collectors.joining("\n")));
 
+    /** The UI languages; every text the AI writes is in the seller's one. */
+    static final Map<String, String> LANGUAGES = Map.of("de", "Swiss German (ss, never ß)", "fr", "French",
+            "it", "Italian", "en", "English");
+
+    static String languageRule(String language) {
+        return "\nWrite every text (title, description, labels, prompts, options, privacy texts and word values "
+                + "such as colours) in " + LANGUAGES.get(language == null ? "de" : language)
+                + "; brand and model names and numbers stay as printed.";
+    }
+
     public record ConfirmedFact(@NotBlank @Size(max = 100) String name, @NotBlank @Size(max = 500) String value) {}
 
     /** {@code confirmedFacts} are the seller's own facts; the AI keeps them and does not ask again. */
     public record DraftRequest(@NotNull @Size(min = 1, max = 5) List<Long> photoIds,
-                               @NotNull List<@Valid ConfirmedFact> confirmedFacts) {}
+                               @NotNull List<@Valid ConfirmedFact> confirmedFacts,
+                               @Schema(nullable = true) @Pattern(regexp = "de|fr|it|en") String language) {}
 
     public record DraftTextRequest(@NotBlank @Size(max = 80) String category, @NotNull @Size(max = 120) String title,
+                                   @Schema(nullable = true) @Pattern(regexp = "de|fr|it|en") String language,
                                    @Schema(nullable = true) Condition condition,
                                    @NotNull @Size(max = 4000) String description,
                                    @NotNull @Size(max = 30) List<@Valid @NotNull KnownFact> facts) {}
@@ -159,7 +173,8 @@ public class DraftController {
         List<AiClient.Image> images = imagesOf(request.photoIds(), seller.getSubject());
         String text = "Create the listing draft for the item in these photos." + (request.confirmedFacts().isEmpty()
                 ? "" : "\nThe seller confirmed:\n" + request.confirmedFacts().stream()
-                        .map(f -> f.name() + ": " + f.value()).collect(Collectors.joining("\n")));
+                        .map(f -> f.name() + ": " + f.value()).collect(Collectors.joining("\n")))
+                + languageRule(request.language());
         // SseEmitter flushes every event; StreamingResponseBody's stream does not
         var emitter = new SseEmitter();
         Consumer<DraftEvent> emit = event -> send(emitter, event);
@@ -190,7 +205,7 @@ public class DraftController {
         String text = "Category: %s\nCurrent title: %s\nCurrent description: %s\nFacts:\n%s".formatted(
                 request.category(), request.title(), request.description(), request.facts().stream()
                         .map(f -> "- %s: %s (%s)".formatted(f.name(), f.value(), f.source()))
-                        .collect(Collectors.joining("\n")));
+                        .collect(Collectors.joining("\n"))) + languageRule(request.language());
         AiText answer = ai.ask(fastModel, TEXT_SYSTEM, text, List.of(), TEXT_SCHEMA, AiText.class);
         // same basis as the draft's first estimate: all facts the seller still sees
         List<DraftFact> facts = request.facts().stream()

@@ -292,12 +292,6 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       flex: 1 1 auto;
       min-width: 0;
     }
-    .read {
-      font-size: 14px;
-      line-height: 20px;
-      font-weight: 500;
-      color: var(--green-text);
-    }
     .status {
       display: flex;
       align-items: center;
@@ -474,6 +468,10 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       }
       .col {
         flex-basis: 100%;
+      }
+      .foot2 .file {
+        flex: 1 1 100%;
+        justify-content: center;
       }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -695,10 +693,7 @@ export class Sell {
     const fact = this.missed();
     return fact
       ? this.i18n.t(
-          'Darauf konnten wir {name} nicht lesen. Geh näher ran oder gib es selbst ein.',
-          {
-            name: this.i18n.t(fact),
-          },
+          'Auf diesem Foto konnten wir es nicht lesen. Geh näher ran oder gib es selbst ein.',
         )
       : '';
   });
@@ -854,17 +849,20 @@ export class Sell {
     const waiting = this.busy() || this.analyzing();
     const asking = this.step() === 2 && !waiting && !this.readFact();
     const hint = asking ? card?.hint : undefined;
-    // a confirm card shows the detection it asks about
+    // a question about something already seen shows that detection
     const seen =
-      asking && card?.kind === 'CONFIRM'
+      asking && card && !hint
         ? this.detections().find((d) => d.fact?.name === card.fact)
         : undefined;
+    // the newest photo while it is analysed or read; otherwise the main photo, not a close-up
     const index = hint
       ? hint.photo - 1
       : seen
         ? (seen.photo ?? 1) - 1
         : this.step() === 2
-          ? last
+          ? asking
+            ? 0
+            : last
           : this.shownPhoto();
     const marks: StageMark[] = seen
       ? [{ box: seen.box ?? [], label: seen.label ?? '', kind: 'detect' }]
@@ -876,7 +874,9 @@ export class Sell {
               kind: 'hint',
             },
           ]
-        : this.marksOn(index + 1).map((m) => ({ ...m, kind: m.privacy ? 'privacy' : 'detect' }));
+        : asking
+          ? []
+          : this.marksOn(index + 1).map((m) => ({ ...m, kind: m.privacy ? 'privacy' : 'detect' }));
     return {
       index,
       photo: this.photos()[index],
@@ -1100,7 +1100,11 @@ export class Sell {
         .map((d) => ({ box: d.box ?? [], label: d.label ?? '', privacy: false })),
       ...this.privacyMarks()
         .filter((p) => p.photo === photo)
-        .map((p) => ({ box: p.box ?? [], label: p.text ?? '', privacy: true })),
+        .map((p) => ({
+          box: p.box ?? [],
+          label: this.i18n.t('Privat – lieber weglassen'),
+          privacy: true,
+        })),
     ];
   }
 
@@ -1174,11 +1178,13 @@ export class Sell {
     this.detections.set([]);
     this.privacyMarks.set([]);
     this.pendingGaps = [];
+    this.missed.set(null);
     let drafted = false;
     try {
       await this.stream.run(
         {
           photoIds: this.photos().map((p) => p.id!),
+          language: this.i18n.lang(),
           // read from a label or given by the seller: known, the AI must not ask again
           confirmedFacts: this.facts()
             .filter((f) => (f.source === 'SELLER' || f.source === 'LABEL') && f.value.trim())
@@ -1209,6 +1215,7 @@ export class Sell {
         );
       if (drafted && read && this.step() === 2) {
         this.readFact.set({ fact: read.name, value: read.value });
+        this.answered.update((n) => n + 1);
         if (read.name === 'Brand' || read.name === 'Model') this.rewriteText();
         else this.textStale = true;
       } else if (drafted && photoGap && this.step() === 2) {
@@ -1402,6 +1409,7 @@ export class Sell {
             description,
             facts,
             condition: (condition || null) as Condition,
+            language: this.i18n.lang(),
           },
         },
         // a failed rewrite keeps the current text

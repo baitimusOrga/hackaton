@@ -7,5 +7,6 @@ export interface DraftTextRequest {
   condition?: ('NEW' | 'LIKE_NEW' | 'GOOD' | 'USED' | 'DEFECTIVE' | null);
   description: string;
   facts: Array<KnownFact>;
+  language?: (string | null);
   title: string;
 }

@@ -1392,6 +1392,10 @@
             "maxLength" : 120,
             "minLength" : 0
           },
+          "language" : {
+            "type" : [ "string", "null" ],
+            "pattern" : "de|fr|it|en"
+          },
           "condition" : {
             "type" : [ "string", "null" ],
             "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
@@ -1693,6 +1697,10 @@
             "items" : {
               "$ref" : "#/components/schemas/ConfirmedFact"
             }
+          },
+          "language" : {
+            "type" : [ "string", "null" ],
+            "pattern" : "de|fr|it|en"
           }
         },
         "required" : [ "confirmedFacts", "photoIds" ]

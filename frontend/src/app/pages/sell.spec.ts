@@ -241,7 +241,7 @@ describe('Sell', () => {
     ]);
 
     expect(uploadPhotos).toHaveBeenCalledOnce();
-    expect(run.mock.calls[0][0]).toEqual({ photoIds: [7], confirmedFacts: [] });
+    expect(run.mock.calls[0][0]).toEqual({ photoIds: [7], confirmedFacts: [], language: 'de' });
     expect(element.querySelector('[data-testid="detection"]')!.textContent).toContain(
       'Brand: Dell',
     );
@@ -352,7 +352,7 @@ describe('Sell', () => {
     expect(sell['fields']()).toMatchObject({ title: 'Dell U2719D', condition: 'GOOD' });
     const card = element.querySelector('[data-testid="gap"]')!.textContent;
     expect(card).toContain('Fotografiere das Typenschild');
-    expect(card).toContain('Darauf konnten wir Modell nicht lesen');
+    expect(card).toContain('Auf diesem Foto konnten wir es nicht lesen.');
   });
 
   it('offers to analyse again when the stream fails before the draft', async () => {
