@@ -55,7 +55,8 @@ public class ListingController {
         boolean here = lat != null && lon != null; // the buyer's position wins over the postcode
         if (radiusKm == null || (code == null && !here)) {
             return listings.search(contains(q), lower(category), maxPrice, code == null ? null : code + "%",
-                    saleMode, endsBefore, null, null, null, null).stream().map(listing -> listing.detail().summary()).toList();
+                    saleMode, null, null, null, null).stream().filter(l -> endsBefore(l, endsBefore))
+                    .map(listing -> listing.detail().summary()).toList();
         }
         if (radiusKm <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The radius must be more than 0 km.");
@@ -64,14 +65,19 @@ public class ListingController {
                 () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Postcode " + code + " not found."));
         double latSpan = Coordinates.latitudeSpan(radiusKm);
         double lonSpan = origin.longitudeSpan(radiusKm);
-        return listings.search(contains(q), lower(category), maxPrice, null, saleMode, endsBefore,
+        return listings.search(contains(q), lower(category), maxPrice, null, saleMode,
                         origin.latitude() - latSpan, origin.latitude() + latSpan,
                         origin.longitude() - lonSpan, origin.longitude() + lonSpan)
-                .stream().map(Listing::detail)
+                .stream().filter(l -> endsBefore(l, endsBefore)).map(Listing::detail)
                 .filter(l -> origin.distanceKm(new Coordinates(l.latitude(), l.longitude())) <= radiusKm)
                 .sorted(Comparator.comparingDouble(
                         l -> origin.distanceKm(new Coordinates(l.latitude(), l.longitude()))))
                 .map(ListingDetail::summary).toList();
+    }
+
+    // filtered in Java, not in the query: Postgres can't type a null timestamp parameter in ":x is null"
+    private static boolean endsBefore(Listing listing, Instant cutoff) {
+        return cutoff == null || (listing.getEndsAt() != null && listing.getEndsAt().isBefore(cutoff));
     }
 
     private static String lower(String value) {
