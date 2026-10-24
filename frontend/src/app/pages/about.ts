@@ -5,32 +5,23 @@ import { TranslatePipe } from '../i18n/i18n';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslatePipe],
   selector: 'app-about',
-  template: `<h1>{{ 'Über uns' | t }}</h1>
+  template: `<h1>About Us</h1>
     <p>
-      {{
-        'Zweit. ist der Marktplatz für Secondhand in der Schweiz: Du findest, was du suchst, und verkaufst, was du nicht mehr brauchst.'
-          | t
-      }}
+      We are four software development apprentices in our third year of training. We met at school
+      and work at four different companies.
     </p>
-    @for (s of sections; track s.title) {
-      <h2>{{ s.title | t }}</h2>
-      <p>{{ s.text | t }}</p>
-    }`,
-  styles: 'h1, h2, p { margin-bottom: var(--space-4); }',
+    <p>
+      Together, we decided to participate in Zentral Hack in the <em>Young Talents</em> category.
+      Our goal is to develop an online marketplace.
+    </p>
+    <p>
+      Although we come from different companies, we share a passion for software development and
+      enjoy working on new challenges.
+    </p>
+    <p>
+      With this project, we want to improve our programming skills, gain practical experience and
+      create something useful together.
+    </p>`,
+  styles: 'h1, p { margin-bottom: var(--space-4); }',
 })
-export class About {
-  protected readonly sections = [
-    {
-      title: 'Genaue Angaben',
-      text: 'Fotos und Fragen führen zu einem Inserat mit klaren Angaben zu Artikel und Zustand.',
-    },
-    {
-      title: 'Passende Treffer',
-      text: 'Beschreibe, was du suchst, und sieh bestätigte Treffer getrennt von Alternativen.',
-    },
-    {
-      title: 'Für Private und Firmen',
-      text: 'Privatpersonen verkaufen einzelne Artikel, Firmen räumen ganze Bestände.',
-    },
-  ];
-}
+export class About {}

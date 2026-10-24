@@ -1,39 +1,21 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { TranslatePipe } from '../i18n/i18n';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe],
   selector: 'app-info',
-  template: `<h1>{{ 'Informationen' | t }}</h1>
-    <p>{{ 'So laufen Kaufen, Verkaufen und Bezahlen ab.' | t }}</p>
-    <h2>{{ 'Kaufen' | t }}</h2>
+  template: `<h1>About the Project</h1>
     <p>
-      {{
-        'Suche, stelle Fragen, mache ein Angebot oder biete bei einer Auktion mit. Dein Höchstgebot bleibt privat.'
-          | t
-      }}
+      Have you ever thought about how a few major platforms dominate the Swiss second-hand market?
+      Several well-known platforms belong to the same company, leaving users with limited
+      alternatives.
     </p>
-    <h2>{{ 'Verkaufen' | t }}</h2>
+    <p>We believe it's time for a change. That's how <em>Zweite.</em> was born.</p>
     <p>
-      {{
-        'Fotografiere den Artikel, beantworte ein paar Fragen und prüfe den Entwurf, bevor du ihn veröffentlichst. Private und Firmen können verkaufen.'
-          | t
-      }}
-    </p>
-    <h2>{{ 'Bezahlen' | t }}</h2>
-    <p>
-      {{
-        'Ihr bezahlt direkt untereinander, zum Beispiel bar bei der Abholung oder per TWINT. Die Plattform wickelt keine Zahlung ab und markiert nichts als bezahlt.'
-          | t
-      }}
-    </p>
-    <p>
-      {{
-        'Ein Chat, ein Screenshot oder eine E-Mail ändert keinen Zahlungsstatus. Ein direkter Handel hat keinen Schutz durch die Plattform.'
-          | t
-      }}
+      Our goal is to create an innovative online marketplace that offers a real alternative to
+      existing platforms. With lower fees, smarter AI integration and a better user experience, we
+      want to make buying and selling second-hand products easier, cheaper and more accessible for
+      everyone.
     </p>`,
-  styles: 'h1, h2, p { margin-bottom: var(--space-4); }',
+  styles: 'h1, p { margin-bottom: var(--space-4); }',
 })
 export class Info {}
