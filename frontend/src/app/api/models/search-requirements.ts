@@ -3,12 +3,14 @@
 
 import { Requirement } from '../models/requirement';
 export interface SearchRequirements {
-  acceptUnknown?: boolean;
   category?: (string | null);
   keywords: Array<string>;
+  latitude?: (number | null);
+  longitude?: (number | null);
   maxBudgetChf?: number;
   maxDistanceKm?: number;
   mustHave: Array<Requirement>;
+  nearMe?: (boolean | null);
   niceToHave: Array<Requirement>;
   postcode?: string;
 }

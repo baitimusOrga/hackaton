@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Auth, AuthRequestError, safeReturnUrl } from '../auth/auth';
+import { translateError } from '../errors';
+import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
 
 // Native inputs with the zw-field classes instead of <app-input>: the form needs name, autocomplete,
@@ -9,7 +11,7 @@ import { Button } from '../ui/button';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-login',
-  imports: [FormsModule, RouterLink, Button],
+  imports: [FormsModule, RouterLink, Button, TranslatePipe],
   styles: `
     section {
       max-width: 440px;
@@ -30,14 +32,14 @@ import { Button } from '../ui/button';
   `,
   template: `
     <section aria-labelledby="auth-heading">
-      <h1 id="auth-heading">{{ registering ? 'Registrieren' : 'Anmelden' }}</h1>
+      <h1 id="auth-heading">{{ (registering ? 'Registrieren' : 'Anmelden') | t }}</h1>
       @if (error()) {
         <p role="alert" class="zw-error">{{ error() }}</p>
       }
       <form #form="ngForm" (ngSubmit)="submit(form)">
         @if (registering) {
           <div class="zw-field">
-            <label for="name" class="zw-label">Anzeigename</label>
+            <label for="name" class="zw-label">{{ 'Anzeigename' | t }}</label>
             <input
               id="name"
               name="name"
@@ -52,13 +54,13 @@ import { Button } from '../ui/button';
             />
             <p id="name-error" class="zw-help zw-help--error">
               @if (nameField.invalid && (nameField.touched || form.submitted)) {
-                Gib einen Anzeigenamen ein.
+                {{ 'Gib einen Anzeigenamen ein.' | t }}
               }
             </p>
           </div>
         }
         <div class="zw-field">
-          <label for="email" class="zw-label">E-Mail</label>
+          <label for="email" class="zw-label">{{ 'E-Mail' | t }}</label>
           <input
             id="email"
             type="email"
@@ -75,12 +77,12 @@ import { Button } from '../ui/button';
           />
           <p id="email-error" class="zw-help zw-help--error">
             @if (emailField.invalid && (emailField.touched || form.submitted)) {
-              Gib eine gültige E-Mail-Adresse ein.
+              {{ 'Gib eine gültige E-Mail-Adresse ein.' | t }}
             }
           </p>
         </div>
         <div class="zw-field">
-          <label for="password" class="zw-label">Passwort</label>
+          <label for="password" class="zw-label">{{ 'Passwort' | t }}</label>
           <input
             id="password"
             type="password"
@@ -96,17 +98,17 @@ import { Button } from '../ui/button';
             aria-describedby="password-hint password-error"
           />
           @if (registering) {
-            <p id="password-hint" class="zw-help">12 bis 128 Zeichen.</p>
+            <p id="password-hint" class="zw-help">{{ '12 bis 128 Zeichen.' | t }}</p>
           }
           <p id="password-error" class="zw-help zw-help--error">
             @if (passwordField.invalid && (passwordField.touched || form.submitted)) {
-              {{ registering ? 'Mindestens 12 Zeichen.' : 'Gib dein Passwort ein.' }}
+              {{ (registering ? 'Mindestens 12 Zeichen.' : 'Gib dein Passwort ein.') | t }}
             }
           </p>
         </div>
         @if (registering) {
           <div class="zw-field">
-            <label for="confirmation" class="zw-label">Passwort wiederholen</label>
+            <label for="confirmation" class="zw-label">{{ 'Passwort wiederholen' | t }}</label>
             <input
               id="confirmation"
               name="confirmation"
@@ -120,17 +122,17 @@ import { Button } from '../ui/button';
           </div>
         }
         <button appButton variant="primary" [block]="true" type="submit" [disabled]="busy()">
-          {{ busy() ? 'Einen Moment…' : registering ? 'Konto erstellen' : 'Anmelden' }}
+          {{ (busy() ? 'Einen Moment…' : registering ? 'Konto erstellen' : 'Anmelden') | t }}
         </button>
       </form>
       <p class="switch">
-        {{ registering ? 'Schon ein Konto?' : 'Neu bei Zweit?' }}
+        {{ (registering ? 'Schon ein Konto?' : 'Neu bei Zweit?') | t }}
         <a
           class="zw-link"
           [routerLink]="registering ? '/login' : '/register'"
           [queryParams]="{ returnUrl }"
         >
-          {{ registering ? 'Anmelden' : 'Registrieren' }}
+          {{ (registering ? 'Anmelden' : 'Registrieren') | t }}
         </a>
       </p>
     </section>
@@ -140,6 +142,7 @@ export class Login {
   private readonly auth = inject(Auth);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly i18n = inject(I18n);
   readonly registering = this.route.snapshot.data['registering'] === true;
   readonly returnUrl = safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
   readonly busy = signal(false);
@@ -154,11 +157,11 @@ export class Login {
     this.error.set('');
     if (form.invalid) {
       form.control.markAllAsTouched();
-      this.error.set('Bitte prüf die markierten Felder.');
+      this.error.set(this.i18n.t('Bitte prüf die markierten Felder.'));
       return;
     }
     if (this.registering && this.password !== this.confirmation) {
-      this.error.set('Die Passwörter stimmen nicht überein.');
+      this.error.set(this.i18n.t('Die Passwörter stimmen nicht überein.'));
       return;
     }
     this.busy.set(true);
@@ -169,8 +172,8 @@ export class Login {
     } catch (error) {
       this.error.set(
         error instanceof AuthRequestError
-          ? error.message
-          : 'Die Anmeldung ist gerade nicht erreichbar. Versuch es nochmals.',
+          ? translateError(error.message, this.i18n)
+          : this.i18n.t('Die Anmeldung ist gerade nicht erreichbar. Versuch es nochmals.'),
       );
     } finally {
       this.password = '';

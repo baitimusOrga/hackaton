@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Public: the buying assistant turns a free-text wish into requirements and matching listings. */
+/** Public: the buying assistant turns a free-text wish into requirements, refines them and ranks listings. */
 @Tag(name = "Search")
 @RestController
 @RequestMapping("/api/searches")
@@ -20,6 +20,11 @@ public class SearchController {
     @PostMapping
     public SearchRequirements create(@Valid @RequestBody SearchRequest request) {
         return search.requirements(request.text());
+    }
+
+    @PostMapping("/refine")
+    public SearchRequirements refine(@Valid @RequestBody RefineRequest request) {
+        return search.refine(request);
     }
 
     @PostMapping("/matches")

@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { ListingsService } from '../api/services';
+import { TranslatePipe } from '../i18n/i18n';
 import { HeroSearch } from '../shell/hero-search';
 import { ListingMap } from '../components/listing-map';
 import { Button } from '../ui/button';

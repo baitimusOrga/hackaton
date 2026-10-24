@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { authGuard } from './auth/auth-guard';
 
 export const routes: Routes = [
@@ -20,11 +21,14 @@ export const routes: Routes = [
     data: { registering: true },
     loadComponent: () => import('./pages/login').then((m) => m.Login),
   },
+  // Selling is a dialog over the page it was opened from (URL `/<page>(modal:sell)`).
   {
     path: 'sell',
+    outlet: 'modal',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/sell').then((m) => m.Sell),
   },
+  { path: 'sell', redirectTo: () => inject(Router).parseUrl('/(modal:sell)') },
   {
     path: 'business',
     canActivate: [authGuard],
