@@ -15,6 +15,7 @@ describe('Home', () => {
         provideRouter([
           { path: '', component: Home },
           { path: 'find', children: [] },
+          { path: 'search', children: [] },
         ]),
         { provide: ListingsService, useValue: { list } },
       ],
@@ -96,5 +97,13 @@ describe('Home', () => {
     element.querySelector('form')!.dispatchEvent(new Event('submit'));
     await harness.fixture.whenStable();
     expect(TestBed.inject(Router).url).toBe('/find?q=iMac%202017');
+  });
+
+  it('links each category tile to the search filtered by that category', async () => {
+    const { element } = await setup([]);
+    const hrefs = [...element.querySelectorAll('nav.zw-cats a')].map((a) => a.getAttribute('href'));
+    expect(hrefs).toContain('/search?category=Bikes');
+    expect(hrefs).toContain('/search?category=TV%20%26%20home%20cinema');
+    expect(hrefs.at(-1)).toBe('/search');
   });
 });

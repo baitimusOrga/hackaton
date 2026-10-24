@@ -42,6 +42,11 @@ const CATEGORY_ICONS: Record<string, IconName> = {
   'TV & home cinema': 'tv',
 };
 
+const CATEGORY_TILES = CATEGORIES.map((name) => ({
+  name,
+  icon: CATEGORY_ICONS[name],
+}));
+
 /** Landing page: hero search, quick filters, categories, ending auctions, new listings, business band. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -65,11 +70,7 @@ export class Home {
   protected readonly hero = inject(HeroSearch);
   private readonly heroForm = viewChild.required<ElementRef<HTMLElement>>('heroForm');
   protected readonly quickFilters = QUICK_FILTERS;
-  /** One tile per listing category; a click browses that category's listings on /search. */
-  protected readonly categories = CATEGORIES.map((name) => ({
-    name,
-    icon: CATEGORY_ICONS[name] ?? 'menu',
-  }));
+  protected readonly categories = CATEGORY_TILES;
   protected readonly placeholders = Array.from({ length: 8 }, (_, i) => i);
   protected readonly query = this.hero.query;
   private readonly router = inject(Router);
