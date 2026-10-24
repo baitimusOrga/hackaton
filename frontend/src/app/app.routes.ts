@@ -11,9 +11,16 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/listing').then((m) => m.ListingPage),
   },
   {
-    path: 'messages',
+    path: 'profile',
     canActivate: [authGuard],
-    loadComponent: () => import('./pages/messages').then((m) => m.Messages),
+    loadComponent: () => import('./pages/profile-layout').then((m) => m.ProfileLayout),
+    children: [
+      { path: '', loadComponent: () => import('./pages/profile').then((m) => m.Profile) },
+      {
+        path: 'trades',
+        loadComponent: () => import('./pages/profile-trades').then((m) => m.ProfileTrades),
+      },
+    ],
   },
   { path: 'login', loadComponent: () => import('./pages/login').then((m) => m.Login) },
   {
@@ -39,5 +46,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./pages/business-project').then((m) => m.BusinessProject),
   },
+  { path: 'about', loadComponent: () => import('./pages/about').then((m) => m.About) },
+  { path: 'info', loadComponent: () => import('./pages/info').then((m) => m.Info) },
   { path: '**', redirectTo: '' },
 ];

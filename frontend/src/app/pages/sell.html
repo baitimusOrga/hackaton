@@ -300,6 +300,7 @@
                     [estimate]="shownEstimate()"
                     [condition]="fields().condition"
                     [(price)]="price"
+                    [(auctionDays)]="auctionDays"
                   />
                   @for (run of [priceRun()]; track run) {
                     @if (run) {
@@ -365,7 +366,9 @@
               }
               @if (draft()) {
                 <div>
-                  <app-badge class="tag">{{ 'Festpreis' | t }}</app-badge>
+                  <app-badge class="tag">{{
+                    (auctionDays() === null ? 'Festpreis' : 'Auktion') | t
+                  }}</app-badge>
                 </div>
               }
               @for (title of [asideTitle()]; track title) {
@@ -412,6 +415,7 @@
   } @else if (view() === 'preview') {
     <app-listing-preview
       [listing]="previewListing()"
+      [auction]="auctionDays() !== null"
       (back)="closePreview()"
       (edit)="closePreview('full')"
     >
@@ -537,6 +541,7 @@
           [estimate]="shownEstimate()"
           [condition]="fields().condition"
           [(price)]="price"
+          [(auctionDays)]="auctionDays"
         />
       </section>
 
@@ -749,6 +754,7 @@
     [estimate]="shownEstimate()"
     [condition]="fields().condition"
     [(price)]="price"
+    [(auctionDays)]="auctionDays"
   />
 </ng-template>
 

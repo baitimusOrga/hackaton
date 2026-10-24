@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of, Subject } from 'rxjs';
 import { SearchService } from '../api/services';
 import { Find } from './find';
@@ -212,5 +212,35 @@ describe('Find', () => {
     expect(body.latitude).toBeNull();
     expect(body.maxDistanceKm).toBeUndefined();
     expect(el.textContent).toContain('Standort nicht verfügbar.');
+  });
+
+  it('restores the filters from the URL without asking the assistant again', async () => {
+    const create = vi.fn();
+    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: SearchService, useValue: { create, matches } },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParamMap: of(
+              convertToParamMap({ q: 'iMac', kw: 'imac', max: '600', plz: '7000', km: '25' }),
+            ),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(Find);
+    await fixture.whenStable();
+
+    expect(create).not.toHaveBeenCalled();
+    expect(matches).toHaveBeenCalledTimes(1);
+    expect(matches.mock.calls[0][0].body).toMatchObject({
+      keywords: ['imac'],
+      maxBudgetChf: 600,
+      postcode: '7000',
+      maxDistanceKm: 25,
+    });
   });
 });

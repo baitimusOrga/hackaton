@@ -17,9 +17,16 @@
           [ngModel]="query()"
           (ngModelChange)="query.set($event)"
         />
-        <button type="button" class="zw-chip zw-chip--location" [attr.aria-label]="locationLabel()">
+        <button
+          type="button"
+          class="zw-chip zw-chip--location"
+          [attr.aria-label]="locationLabel()"
+          [attr.aria-pressed]="!!location.position()"
+          [disabled]="location.locating()"
+          (click)="toggleLocation()"
+        >
           <app-icon name="pin" [size]="16" />
-          <span>{{ location.radius }}</span>
+          <span>{{ location.position() ? '25 km' : ('Standort' | t) }}</span>
         </button>
         <button
           appButton
@@ -31,27 +38,32 @@
         </button>
       </form>
     } @else {
-      <button type="button" class="zw-chip zw-chip--location" [attr.aria-label]="locationLabel()">
+      <button
+        type="button"
+        class="zw-chip zw-chip--location"
+        [attr.aria-label]="locationLabel()"
+        [attr.aria-pressed]="!!location.position()"
+        [disabled]="location.locating()"
+        (click)="toggleLocation()"
+      >
         <app-icon name="pin" [size]="16" />
-        <span>{{ location.place }} · {{ location.radius }}</span>
+        <span>{{
+          location.position() ? ('Mein Standort' | t) + ' · 25 km' : ('Standort' | t)
+        }}</span>
       </button>
     }
     <nav class="zw-nav" [attr.aria-label]="'Hauptnavigation' | t">
-      @if (docked()) {
-        <a routerLink="/find" [attr.aria-label]="'Meine Suchen' | t"
-          ><app-icon name="bookmark"
-        /></a>
-        <a routerLink="/messages" [attr.aria-label]="'Nachrichten' | t"
-          ><app-icon name="message"
-        /></a>
-      } @else {
-        <a routerLink="/find"><app-icon name="bookmark" />{{ 'Meine Suchen' | t }}</a>
-        <a routerLink="/messages"><app-icon name="message" />{{ 'Nachrichten' | t }}</a>
-      }
       <a appButton [routerLink]="[{ outlets: { modal: ['sell'] } }]"
         ><app-icon name="camera" /><span>{{ 'Verkaufen' | t }}</span></a
       >
-      @if (auth.user()) {
+      @if (auth.user(); as user) {
+        <a
+          routerLink="/profile"
+          class="zw-avatar"
+          [attr.aria-label]="'Mein Konto' | t"
+          [attr.title]="user.name"
+          >{{ user.name.trim().charAt(0).toUpperCase() }}</a
+        >
         <button type="button" class="zw-link" [disabled]="signingOut()" (click)="logout()">
           {{ 'Abmelden' | t }}
         </button>

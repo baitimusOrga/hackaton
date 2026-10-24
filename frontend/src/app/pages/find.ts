@@ -1,21 +1,38 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
-import { SearchService } from '../api/services';
-import { Requirement, SearchMatch, SearchRequirements, SearchResults } from '../api/models';
-import { CONDITION_LABELS } from '../conditions';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
+import { ListingsService, SearchService } from '../api/services';
+import {
+  ListingSummary,
+  Requirement,
+  SearchMatch,
+  SearchRequirements,
+  SearchResults,
+} from '../api/models';
+import { Position, SessionLocation } from '../device-location';
 import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
 import { chf } from '../ui/chf';
 import { Icon } from '../ui/icon';
 import { SummaryCard } from '../ui/summary-card';
 
-type Row = 'mustHave' | 'niceToHave';
-interface Position {
-  latitude: number;
-  longitude: number;
+const FILTER_KEYS = ['kw', 'cat', 'max', 'plz', 'km', 'must', 'nice'];
+
+/** True when the URL already holds exactly the filters the form shows (our own navigation). */
+function sameQuery(params: ParamMap, query: Record<string, string | null>): boolean {
+  return Object.entries(query).every(([k, v]) => params.get(k) === v);
 }
+
+type Row = 'mustHave' | 'niceToHave';
 
 const FITS: Record<string, string> = {
   MATCH: 'Passt',
@@ -157,6 +174,7 @@ const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube de
 })
 export class Find {
   private readonly search = inject(SearchService);
+  private readonly listings = inject(ListingsService);
   private readonly i18n = inject(I18n);
 
   protected readonly rows = [
@@ -164,10 +182,6 @@ export class Find {
     { key: 'niceToHave', label: 'Wäre schön', other: 'Muss' },
   ] as const;
   protected readonly radii = [5, 10, 25, 50, 100];
-  // TODO: the backend has no filters for these yet (condition, sale mode, "Nur" flags); wire them up once SearchRequirements has them.
-  protected readonly conditionOptions = Object.values(CONDITION_LABELS);
-  protected readonly modeOptions = ['Festpreis', 'Preisvorschlag', 'Auktion'];
-  protected readonly onlyOptions = ['Getestet, funktioniert', 'Grüne Wahl', 'Geprüfte Verkäufer'];
 
   protected readonly text = signal('');
   protected readonly adjust = signal('');
@@ -185,7 +199,37 @@ export class Find {
   protected readonly position = signal<Position | null>(null);
   protected readonly matching = signal(false);
   protected readonly results = signal<SearchResults | null>(null);
+  // shortcut: matches are filtered to auctions in the browser; move into SearchRequirements if lists get long
+  protected readonly auctionsOnly = signal(false);
+  /** All running auctions, shown on /find?mode=auction before a search. */
+  protected readonly auctions = signal<ListingSummary[] | null>(null);
+  protected readonly shown = computed(() => {
+    const res = this.results();
+    if (!res || !this.auctionsOnly()) return res;
+    const auction = (m: SearchMatch) => m.listing?.saleMode === 'AUCTION';
+    return { ...res, matches: (res.matches ?? []).filter(auction) };
+  });
   protected readonly progress = signal('');
+  private readonly router = inject(Router);
+  private readonly location = inject(SessionLocation);
+  /** The text the filters were read from; it stays in the URL next to the filters. */
+  private readonly asked = signal('');
+  /** The filters as URL query params (null = not in the URL); the position never goes in. */
+  private readonly query = computed(() => {
+    const pc = this.postcode().trim();
+    const json = (list: Requirement[]) => (list.length ? JSON.stringify(list) : null);
+    return {
+      q: this.asked() || null,
+      kw: this.keywords().trim() || null,
+      cat: this.category()?.trim() || null,
+      max: this.budget() === null ? null : String(this.budget()),
+      plz: pc || null,
+      km: pc && this.radius() ? String(this.radius()) : null,
+      must: json(this.mustHave()),
+      nice: json(this.niceToHave()),
+      mode: this.auctionsOnly() ? 'auction' : null,
+    };
+  });
   private initial: SearchRequirements | null = null;
   private original = '';
   private nearMe = false;
@@ -194,15 +238,69 @@ export class Find {
   private debounce: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
-    // The header and the landing page search by navigating to /find?q=…
+    // The header's location chip applies to a shown search that has no postcode of its own.
+    effect(() => {
+      const here = this.location.position();
+      untracked(() => {
+        if (!this.searched() || this.postcode().trim()) return;
+        if (here && !this.position()) void this.useMyPosition();
+        else if (!here && this.position()) this.clearRegion();
+      });
+    });
+
+    // Keep the filters in the URL so a reload or a shared link shows the same search.
+    effect(() => {
+      const queryParams = this.query();
+      if (!this.searched()) return;
+      untracked(() =>
+        this.router.navigate([this.router.url.split('?')[0]], { queryParams, replaceUrl: true }),
+      );
+    });
+
+    // The header and the landing page search by navigating to /find?q=…; a URL with filters restores them.
     inject(ActivatedRoute)
       .queryParamMap.pipe(takeUntilDestroyed())
       .subscribe((params) => {
+        if (params.get('mode') === 'auction' && !this.auctionsOnly()) {
+          this.auctionsOnly.set(true);
+          this.listings.list({ saleMode: 'AUCTION' }).subscribe((list) => this.auctions.set(list));
+        }
+        if (FILTER_KEYS.some((k) => params.has(k))) {
+          if (!this.searched() || !sameQuery(params, this.query())) this.restore(params);
+          return;
+        }
         const q = params.get('q')?.trim();
-        if (!q) return;
+        if (!q || (this.searched() && sameQuery(params, this.query()))) return;
         this.text.set(q);
         this.find();
       });
+  }
+
+  /** A link with filters shows that search directly, without asking the assistant again. */
+  private restore(params: ParamMap): void {
+    const list = (key: string): Requirement[] => {
+      try {
+        return JSON.parse(params.get(key) ?? '[]');
+      } catch {
+        return [];
+      }
+    };
+    const max = params.get('max');
+    const km = params.get('km');
+    this.text.set(params.get('q') ?? '');
+    this.asked.set(params.get('q') ?? '');
+    this.original = params.get('q') ?? '';
+    this.searched.set(true);
+    this.apply({
+      mustHave: list('must'),
+      niceToHave: list('nice'),
+      category: params.get('cat'),
+      keywords: (params.get('kw') ?? '').split(',').filter((k) => k.trim()),
+      maxBudgetChf: max === null ? undefined : Number(max),
+      postcode: params.get('plz') ?? undefined,
+      maxDistanceKm: km === null ? undefined : Number(km),
+    });
+    this.afterParse({ postcode: params.get('plz') ?? undefined });
   }
 
   find(): void {
@@ -214,6 +312,7 @@ export class Find {
       next: (req) => {
         this.initial = req;
         this.original = text;
+        this.asked.set(text.trim());
         this.refinements.set([]);
         this.apply(req);
         this.results.set(null);
@@ -272,8 +371,9 @@ export class Find {
     this.nearMe = !!req.nearMe;
   }
 
-  private afterParse(req: SearchRequirements): void {
-    if (req.nearMe) this.useMyPosition();
+  /** Searches around the position if asked for, or if the user shared it this session and gave no postcode. */
+  private afterParse(req: Pick<SearchRequirements, 'nearMe' | 'postcode'>): void {
+    if (req.nearMe || (!req.postcode && this.location.position())) void this.useMyPosition();
     else this.showMatches();
   }
 
@@ -297,23 +397,20 @@ export class Find {
     this.changed();
   }
 
-  /** "Mein Standort": asks the browser once, then searches around the position instead of a postcode. */
-  protected useMyPosition(): void {
-    const failed = () => {
+  /** "Mein Standort": asks the browser once per session, then searches around the position instead of a postcode. */
+  protected async useMyPosition(): Promise<void> {
+    const position = await this.location.locate();
+    if (!position) {
       this.position.set(null);
       this.radius.set(null);
       this.nearMe = false;
-      this.showMatches(this.i18n.t(NO_POSITION));
-    };
-    if (!navigator.geolocation) return failed();
-    navigator.geolocation.getCurrentPosition(({ coords }) => {
-      const round = (n: number) => Math.round(n * 1000) / 1000;
-      this.position.set({ latitude: round(coords.latitude), longitude: round(coords.longitude) });
-      this.postcode.set('');
-      if (this.radius() === null) this.radius.set(NEAR_ME_KM);
-      this.nearMe = true;
-      this.showMatches();
-    }, failed);
+      return this.showMatches(this.i18n.t(NO_POSITION));
+    }
+    this.position.set(position);
+    this.postcode.set('');
+    if (this.radius() === null) this.radius.set(NEAR_ME_KM);
+    this.nearMe = true;
+    this.showMatches();
   }
 
   /** Matches again after a filter change; typing waits for a 400 ms pause. */

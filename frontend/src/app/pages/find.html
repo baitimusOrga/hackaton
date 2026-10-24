@@ -66,10 +66,6 @@
       </button>
     }
     <span class="zw-help">{{ 'Antippen zum Entfernen, links alles im Detail.' | t }}</span>
-    <!-- TODO: "Suche speichern" needs a saved-search/alert API (immediate, daily, weekly; dedup of relists). -->
-    <button appButton variant="primary" type="button" disabled>
-      {{ 'Suche speichern' | t }}
-    </button>
   </div>
 
   <form
@@ -132,13 +128,6 @@
           (ngModelChange)="category.set($event); changed(400)"
         />
       </div>
-      <!-- TODO: brand filter; the backend has no brand field in SearchRequirements. -->
-      <fieldset class="zw-fieldset find__f" disabled>
-        <label class="zw-label" for="find-brand">{{ 'Marke' | t }}</label>
-        <select id="find-brand" class="zw-input">
-          <option>{{ 'Alle Marken' | t }}</option>
-        </select>
-      </fieldset>
       <div class="find__f">
         <label class="zw-label" for="find-keywords">{{ 'Modell, Stichwort' | t }}</label>
         <input
@@ -153,14 +142,6 @@
       <fieldset class="zw-fieldset find__f">
         <legend class="zw-label">{{ 'Preis' | t }}</legend>
         <div class="find__pair">
-          <!-- TODO: minimum price; the backend only knows a maximum budget. -->
-          <input
-            class="zw-input zw-input--price"
-            type="number"
-            [placeholder]="'von' | t"
-            [attr.aria-label]="'Preis von' | t"
-            disabled
-          />
           <input
             class="zw-input zw-input--price"
             type="number"
@@ -172,10 +153,6 @@
             (ngModelChange)="budget.set($event); changed(400)"
           />
         </div>
-        <!-- TODO: total price incl. shipping; listings have no shipping cost yet. -->
-        <label class="zw-check"
-          ><input type="checkbox" disabled />{{ 'Gesamtpreis inkl. Versand' | t }}</label
-        >
       </fieldset>
       <fieldset class="zw-fieldset find__f">
         <legend class="zw-label">{{ 'Region' | t }}</legend>
@@ -193,6 +170,7 @@
             id="find-radius"
             class="zw-input"
             name="radius"
+            [disabled]="!postcode().trim() && !position()"
             [attr.aria-label]="'Umkreis' | t"
             [ngModel]="radius()"
             (ngModelChange)="radius.set($event); changed()"
@@ -207,28 +185,13 @@
           <app-icon name="pin" [size]="16" />
           <span>{{ (position() ? 'Standort aktualisieren' : 'Mein Standort') | t }}</span>
         </button>
-        <!-- TODO: pickup / shipping filter; listings have no delivery options yet. -->
-        <label class="zw-check"><input type="checkbox" disabled />{{ 'Abholung' | t }}</label>
-        <label class="zw-check"><input type="checkbox" disabled />{{ 'Versand' | t }}</label>
-      </fieldset>
-      <!-- TODO: condition, sale mode and "Nur" filters are not in SearchRequirements yet. -->
-      <fieldset class="zw-fieldset find__f" disabled>
-        <legend class="zw-label">{{ 'Zustand' | t }}</legend>
-        @for (c of conditionOptions; track c) {
-          <label class="zw-check"><input type="checkbox" />{{ c | t }}</label>
-        }
-      </fieldset>
-      <fieldset class="zw-fieldset find__f" disabled>
-        <legend class="zw-label">{{ 'Verkaufsart' | t }}</legend>
-        @for (m of modeOptions; track m) {
-          <label class="zw-check"><input type="checkbox" />{{ m | t }}</label>
-        }
       </fieldset>
       <fieldset class="zw-fieldset find__f">
-        <legend class="zw-label">{{ 'Nur' | t }}</legend>
-        @for (o of onlyOptions; track o) {
-          <label class="zw-check"><input type="checkbox" disabled />{{ o | t }}</label>
-        }
+        <legend class="zw-label">{{ 'Verkaufsart' | t }}</legend>
+        <label class="zw-check">
+          <input type="checkbox" name="auctionsOnly" [(ngModel)]="auctionsOnly" />
+          {{ 'Auktion' | t }}
+        </label>
       </fieldset>
       <button appButton type="submit" [disabled]="matching()">
         {{ (matching() ? 'Suche läuft…' : 'Treffer aktualisieren') | t }}
@@ -239,7 +202,7 @@
     </form>
 
     <div class="find__results" [class.find__busy]="matching()" [attr.aria-busy]="matching()">
-      @if (results(); as res) {
+      @if (shown(); as res) {
         @let found = res.matches ?? [];
         <div class="find__bar">
           <span>{{ '{count} Inserate' | t: { count: found.length } }}</span>
@@ -262,7 +225,7 @@
           <div class="zw-grid" [attr.aria-label]="'Treffer' | t">
             @for (m of found; track m.listing?.id) {
               <div class="find__item">
-                <!-- TODO: sale mode, current bid ("Gebot, nicht Endpreis") and total cost incl. shipping are not in ListingSummary yet; all cards show as Festpreis. -->
+                <!-- TODO: total cost incl. shipping; listings have no shipping cost yet. -->
                 <app-summary-card [listing]="m.listing ?? {}" />
                 <p class="zw-small" [class.find__why--ok]="m.fit === 'MATCH'">{{ scoreLine(m) }}</p>
                 @for (d of details(m); track d) {
@@ -284,4 +247,17 @@
       }
     </div>
   </div>
+} @else if (auctions(); as list) {
+  <section class="find__grp" aria-labelledby="find-auctions">
+    <h2 id="find-auctions">{{ 'Alle Auktionen' | t }}</h2>
+    @if (list.length) {
+      <div class="zw-grid">
+        @for (auction of list; track auction.id) {
+          <app-summary-card [listing]="auction" />
+        }
+      </div>
+    } @else {
+      <p class="zw-muted">{{ 'Gerade läuft keine Auktion.' | t }}</p>
+    }
+  </section>
 }

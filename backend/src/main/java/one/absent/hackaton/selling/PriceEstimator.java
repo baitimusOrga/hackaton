@@ -21,6 +21,7 @@ import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.listing.Listing;
 import one.absent.hackaton.listing.ListingRepository;
 import one.absent.hackaton.listing.ListingStatus;
+import one.absent.hackaton.listing.SaleMode;
 import one.absent.hackaton.selling.ListingDraft.DraftFact;
 import one.absent.hackaton.selling.ListingDraft.FactSource;
 import one.absent.hackaton.selling.ListingDraft.PriceConfidence;
@@ -89,6 +90,8 @@ public class PriceEstimator {
         List<Listing> inCategory = listings.findAll().stream()
                 .filter(l -> l.getCategory().equalsIgnoreCase(category))
                 .filter(l -> sellerId == null || !sellerId.equals(l.getSellerId()))
+                // an auction's start price is no asking price
+                .filter(l -> l.getSaleMode() == SaleMode.FIXED)
                 .toList();
         BigDecimal median = inCategory.size() < 3 ? null
                 : percentile(inCategory.stream().map(Listing::getPriceChf).sorted().toList(), 0.5);

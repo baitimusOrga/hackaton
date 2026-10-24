@@ -10,7 +10,7 @@ import { ListingMap } from './listing-map';
 
 /**
  * A listing as buyers see it, fixed price: photo left, buying column right, facts and description
- * below. Used by the listing page and by the sell preview.
+ * below. The sell preview shows it before publishing.
  */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -137,6 +137,8 @@ import { ListingMap } from './listing-map';
 export class ListingView {
   private readonly i18n = inject(I18n);
   readonly listing = input<ListingDetail>();
+  /** shortcut: the sell preview only; the listing page has its own auction view, share it once the preview needs bids */
+  readonly auction = input(false);
 
   protected meta(item: ListingDetail): string {
     return metaLine(

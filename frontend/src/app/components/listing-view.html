@@ -14,7 +14,11 @@
         <!-- TODO: backend has no sale mode or auction data; branch here to the auction variant (DetailAuction: timer, current bid, bid field, blue "Jetzt bieten") once ListingDetail has it. -->
         <!-- TODO: backend has no "Grüne Wahl" flag; add <app-badge variant="green">Grüne Wahl</app-badge> once it does. -->
         <div class="badges">
-          <app-badge>{{ 'Festpreis' | t }}</app-badge>
+          @if (auction()) {
+            <app-badge variant="inverse">{{ 'Auktion' | t }}</app-badge>
+          } @else {
+            <app-badge>{{ 'Festpreis' | t }}</app-badge>
+          }
         </div>
         <h1>{{ item.title }}</h1>
         <!-- TODO: backend has no included accessories or distance to the buyer; extend the meta line once it does. -->
@@ -22,6 +26,9 @@
       </div>
 
       <div class="group tight">
+        @if (auction()) {
+          <span class="zw-caption">{{ 'Startpreis' | t }}</span>
+        }
         <span class="zw-price-lg">{{ item.priceChf ?? 0 | chf }}</span>
         <!-- TODO: backend has no pickup/shipping cost or new price; show "Abholung gratis · Versand CHF 35.– · neu CHF 1’890.–" once it does. -->
       </div>
@@ -29,7 +36,7 @@
       <div class="group tight">
         <!-- TODO: backend has no purchase endpoint; wire Kaufen to it (then the Bought flow). -->
         <button appButton variant="primary" [block]="true" type="button" disabled>
-          {{ 'Kaufen' | t }}
+          {{ (auction() ? 'Bieten' : 'Kaufen') | t }}
         </button>
         <div class="links">
           <!-- TODO: backend has no public Q&A or watchlist; enable these once it does. -->

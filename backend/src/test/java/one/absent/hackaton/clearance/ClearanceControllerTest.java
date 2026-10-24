@@ -7,13 +7,19 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+
+import jakarta.persistence.EntityManager;
 
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.clearance.ClearanceService.AiInventory;
 import one.absent.hackaton.clearance.ClearanceService.AiItem;
 import one.absent.hackaton.listing.Condition;
+import one.absent.hackaton.listing.Listing;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +42,7 @@ class ClearanceControllerTest {
     private static final String BASE = "/api/clearance/projects";
     @Autowired WebApplicationContext context;
     @Autowired JsonMapper json;
+    @Autowired EntityManager em;
     @MockitoBean AiClient ai;
     MockMvc mvc;
 
@@ -117,6 +124,18 @@ class ClearanceControllerTest {
     }
 
     @Test void brandAndModelPriceFromSameModelAndUnknownCategoryIsReplaced() throws Exception {
+        Listing aeron = new Listing();
+        aeron.setTitle("Herman Miller Aeron");
+        aeron.setDescription("Test listing.");
+        aeron.setPriceChf(new BigDecimal("380"));
+        aeron.setCondition(Condition.USED);
+        aeron.setCategory("Office furniture");
+        aeron.setPostcode("8001");
+        aeron.setLocality("Zürich");
+        aeron.setCreatedAt(Instant.now());
+        aeron.getAttributes().putAll(Map.of("Brand", "Herman Miller", "Model", "Aeron"));
+        em.persist(aeron);
+        em.flush();
         long id = createProject(30);
         when(ai.ask(anyString(), anyString(), anyList(), anyString(), eq(AiInventory.class)))
                 .thenReturn(new AiInventory(List.of(
@@ -125,7 +144,7 @@ class ClearanceControllerTest {
                         new AiItem("HP LaserJet Pro M404dn", "HP", "M404dn", "Printers", 3, Condition.USED, null))));
         mvc.perform(multipart(BASE + "/" + id + "/items/extract").file(text("20 Aeron; 3 HP printers")).with(owner()))
                 .andExpect(status().isOk())
-                // the V4 demo Aeron (USED) asks CHF 380, instead of the CHF 150 × 0.8 category fallback
+                // the used Aeron above asks CHF 380, instead of the CHF 150 × 0.8 category fallback
                 .andExpect(jsonPath("$.items[0].estimatedUnitChf").value(380))
                 .andExpect(jsonPath("$.items[1].category").value("Household"));
     }

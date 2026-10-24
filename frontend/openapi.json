@@ -303,6 +303,14 @@
             "type" : "number",
             "format" : "double"
           }
+        }, {
+          "name" : "saleMode",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "FIXED", "AUCTION" ]
+          }
         } ],
         "responses" : {
           "200" : {
@@ -340,6 +348,43 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ListingDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/listings/{id}/auction/bids" : {
+      "post" : {
+        "tags" : [ "Auctions" ],
+        "operationId" : "placeBid",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PlaceBidRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuctionState"
                 }
               }
             }
@@ -682,6 +727,24 @@
         }
       }
     },
+    "/api/me/trades" : {
+      "get" : {
+        "tags" : [ "Trades" ],
+        "operationId" : "trades",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Trades"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/listings/{id}" : {
       "get" : {
         "tags" : [ "Listings" ],
@@ -702,6 +765,33 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ListingDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/listings/{id}/auction" : {
+      "get" : {
+        "tags" : [ "Auctions" ],
+        "operationId" : "getAuction",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuctionState"
                 }
               }
             }
@@ -1154,6 +1244,21 @@
           "longitude" : {
             "type" : [ "number", "null" ],
             "format" : "double"
+          },
+          "saleMode" : {
+            "type" : "string",
+            "enum" : [ "FIXED", "AUCTION" ]
+          },
+          "endsAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "currentBidChf" : {
+            "type" : [ "number", "null" ]
+          },
+          "bidCount" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },
@@ -1258,6 +1363,12 @@
             },
             "maxItems" : 5,
             "minItems" : 0
+          },
+          "auctionDays" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "maximum" : 14,
+            "minimum" : 1
           }
         },
         "required" : [ "attributes", "category", "condition", "description", "locality", "photoIds", "postcode", "priceChf", "title" ]
@@ -1314,6 +1425,98 @@
           "longitude" : {
             "type" : [ "number", "null" ],
             "format" : "double"
+          },
+          "saleMode" : {
+            "type" : "string",
+            "enum" : [ "FIXED", "AUCTION" ]
+          },
+          "endsAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "currentBidChf" : {
+            "type" : [ "number", "null" ]
+          },
+          "bidCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PlaceBidRequest" : {
+        "type" : "object",
+        "properties" : {
+          "maxChf" : {
+            "type" : "number",
+            "exclusiveMinimum" : 0
+          }
+        },
+        "required" : [ "maxChf" ]
+      },
+      "AuctionState" : {
+        "type" : "object",
+        "properties" : {
+          "endsAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "ended" : {
+            "type" : "boolean"
+          },
+          "currentBidChf" : {
+            "type" : [ "number", "null" ]
+          },
+          "bidCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "minimumNextBidChf" : {
+            "type" : "number"
+          },
+          "incrementChf" : {
+            "type" : "number"
+          },
+          "myMaxChf" : {
+            "type" : [ "number", "null" ]
+          },
+          "leading" : {
+            "type" : "boolean"
+          },
+          "ownListing" : {
+            "type" : "boolean",
+            "description" : "The viewer is the seller and cannot bid"
+          },
+          "bids" : {
+            "type" : "array",
+            "description" : "Newest first",
+            "items" : {
+              "$ref" : "#/components/schemas/BidView"
+            }
+          }
+        }
+      },
+      "BidView" : {
+        "type" : "object",
+        "properties" : {
+          "amountChf" : {
+            "type" : "number"
+          },
+          "bidder" : {
+            "type" : "string"
+          },
+          "at" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "automatic" : {
+            "type" : "boolean"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "myMaxChf" : {
+            "type" : [ "number", "null" ],
+            "description" : "Your maximum behind this row; only on your own rows"
           }
         }
       },
@@ -1752,6 +1955,23 @@
           },
           "locality" : {
             "type" : "string"
+          }
+        }
+      },
+      "Trades" : {
+        "type" : "object",
+        "properties" : {
+          "sold" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ListingSummary"
+            }
+          },
+          "bought" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ListingSummary"
+            }
           }
         }
       },

@@ -44,7 +44,8 @@ public class SearchService {
     static final List<String> ATTRIBUTES = Attributes.ALL;
     static final List<String> CATEGORIES = Categories.ALL;
     static final BigDecimal BUDGET_STRETCH = new BigDecimal("1.25");
-    static final int MAX_FETCH = 200;
+    // code scoring is cheap, so fetch every available listing up to this; only the top MAX_CANDIDATES reach the AI
+    static final int MAX_FETCH = 1000;
     static final int MAX_CANDIDATES = 30;
     static final int MIN_SCORE = 30;
     static final int MAX_RESULTS = 20;

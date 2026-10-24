@@ -39,10 +39,22 @@ export const SHELL_MESSAGES: Messages = {
   'Für Firmen': { fr: 'Pour les entreprises', it: 'Per le aziende', en: 'For businesses' },
   Hilfe: { fr: 'Aide', it: 'Aiuto', en: 'Help' },
   Sprache: { fr: 'Langue', it: 'Lingua', en: 'Language' },
-  'Standort ändern: {place}, Umkreis {radius}': {
-    fr: 'Changer de lieu : {place}, rayon {radius}',
-    it: 'Cambia luogo: {place}, raggio {radius}',
-    en: 'Change location: {place}, radius {radius}',
+  Standort: { fr: 'Position', it: 'Posizione', en: 'Location' },
+  'Mein Standort': { fr: 'Ma position', it: 'La mia posizione', en: 'My location' },
+  'Suche in meiner Nähe (25 km)': {
+    fr: 'Chercher près de moi (25 km)',
+    it: 'Cerca vicino a me (25 km)',
+    en: 'Search near me (25 km)',
+  },
+  'Standort nicht mehr verwenden': {
+    fr: 'Ne plus utiliser ma position',
+    it: 'Non usare più la mia posizione',
+    en: 'Stop using my location',
+  },
+  'Standort nicht verfügbar. Erlaube den Standortzugriff.': {
+    fr: 'Position indisponible. Autorise l’accès à la position.',
+    it: 'Posizione non disponibile. Consenti l’accesso alla posizione.',
+    en: 'Location unavailable. Allow location access.',
   },
   'Abmelden hat nicht geklappt. Versuch es nochmals.': {
     fr: 'La déconnexion a échoué. Réessaie.',
@@ -61,8 +73,6 @@ export const SHELL_MESSAGES: Messages = {
     it: 'Navigazione principale',
     en: 'Main navigation',
   },
-  'Meine Suchen': { fr: 'Mes recherches', it: 'Le mie ricerche', en: 'My searches' },
-  Nachrichten: { fr: 'Messages', it: 'Messaggi', en: 'Messages' },
   Verkaufen: { fr: 'Vendre', it: 'Vendi', en: 'Sell' },
   Abmelden: { fr: 'Se déconnecter', it: 'Esci', en: 'Sign out' },
   Anmelden: { fr: 'Se connecter', it: 'Accedi', en: 'Sign in' },

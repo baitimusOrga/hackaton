@@ -33,9 +33,28 @@ describe('Home', () => {
     expect(card.textContent).toContain('Wie neu · Bern');
   });
 
+  it('shows auctions under "Endet bald" and hides the section without any', async () => {
+    const { element } = await setup([
+      {
+        id: 1201,
+        title: 'Aeron',
+        priceChf: 300,
+        currentBidChf: 310,
+        bidCount: 2,
+        saleMode: 'AUCTION',
+        endsAt: new Date(Date.now() + 3_600_000).toISOString(),
+      },
+    ]);
+    expect(TestBed.inject(ListingsService).list).toHaveBeenCalledWith({ saleMode: 'AUCTION' });
+    const card = element.querySelector('[aria-labelledby="h-auction"] a.zw-card')!;
+    expect(card.textContent).toContain('CHF 310.–');
+    expect(card.textContent).toContain('2 Gebote');
+  });
+
   it('sends the hero search to the search page', async () => {
     const { harness, element } = await setup([]);
     expect(element.textContent).toContain('Noch keine Inserate in deiner Nähe.');
+    expect(element.querySelector('[aria-labelledby="h-auction"]')).toBeNull();
     const input = element.querySelector<HTMLInputElement>('#hero-q')!;
     input.value = 'iMac 2017';
     input.dispatchEvent(new Event('input'));

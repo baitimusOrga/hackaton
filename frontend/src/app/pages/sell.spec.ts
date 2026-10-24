@@ -777,10 +777,33 @@ describe('Sell', () => {
       locality: 'Zürich',
       attributes: { Brand: 'Dell' },
       photoIds: [7],
+      auctionDays: null,
     });
     expect(JSON.parse(localStorage.getItem('sell.lastLocation')!)).toEqual({
       postcode: '8001',
       locality: 'Zürich',
     });
+  });
+
+  it('publishes an auction with its duration and the start price', async () => {
+    const publish = vi.fn().mockReturnValue(of({ id: 1 }));
+    const { fixture, element } = await full(DRAFT, { publish });
+    const sell = fixture.componentInstance;
+    sell['price'].set(80);
+    sell['postcode'].set('8001');
+    sell['locality'].set('Zürich');
+    button(element, 'Auktion').click();
+    await fixture.whenStable();
+    expect(element.querySelector('label[for="price-compact"]')!.textContent).toContain(
+      'Startpreis',
+    );
+    const days = element.querySelector<HTMLSelectElement>('#auction-days')!;
+    days.value = '7';
+    days.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+
+    element.querySelector('form')!.dispatchEvent(new Event('submit'));
+
+    expect(publish.mock.calls[0][0].body).toMatchObject({ priceChf: 80, auctionDays: 7 });
   });
 });

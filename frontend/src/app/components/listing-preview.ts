@@ -28,7 +28,7 @@ import { ListingView } from './listing-view';
       <span class="in">{{ 'So sehen andere Mitglieder dein Inserat.' | t }}</span>
     </p>
     <div class="in" role="region" aria-labelledby="sell-preview">
-      <app-listing-view [listing]="listing()" />
+      <app-listing-view [listing]="listing()" [auction]="auction()" />
     </div>
     <div class="bar">
       <div class="in">
@@ -100,6 +100,7 @@ import { ListingView } from './listing-view';
 })
 export class ListingPreview {
   readonly listing = input<ListingDetail>();
+  readonly auction = input(false);
   readonly back = output();
   readonly edit = output();
 }

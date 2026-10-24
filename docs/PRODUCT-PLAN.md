@@ -108,8 +108,6 @@ Sold or reserved items must stop appearing as available. Quantity-based listings
 |---|---|
 | Discover | Browse, filter, compare, and inspect items. |
 | Sell | Camera intake, drafts, pricing, publication, and seller activity. |
-| My searches | Requirements, recommendations, alerts, and feedback. |
-| Messages | Item questions, offers, and transaction conversations. |
 | Purchases and sales | Payment, delivery, collection, issues, and reviews. |
 | Business projects | Inventory, approvals, liquidation routes, and reporting. |
 | Profile and settings | Trust information, privacy, language, and notifications. |

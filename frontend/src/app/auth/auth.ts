@@ -54,6 +54,25 @@ export class Auth {
     await this.restore();
   }
 
+  async updateName(name: string): Promise<void> {
+    const { error } = await this.client.updateUser({ name });
+    if (error)
+      throw new AuthRequestError(error.message ?? 'Unable to update your account.', error.status);
+    this.user.update((user) => user && { ...user, name });
+    // The API token carries the name as a claim.
+    this.cachedToken = undefined;
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const { error } = await this.client.changePassword({
+      currentPassword,
+      newPassword,
+      revokeOtherSessions: true,
+    });
+    if (error)
+      throw new AuthRequestError(error.message ?? 'Unable to change your password.', error.status);
+  }
+
   async logout(): Promise<void> {
     const { error } = await this.client.signOut();
     if (error) throw new AuthRequestError(error.message ?? 'Unable to sign out.', error.status);

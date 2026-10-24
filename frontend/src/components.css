@@ -106,6 +106,16 @@
   outline-offset: 2px;
   background: var(--bg-000);
 }
+.zw-input:disabled {
+  border-style: dashed;
+  border-color: var(--line-soft);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+.zw-field:has(:disabled) .zw-label {
+  color: var(--ink-muted);
+}
 .zw-input--price {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -634,6 +644,26 @@ textarea.zw-input {
 }
 .zw-nav a:not(.zw-btn) {
   padding: 0 4px;
+}
+.zw-avatar,
+.zw-nav a.zw-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--bg-900);
+  color: var(--ink-inverse);
+  font: 600 14px/1 var(--font-sans);
+  text-decoration: none;
+}
+.zw-nav a.zw-avatar:hover {
+  color: var(--ink-inverse);
+  text-decoration: none;
 }
 
 /* Footer */

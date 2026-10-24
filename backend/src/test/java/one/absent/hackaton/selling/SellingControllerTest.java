@@ -1,10 +1,15 @@
 package one.absent.hackaton.selling;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import one.absent.hackaton.listing.ListingRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,9 +56,22 @@ class SellingControllerTest {
         mvc.perform(get("/api/listings")).andExpect(jsonPath("$[?(@.title == 'Desk')]").exists());
     }
 
+    @Test void auctionDaysPublishesAnAuction() throws Exception {
+        mvc.perform(post("/api/listings").with(jwt().jwt(j -> j.subject("auctioneer").claim("name", "A")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(REQUEST.replace("\"photoIds\":[]", "\"photoIds\":[],\"auctionDays\":5")))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.saleMode").value("AUCTION"));
+        var listing = listings.findAll().stream().filter(l -> "auctioneer".equals(l.getSellerId())).findFirst().orElseThrow();
+        assertThat(listing.getEndsAt()).isCloseTo(Instant.now().plus(Duration.ofDays(5)), within(1, ChronoUnit.MINUTES));
+        mvc.perform(post("/api/listings").with(jwt().jwt(j -> j.subject("auctioneer").claim("name", "A")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(REQUEST.replace("\"photoIds\":[]", "\"photoIds\":[],\"auctionDays\":30")))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors.auctionDays").exists());
+    }
+
     @Test void demoListingsHaveNoSeller() throws Exception {
-        assertThat(listings.findById(1L).orElseThrow().getSellerId()).isNull();
-        mvc.perform(get("/api/listings/1")).andExpect(status().isOk())
+        assertThat(listings.findById(2301L).orElseThrow().getSellerId()).isNull();
+        mvc.perform(get("/api/listings/2301")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.sellerName").doesNotExist());
     }
 
