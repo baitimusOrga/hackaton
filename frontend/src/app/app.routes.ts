@@ -11,11 +11,6 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/listing').then((m) => m.ListingPage),
   },
   {
-    path: 'messages',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/messages').then((m) => m.Messages),
-  },
-  {
     path: 'profile',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/profile-layout').then((m) => m.ProfileLayout),
