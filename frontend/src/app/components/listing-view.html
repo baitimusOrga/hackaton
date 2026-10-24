@@ -1,12 +1,8 @@
 @if (listing(); as item) {
   <div class="cols">
     <section [attr.aria-label]="'Fotos' | t">
-      <div class="photo">
-        @if (item.imageUrl) {
-          <img [src]="item.imageUrl" [alt]="item.title" />
-        }
-      </div>
-      <!-- TODO: backend has one imageUrl per listing; add the thumbnail row (zw-thumb buttons, aria-current) once ListingDetail has several photos. -->
+      <app-photo-gallery [urls]="item.imageUrls ?? []" [alt]="item.title ?? ''" />
+      <!-- TODO: the design also has a thumbnail row (zw-thumb buttons, aria-current) under the photo. -->
     </section>
 
     <section [attr.aria-label]="'Kaufen' | t" class="stack">

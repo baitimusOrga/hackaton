@@ -965,6 +965,12 @@
           "imageUrl" : {
             "type" : "string"
           },
+          "imageUrls" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
           "description" : {
             "type" : "string"
           },

@@ -26,6 +26,7 @@ import { Badge } from '../ui/badge';
 import { ListingMap } from '../components/listing-map';
 import { Button } from '../ui/button';
 import { Icon } from '../ui/icon';
+import { PhotoGallery } from '../ui/photo-gallery';
 import { chf, ChfPipe } from '../ui/chf';
 import { SectionHeading } from '../ui/section-heading';
 import { SummaryCard } from '../ui/summary-card';
@@ -51,6 +52,7 @@ interface BidStatus {
     ChfPipe,
     Icon,
     ListingMap,
+    PhotoGallery,
     SectionHeading,
     SummaryCard,
     TranslatePipe,
@@ -68,16 +70,6 @@ interface BidStatus {
         grid-template-columns: 1fr;
         gap: var(--space-8);
       }
-    }
-    .photo {
-      aspect-ratio: 4 / 3;
-      background: var(--bg-100);
-    }
-    .photo img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
     }
     .stack {
       display: flex;

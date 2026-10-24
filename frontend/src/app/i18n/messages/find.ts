@@ -215,6 +215,8 @@ export const FIND_MESSAGES: Messages = {
     en: 'Not stated: {details}',
   },
   Fotos: { fr: 'Photos', it: 'Foto', en: 'Photos' },
+  'Vorheriges Foto': { fr: 'Photo précédente', it: 'Foto precedente', en: 'Previous photo' },
+  'Nächstes Foto': { fr: 'Photo suivante', it: 'Foto successiva', en: 'Next photo' },
   Kaufen: { fr: 'Acheter', it: 'Acquista', en: 'Buy' },
   Details: { fr: 'Détails', it: 'Dettagli', en: 'Details' },
   'Frage stellen': { fr: 'Poser une question', it: 'Fai una domanda', en: 'Ask a question' },
