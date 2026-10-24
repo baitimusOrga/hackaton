@@ -990,7 +990,8 @@ export class Sell {
   // the state worth keeping: only a finished analysis, never one in flight
   private readonly snapshot = computed((): Omit<SavedDraft, 'savedAt'> | null => {
     const draft = this.draft();
-    if (!draft || this.busy() || this.analyzing()) return null;
+    // a published draft is gone for good: saving it again would bring it back on the next visit
+    if (!draft || this.busy() || this.analyzing() || this.published()) return null;
     return {
       photos: this.photos().map(({ file, id }) => ({ file, id })),
       draft,
