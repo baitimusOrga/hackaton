@@ -50,12 +50,14 @@ describe('ListingMap', () => {
     const scroll = vi.fn();
     Element.prototype.scrollIntoView = scroll;
     const element = await render();
-    expect(element.querySelector('.zw-map-list')).toBeNull();
+    expect(element.querySelector('.zw-grid')).toBeNull();
     element
       .querySelector('.leaflet-interactive')!
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await TestBed.inject(ApplicationRef).whenStable();
-    const rows = [...element.querySelectorAll('.zw-map-list li')].map((li) => li.textContent);
+    const rows = [...element.querySelectorAll('.zw-grid app-summary-card')].map(
+      (li) => li.textContent,
+    );
     expect(rows).toHaveLength(2);
     expect(rows[0]).toContain('With coordinates');
     expect(rows[0]).toContain('CHF 20');

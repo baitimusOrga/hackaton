@@ -11,17 +11,11 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import * as L from 'leaflet';
-import { ChfPipe } from '../ui/chf';
+import { ListingSummary } from '../api/models';
+import { SummaryCard } from '../ui/summary-card';
 
-export interface MapItem {
-  id?: number;
-  title?: string;
-  priceChf?: number;
-  latitude?: number | null;
-  longitude?: number | null;
-}
+export type MapItem = ListingSummary;
 
 const SWITZERLAND = L.latLng(46.8, 8.2);
 
@@ -39,7 +33,7 @@ const PIN = L.icon({
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing-map',
-  imports: [ChfPipe, RouterLink],
+  imports: [SummaryCard],
   template: `<div
       #map
       role="region"
@@ -47,16 +41,11 @@ const PIN = L.icon({
       class="isolate h-80 w-full zw-map"
     ></div>
     @if (selected().length) {
-      <ul #list class="zw-map-list" aria-label="Inserate in diesem Gebiet">
+      <div #list class="zw-grid mt-4" aria-label="Inserate in diesem Gebiet">
         @for (item of selected(); track item.id) {
-          <li>
-            <a [routerLink]="['/listings', item.id]">{{ item.title ?? 'Listing' }}</a>
-            @if (item.priceChf !== undefined) {
-              <span>{{ item.priceChf | chf }}</span>
-            }
-          </li>
+          <app-summary-card [listing]="item" />
         }
-      </ul>
+      </div>
     }`,
 })
 export class ListingMap {
