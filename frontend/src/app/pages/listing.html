@@ -55,6 +55,7 @@
           @if (bought()) {
             <p role="status">
               {{ 'Gekauft! Du findest den Kauf unter «Käufe und Verkäufe».' | t }}
+              <a class="zw-link" [routerLink]="['/orders', item.id]">{{ 'Zur Bestellung' | t }}</a>
             </p>
           }
           @if (buyError()) {

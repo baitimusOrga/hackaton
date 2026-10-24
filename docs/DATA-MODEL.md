@@ -45,6 +45,7 @@ Rules:
 | V22 | `listing.buyer_id`: the user who bought a fixed-price listing (null otherwise; auction winners come from `bid`) |
 | V23 | drops `clearance_item` and `clearance_project` (business clearance feature removed) |
 | V24 | `image_url` for 368 more V18/V20 demo listings with an AI-generated photo in `frontend/public/demo/<id>.jpg` |
+| V25 | `listing.shipped_at`: when the seller marked the sold item as shipped (null until then) |
 
 ## Backups
 

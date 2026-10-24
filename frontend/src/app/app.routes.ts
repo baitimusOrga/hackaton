@@ -11,6 +11,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/listing').then((m) => m.ListingPage),
   },
   {
+    path: 'orders/:id',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/order').then((m) => m.OrderPage),
+  },
+  {
     path: 'profile',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/profile-layout').then((m) => m.ProfileLayout),

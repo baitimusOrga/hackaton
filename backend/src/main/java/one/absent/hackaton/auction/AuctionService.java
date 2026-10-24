@@ -39,6 +39,13 @@ public class AuctionService {
                 BigDecimal maxChf) {}
 
     @Transactional(readOnly = true)
+    /** Who bought a sold listing: the fixed-price buyer, else the leading bidder; null when nobody did. */
+    public String buyerOf(Listing listing) {
+        if (listing.getBuyerId() != null) return listing.getBuyerId();
+        var steps = history(listing.getPriceChf(), bids.findByListingIdOrderByIdAsc(listing.getId()));
+        return steps.isEmpty() ? null : steps.getLast().bidderId();
+    }
+
     public AuctionState get(long listingId, String viewerId) {
         Listing listing = auction(listings.findById(listingId).orElse(null));
         return state(listing, bids.findByListingIdOrderByIdAsc(listingId), viewerId, Instant.now());
