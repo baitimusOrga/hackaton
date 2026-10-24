@@ -1,8 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { ListingsService } from '../api/services';
+import { ListingsService, QuestionsService } from '../api/services';
+import { Auth } from '../auth/auth';
 import { ListingPage } from './listing';
+
+const questionStubs = [
+  { provide: QuestionsService, useValue: { list1: () => of([]) } },
+  { provide: Auth, useValue: { user: () => null } },
+];
 
 describe('ListingPage', () => {
   for (const [sellerName, label] of [
@@ -18,6 +24,7 @@ describe('ListingPage', () => {
           provideRouter([]),
           { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: '4' })) } },
           { provide: ListingsService, useValue: { get, list } },
+          ...questionStubs,
         ],
       });
       const fixture = TestBed.createComponent(ListingPage);
@@ -44,6 +51,7 @@ describe('ListingPage', () => {
         providers: [
           { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: '4' })) } },
           { provide: ListingsService, useValue: { get, list: () => of([]) } },
+          ...questionStubs,
         ],
       });
       const fixture = TestBed.createComponent(ListingPage);

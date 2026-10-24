@@ -32,8 +32,10 @@
           {{ 'Kaufen' | t }}
         </button>
         <div class="links">
-          <!-- TODO: backend has no public Q&A or watchlist; enable these once it does. -->
-          <button type="button" class="zw-link" disabled>{{ 'Frage stellen' | t }}</button>
+          <!-- TODO: backend has no watchlist; enable Merken once it does. -->
+          <button type="button" class="zw-link" (click)="qa.focus()">
+            {{ 'Frage stellen' | t }}
+          </button>
           <button type="button" class="zw-link" disabled>{{ 'Merken' | t }}</button>
         </div>
       </div>
@@ -99,8 +101,7 @@
 
       <div class="group tight">
         <h2>{{ 'Fragen' | t }}</h2>
-        <!-- TODO: backend has no public questions; list them here ("Name: Frage" / "Verkäufer: Antwort") once it does. -->
-        <p class="zw-muted">{{ 'Noch keine Fragen.' | t }}</p>
+        <app-listing-questions #qa [listingId]="item.id!" />
       </div>
     </section>
   </div>

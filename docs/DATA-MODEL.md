@@ -15,6 +15,7 @@ Rules:
 - `listing.status`: `AVAILABLE` (default) or `SOLD`; `GET /api/listings` only returns `AVAILABLE`, newest first. V6 adds 20 fictional demo listings with ids 1001–1020, V15 another 90 for the buying assistant (ids 1201–1290).
 - Nullable `listing.seller_id` and `seller_name` store the verified Better Auth subject and a display-name snapshot at publication. Existing demos retain null sellers. Auth owns the separate `auth` schema, with no cross-schema user foreign key.
 - `photo`: uploaded listing photos (content type, and either the S3 `storage_key` or, for older rows and local dev without S3 credentials, the bytes in `data`) with the uploading seller's subject. `listing_id` stays null until the photo is published with a listing; `listing.image_url` then points at `/api/photos/{first photo id}`. Only published photos are served; unpublished draft photos are deleted by `PhotoCleanup` after 24 hours (and right away when the AI draft fails). JPEG and PNG uploads are re-encoded to drop EXIF metadata.
+- `listing_question`: public question on a listing (asker = Better Auth subject plus name snapshot, no cross-schema FK) with the seller's nullable `answer`/`answered_at`. Only the listing's seller may answer; demo listings have no seller.
 - `clearance_project`: a company's office clearance (owner = Better Auth subject, no cross-schema FK; postcode, locality, deadline, chosen `route` null until chosen).
 - `clearance_item`: inventory line of a project (name, category, quantity + `quantity_confirmed`, condition, notes, estimated unit price in CHF, nullable `unit_price_chf` the company set; publishing requires it). `listing_id` is set when the item is published as a listing; the item status DRAFT/LISTED/SOLD is derived from it and the listing's status, not stored.
 
@@ -37,6 +38,7 @@ Rules:
 | V14 | nullable `unit_price_chf` on `clearance_item` (the company's price per piece, used when publishing) |
 | V15 | 90 fictional demo listings for the buying assistant (ids 1201–1290, with attributes and postcode centroids) |
 | V16 | index on `listing (status, created_at desc)` for the search |
+| V18 | `listing_question` (public questions on a listing, with the seller's answer); V17 belongs to another change |
 
 ## Backups
 
