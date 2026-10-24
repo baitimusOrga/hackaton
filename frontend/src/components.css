@@ -822,6 +822,10 @@ textarea.zw-input {
   .zw-shell {
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
+  /* The find page's filter sheet, open on a phone, locks the page behind it. */
+  body:has(.find__filters--open) {
+    overflow: hidden;
+  }
   /* Long titles and prices must not widen a phone page. */
   h1,
   h2,
