@@ -15,7 +15,27 @@ Demo: https://hackaton.absent.one/
 | Problem | Etwas Gebrauchtes zu verkaufen dauert zu lange: genaues Modell herausfinden, Inserat schreiben, Preis schätzen. Viele lassen es bleiben, und brauchbare Dinge bleiben in der Schublade. Käufer haben das umgekehrte Problem: Die Stichwortsuche über unordentliche Inserate liefert Hüllen, Ladekabel und Defektes statt des gesuchten Geräts. |
 | Zielgruppe | Privatpersonen in der Schweiz, die ab und zu etwas verkaufen, und Käufer, die ein bestimmtes Modell suchen. Start mit Elektronik: Handys, Laptops, Monitore, Konsolen, TVs. |
 | Lösung | **Verkaufen per Foto:** Die KI erkennt den Artikel live, fragt nur nach, was sie auf dem Foto nicht sieht, und schlägt einen Preis mit Belegen aus vergleichbaren Inseraten vor. **Kaufen per Beschreibung:** Man schreibt in normaler Sprache, was man sucht (auch Schweizerdeutsch, Französisch, Italienisch). Der Kauf-Assistent macht daraus Anforderungen und zeigt passende Treffer, mögliche Treffer und Alternativen, jeweils mit Begründung. Dazu Festpreis-Kauf, Auktionen mit automatischem Bieten und eine Karte mit Umkreissuche nach PLZ. |
-| Geschäftsmodell | Inserieren ist gratis. Wird über Zweit bezahlt (geschützter Checkout mit Käuferschutz), fällt eine kleine Kommission an, deutlich tiefer als bei bestehenden Plattformen; die KI-Funktionen sind inklusive. Dazu optionale Services: Abholung und Versand, Werkzeuge für professionelle Verkäufer und später die Räumung von Firmeninventar. Details: [`docs/PRODUCT-PLAN.md`](docs/PRODUCT-PLAN.md), Abschnitte 12–15. |
+| Geschäftsmodell | **Konzept, im Prototyp noch nicht umgesetzt.** Siehe Abschnitt [Geschäftsmodell](#geschäftsmodell). |
+
+## Geschäftsmodell
+
+> **Noch nicht umgesetzt.** Der Prototyp verlangt heute keine Gebühren und wickelt keine Zahlung ab:
+> Ein Kauf zum Festpreis oder ein Auktionszuschlag markiert das Inserat nur als verkauft, bezahlt wird
+> ausserhalb der Plattform (`PurchaseController`: «no payment yet»).
+
+Das Konzept baut auf dem auf, was heute schon funktioniert:
+
+| Heute im Prototyp | Darauf baut das Geschäftsmodell auf |
+|---|---|
+| Inserieren per Foto mit KI-Entwurf und Preisvorschlag, gratis | Bleibt gratis, auch die KI-Funktionen. Gratis-Inserate bringen das Angebot, ohne das gibt es keinen Marktplatz. |
+| Festpreis-Kauf und Auktionen, ohne Zahlung | **Geschützter Checkout:** Zahlung über Zweit mit Käuferschutz, das Geld wird erst nach bestätigter Übergabe freigegeben. Dafür fällt eine kleine Kommission an, deutlich tiefer als bei bestehenden Plattformen. Wer direkt bezahlt, zahlt nichts. |
+| Als versendet markieren | **Abholung und Versand** als bezahlter Zusatz-Service, mit Partnern. |
+| Kauf-Assistent und Suche in normaler Sprache | Bleibt für Käufer gratis. Später: **Werkzeuge für professionelle Verkäufer** (Massen-Upload, Statistiken) im Abo. |
+| Firmen-Räumung im Produktplan, für die Demo entfernt (#76) | **Betreute Räumung von Firmeninventar** gegen Gebühr, später Ankauf ganzer Posten mit Weiterverkaufsmarge. |
+
+Reihenfolge: zuerst der geschützte Checkout, weil er am heutigen Kaufablauf ansetzt und die einzige
+Einnahme ist, die direkt mit jedem Verkauf wächst. Details: [`docs/PRODUCT-PLAN.md`](docs/PRODUCT-PLAN.md),
+Abschnitte 12–15.
 
 ## Team
 
@@ -68,7 +88,7 @@ Nachrichten-Platzhalter (#72), gespeicherte Suchen (#71).
 ## Nächste Schritte
 
 - Chat zwischen Käufer und Verkäufer, Angebote und Kaufvereinbarung
-- Geschützter Checkout und Bestätigung der Übergabe
+- Geschützter Checkout mit Kommission und Bestätigung der Übergabe (erster Schritt zum Geschäftsmodell)
 - Gespeicherte Suchen mit Benachrichtigung, sobald ein passendes Inserat erscheint
 - Firmen-Räumung: Inventar in grossen Mengen erfassen, betreuter Verkauf, Kauf ganzer Posten
 - Betrugserkennung und Verifizierung von Verkäufern
