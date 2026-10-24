@@ -143,6 +143,7 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      padding-bottom: env(safe-area-inset-bottom);
     }
     .bar {
       position: sticky;
@@ -820,9 +821,12 @@ export class Sell {
   protected readonly photoIdsToPublish = computed(() =>
     (this.draft()?.photoIds ?? []).filter((_, i) => !this.excluded().has(i)),
   );
-  protected readonly previewPhoto = computed(
-    () => this.photos().find((_, i) => !this.excluded().has(i))?.url,
+  private readonly previewPhotos = computed(() =>
+    this.photos()
+      .filter((_, i) => !this.excluded().has(i))
+      .map((photo) => photo.url),
   );
+  protected readonly previewPhoto = computed(() => this.previewPhotos()[0]);
   private readonly auth = inject(Auth);
   /** The listing as buyers will see it, from what would be published now. */
   protected readonly previewListing = computed((): ListingDetail => {
@@ -837,6 +841,7 @@ export class Sell {
       locality: this.locality().trim(),
       attributes: this.publishedFacts(),
       imageUrl: this.previewPhoto(),
+      imageUrls: this.previewPhotos(),
       sellerName: this.auth.user()?.name ?? null,
       createdAt: new Date().toISOString(),
     };
@@ -990,7 +995,8 @@ export class Sell {
   // the state worth keeping: only a finished analysis, never one in flight
   private readonly snapshot = computed((): Omit<SavedDraft, 'savedAt'> | null => {
     const draft = this.draft();
-    if (!draft || this.busy() || this.analyzing()) return null;
+    // a published draft is gone for good: saving it again would bring it back on the next visit
+    if (!draft || this.busy() || this.analyzing() || this.published()) return null;
     return {
       photos: this.photos().map(({ file, id }) => ({ file, id })),
       draft,

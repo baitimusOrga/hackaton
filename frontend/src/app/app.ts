@@ -6,10 +6,11 @@ import { Auth } from './auth/auth';
 import { ErrorToast } from './shell/error-toast';
 import { Footer } from './shell/footer';
 import { Header } from './shell/header';
+import { TabBar } from './shell/tab-bar';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, Header, Footer, ErrorToast],
+  imports: [RouterOutlet, Header, Footer, TabBar, ErrorToast],
   selector: 'app-root',
   host: { class: 'zw-shell' },
   templateUrl: './app.html',

@@ -54,8 +54,9 @@ class PurchaseControllerTest {
         mvc.perform(post("/api/listings/" + id + "/purchase")).andExpect(status().isUnauthorized());
         mvc.perform(post("/api/listings/" + id + "/purchase").with(AuctionControllerTest.user("seller")))
                 .andExpect(status().isForbidden());
+        mvc.perform(get("/api/listings/" + id)).andExpect(jsonPath("$.status").value("AVAILABLE"));
         mvc.perform(post("/api/listings/" + id + "/purchase").with(AuctionControllerTest.user("a")))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SOLD"));
         mvc.perform(post("/api/listings/" + id + "/purchase").with(AuctionControllerTest.user("b")))
                 .andExpect(status().isConflict());
         mvc.perform(get("/api/me/trades").with(AuctionControllerTest.user("a")))
@@ -66,5 +67,23 @@ class PurchaseControllerTest {
         long id = listing(SaleMode.AUCTION);
         mvc.perform(post("/api/listings/" + id + "/purchase").with(AuctionControllerTest.user("a")))
                 .andExpect(status().isConflict());
+    }
+
+    @Test void onlyTheSellerShipsABoughtListingOnce() throws Exception {
+        long id = listing(SaleMode.FIXED);
+        mvc.perform(get("/api/orders/" + id).with(AuctionControllerTest.user("seller"))).andExpect(status().isNotFound());
+        mvc.perform(post("/api/listings/" + id + "/purchase").with(AuctionControllerTest.user("a")));
+        mvc.perform(get("/api/orders/" + id).with(AuctionControllerTest.user("other"))).andExpect(status().isNotFound());
+        mvc.perform(get("/api/orders/" + id).with(AuctionControllerTest.user("a")))
+                .andExpect(jsonPath("$.seller").value(false)).andExpect(jsonPath("$.shippedAt").doesNotExist());
+        mvc.perform(post("/api/orders/" + id + "/ship").with(AuctionControllerTest.user("a")))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/orders/" + id + "/ship").with(AuctionControllerTest.user("seller")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.seller").value(true))
+                .andExpect(jsonPath("$.shippedAt").exists());
+        mvc.perform(post("/api/orders/" + id + "/ship").with(AuctionControllerTest.user("seller")))
+                .andExpect(status().isConflict());
+        mvc.perform(get("/api/orders/" + id).with(AuctionControllerTest.user("a")))
+                .andExpect(jsonPath("$.shippedAt").exists());
     }
 }

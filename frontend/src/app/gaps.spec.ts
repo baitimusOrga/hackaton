@@ -70,6 +70,8 @@ describe('openGaps', () => {
         prompt: '',
         options: [],
         value: 'Marlin 7',
+        // the AI's photo hint stays: a close-up settles an unclear reading
+        hint: { photo: 1, box: [0.38, 0.38, 0.3, 0.16] },
       },
       // the AI gave no options, so the card offers the field's own
       { fact: 'Brakes', kind: 'ASK', prompt: '', options: ['Rim', 'Disc'] },

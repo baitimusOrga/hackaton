@@ -2,7 +2,7 @@ import { DatePipe, KeyValuePipe, NgTemplateOutlet } from '@angular/common';
 import { HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, linkedSignal, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   catchError,
   distinctUntilChanged,
@@ -26,6 +26,7 @@ import { Badge } from '../ui/badge';
 import { ListingMap } from '../components/listing-map';
 import { Button } from '../ui/button';
 import { Icon } from '../ui/icon';
+import { PhotoGallery } from '../ui/photo-gallery';
 import { chf, ChfPipe } from '../ui/chf';
 import { SectionHeading } from '../ui/section-heading';
 import { SummaryCard } from '../ui/summary-card';
@@ -51,6 +52,8 @@ interface BidStatus {
     ChfPipe,
     Icon,
     ListingMap,
+    PhotoGallery,
+    RouterLink,
     SectionHeading,
     SummaryCard,
     TranslatePipe,
@@ -68,16 +71,6 @@ interface BidStatus {
         grid-template-columns: 1fr;
         gap: var(--space-8);
       }
-    }
-    .photo {
-      aspect-ratio: 4 / 3;
-      background: var(--bg-100);
-    }
-    .photo img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
     }
     .stack {
       display: flex;
@@ -249,6 +242,15 @@ interface BidStatus {
       justify-content: space-between;
       margin-bottom: var(--space-4);
     }
+    @media (max-width: 720px) {
+      .cols {
+        padding-top: var(--space-4);
+      }
+      .fact {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2px;
+      }
+    }
   `,
 })
 export class ListingPage {
@@ -320,21 +322,24 @@ export class ListingPage {
   /** The bid count right after the own bid; the status explains that bid until a poll shows newer bids. */
   private readonly ownBidCount = signal<number | null>(null);
   protected readonly bidding = signal(false);
-  protected readonly buying = signal(false);
-  protected readonly bought = signal(false);
-  protected readonly buyError = signal('');
+  protected readonly buying = linkedSignal({ source: this.listing, computation: () => false });
+  protected readonly bought = linkedSignal({ source: this.listing, computation: () => false });
+  protected readonly buyError = linkedSignal({ source: this.listing, computation: () => '' });
 
   protected buy(id: number): void {
     if (this.buying()) return;
     if (!this.auth.user()) return this.signIn();
+    const item = this.listing();
     this.buying.set(true);
     this.buyError.set('');
     this.purchases.buy({ id }, new HttpContext().set(HANDLES_ERRORS, true)).subscribe({
       next: () => {
+        if (this.listing() !== item) return;
         this.bought.set(true);
         this.buying.set(false);
       },
       error: (err: HttpErrorResponse) => {
+        if (this.listing() !== item) return;
         this.buying.set(false);
         if (err.status === 401) return this.signIn();
         this.buyError.set(messageOf(err, this.i18n));

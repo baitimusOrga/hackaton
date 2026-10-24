@@ -64,12 +64,8 @@
           [attr.title]="user.name"
           >{{ user.name.trim().charAt(0).toUpperCase() }}</a
         >
-        <button type="button" class="zw-link" [disabled]="signingOut()" (click)="logout()">
-          {{ 'Abmelden' | t }}
-        </button>
-      } @else {
-        <a routerLink="/login">{{ 'Anmelden' | t }}</a>
       }
+      <app-account />
     </nav>
   </div>
 </header>

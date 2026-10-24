@@ -57,7 +57,29 @@ class PhotoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("image/png"))
                 .andExpect(content().bytes(photo.getData()))
-                .andExpect(header().string("Cache-Control", "max-age=86400, public"));
+                .andExpect(header().string("Cache-Control", "no-cache, public"));
+    }
+
+    @Test void theBrowserRevalidatesAndGetsANewPhotoWhenTheIdIsReused() throws Exception {
+        String body = mvc.perform(multipart("/api/photos").file(photo("image/png"))
+                        .with(jwt().jwt(j -> j.subject("seller"))))
+                .andReturn().getResponse().getContentAsString();
+        Photo photo = photos.findById(json.readTree(body).get(0).asLong()).orElseThrow();
+        photo.setListingId(listings.findAll().getFirst().getId());
+        String etag = mvc.perform(get("/api/photos/" + photo.getId()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getHeader("ETag");
+
+        mvc.perform(get("/api/photos/" + photo.getId()).header("If-None-Match", etag))
+                .andExpect(status().isNotModified())
+                .andExpect(header().string("ETag", etag))
+                .andExpect(header().doesNotExist("Cache-Control")) // the browser keeps the one from the 200
+                .andExpect(content().bytes(new byte[0]));
+        // same id, other upload (as after a database reset): the cached copy no longer matches
+        photo.setCreatedAt(photo.getCreatedAt().plusSeconds(1));
+        mvc.perform(get("/api/photos/" + photo.getId()).header("If-None-Match", etag))
+                .andExpect(status().isOk())
+                .andExpect(content().bytes(photo.getData()));
     }
 
     @Test void wrongTypeIsRejected() throws Exception {

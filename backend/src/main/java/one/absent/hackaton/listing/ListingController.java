@@ -83,7 +83,7 @@ public class ListingController {
 
     @GetMapping("/{id}")
     public ListingDetail get(@PathVariable long id) {
-        return listings.findById(id).map(Listing::detail)
+        return listings.findById(id).map(listing -> listing.detail(listings.findPhotoIds(id)))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found."));
     }
 }

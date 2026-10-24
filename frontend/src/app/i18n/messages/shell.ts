@@ -72,6 +72,12 @@ export const SHELL_MESSAGES: Messages = {
     it: 'Navigazione principale',
     en: 'Main navigation',
   },
+  Start: { fr: 'Accueil', it: 'Inizio', en: 'Home' },
+  'Verkaufen, neues Inserat': {
+    fr: 'Vendre, nouvelle annonce',
+    it: 'Vendi, nuovo annuncio',
+    en: 'Sell, new listing',
+  },
   Verkaufen: { fr: 'Vendre', it: 'Vendi', en: 'Sell' },
   Abmelden: { fr: 'Se déconnecter', it: 'Esci', en: 'Sign out' },
   Anmelden: { fr: 'Se connecter', it: 'Accedi', en: 'Sign in' },
@@ -151,6 +157,11 @@ export const SHELL_MESSAGES: Messages = {
     fr: 'Nouveau près de chez toi',
     it: 'Novità vicino a te',
     en: 'New near you',
+  },
+  'Gefundene Inserate: {count}': {
+    fr: 'Annonces trouvées : {count}',
+    it: 'Annunci trovati: {count}',
+    en: 'Listings found: {count}',
   },
   'Alles in 25 km': {
     fr: 'Tout dans un rayon de 25 km',

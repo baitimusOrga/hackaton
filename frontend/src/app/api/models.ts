@@ -19,6 +19,8 @@ export type { KnownFact } from './models/known-fact';
 export type { ListingDetail } from './models/listing-detail';
 export type { ListingDraft } from './models/listing-draft';
 export type { ListingSummary } from './models/listing-summary';
+export type { MyListing } from './models/my-listing';
+export type { Order } from './models/order';
 export type { Place } from './models/place';
 export type { PlaceBidRequest } from './models/place-bid-request';
 export type { PriceEstimate } from './models/price-estimate';

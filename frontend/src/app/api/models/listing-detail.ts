@@ -14,6 +14,7 @@ export interface ListingDetail {
   endsAt?: (string | null);
   id?: number;
   imageUrl?: string;
+  imageUrls?: Array<string>;
   latitude?: (number | null);
   locality?: string;
   longitude?: (number | null);
@@ -21,5 +22,6 @@ export interface ListingDetail {
   priceChf?: number;
   saleMode?: 'FIXED' | 'AUCTION';
   sellerName?: (string | null);
+  status?: 'AVAILABLE' | 'SOLD' | 'ENDED' | 'WITHDRAWN';
   title?: string;
 }

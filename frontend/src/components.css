@@ -636,17 +636,6 @@ textarea.zw-input {
 .zw-dock .zw-btn {
   padding: 0 14px;
 }
-@media (max-width: 720px) {
-  /* The wrapped header takes a third of a phone screen; let it scroll away. */
-  .zw-header {
-    position: static;
-  }
-  .zw-dock {
-    order: 3;
-    flex-basis: 100%;
-  }
-}
-
 .zw-nav {
   display: flex;
   align-items: center;
@@ -676,6 +665,30 @@ textarea.zw-input {
 .zw-nav a.zw-avatar:hover {
   color: var(--ink-inverse);
   text-decoration: none;
+}
+
+@media (max-width: 720px) {
+  /* Phones: one row with the wordmark and the location chip; the tab bar carries the nav, /find its own search. */
+  .zw-header {
+    position: static;
+  }
+  .zw-header__bar {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-height: 56px;
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-2);
+  }
+  .zw-wordmark__tagline,
+  .zw-nav,
+  .zw-dock {
+    display: none;
+  }
+  .zw-header .zw-chip--location {
+    height: 36px;
+    max-width: 60%;
+  }
 }
 
 /* Footer */
@@ -718,6 +731,140 @@ textarea.zw-input {
   display: flex;
   gap: var(--space-3);
   margin-left: auto;
+}
+.zw-account {
+  display: contents;
+}
+/* The header carries the account link; the footer only shows it where the header's nav is hidden. */
+.zw-footer .zw-account {
+  display: none;
+}
+@media (max-width: 720px) {
+  .zw-footer .zw-account {
+    display: contents;
+  }
+  .zw-footer__bar {
+    gap: var(--space-3) var(--space-6);
+    padding-top: var(--space-6);
+    padding-bottom: var(--space-6);
+  }
+  .zw-footer__bar a,
+  .zw-footer__bar .zw-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .zw-footer__langs {
+    width: 100%;
+    margin-left: 0;
+    gap: var(--space-4);
+  }
+  .zw-footer__langs button {
+    min-height: 44px;
+    padding: 0 var(--space-1);
+  }
+}
+
+/* Tab bar (phones only) */
+.zw-tabs {
+  display: none;
+}
+/* Two groups of equal width around the sell button keep it centred whatever each group holds. */
+.zw-tabs__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 80px minmax(0, 1fr);
+  height: 56px;
+}
+.zw-tabs__group {
+  display: flex;
+}
+.zw-tabs__group .zw-tabs__item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.zw-tabs__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-height: 44px;
+  padding-bottom: 2px;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+.zw-tabs__item:hover,
+.zw-tabs__item--active {
+  color: var(--ink);
+}
+.zw-tabs__item--active::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: var(--ink);
+}
+/* The sell button is the one round element: it rises 16px above the bar, its label sits under it. */
+.zw-tabs__sell {
+  color: var(--ink);
+}
+.zw-tabs__plus {
+  position: absolute;
+  top: -16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--bg-900);
+  color: var(--ink-inverse);
+}
+@media (max-width: 720px) {
+  .zw-tabs {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    background: var(--bg-000);
+    border-top: var(--border-1) solid var(--line-soft);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .zw-shell {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+  /* A facet sheet open on a phone locks the page behind it and takes the tab bar's place. */
+  body:has(.facet__panel) {
+    overflow: hidden;
+  }
+  body:has(.facet__panel) .zw-tabs {
+    display: none;
+  }
+  /* In a narrow card column the bid count moves under the price. */
+  .zw-card__price {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+  /* Long titles and prices must not widen a phone page. */
+  h1,
+  h2,
+  h3 {
+    overflow-wrap: anywhere;
+  }
+  img {
+    max-width: 100%;
+  }
+  .zw-main > :not(.zw-container, .zw-bleed, router-outlet) {
+    padding-top: var(--space-4);
+  }
 }
 
 /* Sections */
@@ -784,14 +931,6 @@ textarea.zw-input {
   padding: 0 var(--space-6);
   font-size: 16px;
 }
-@media (max-width: 720px) {
-  .zw-hero__form {
-    flex-direction: column;
-  }
-  .zw-hero__form .zw-btn {
-    width: 100%;
-  }
-}
 .zw-hero__chips {
   display: flex;
   flex-wrap: wrap;
@@ -837,6 +976,68 @@ textarea.zw-input {
   text-align: center;
 }
 
+@media (max-width: 720px) {
+  /* Mockup 1a: left-aligned, input and icon button in one row, quick filters scroll sideways. */
+  .zw-hero {
+    align-items: stretch;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    padding-bottom: var(--space-6);
+    text-align: left;
+  }
+  .zw-hero__title {
+    font-size: 32px;
+    line-height: 36px;
+  }
+  .zw-hero__lead {
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .zw-hero__form .zw-input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+  .zw-hero__form .zw-btn {
+    width: 48px;
+    min-height: 48px;
+    padding: 0;
+  }
+  .zw-hero__form .zw-btn span {
+    display: none;
+  }
+  .zw-hero__chips {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 calc(-1 * var(--space-4));
+    padding: 0 var(--space-4);
+  }
+  .zw-hero__chips::-webkit-scrollbar {
+    display: none;
+  }
+  .zw-hero__chips .zw-chip {
+    flex: none;
+  }
+  .zw-hero__hint {
+    display: none;
+  }
+  .zw-cats {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: var(--space-2) calc(-1 * var(--space-4)) 0;
+    padding: 0 var(--space-4);
+  }
+  .zw-cats::-webkit-scrollbar {
+    display: none;
+  }
+  .zw-cat {
+    flex: none;
+  }
+}
+
 /* Map (Leaflet): Zweit palette, square corners, white areas with black outline and count */
 .zw-map {
   height: 480px;
@@ -868,28 +1069,6 @@ textarea.zw-input {
 }
 .leaflet-tooltip.zw-map-count::before {
   display: none;
-}
-.zw-map-list {
-  margin: var(--space-3) 0 0;
-  padding: 0;
-  list-style: none;
-  border: var(--border-1) solid var(--line);
-  border-radius: var(--radius-1);
-}
-.zw-map-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-4);
-}
-.zw-map-list li + li {
-  border-top: var(--border-1) solid var(--line);
-}
-.zw-map-list a {
-  color: var(--ink);
-}
-.zw-map-list a:hover {
-  color: var(--blue-text);
 }
 .zw-map .leaflet-bar a,
 .zw-map .leaflet-control-attribution {
