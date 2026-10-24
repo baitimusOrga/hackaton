@@ -455,7 +455,6 @@ export const SELL_MESSAGES: Messages = {
     it: 'Non è stato possibile creare la bozza.',
     en: "The draft couldn't be created.",
   },
-  'Alles bearbeiten': { fr: 'Tout modifier', it: 'Modifica tutto', en: 'Edit everything' },
   'Anderer Wert': { fr: 'Autre valeur', it: 'Altro valore', en: 'Other value' },
   'Damit finden wir die passenden Vergleichspreise.': {
     fr: 'Ainsi, nous trouvons les bons prix de comparaison.',

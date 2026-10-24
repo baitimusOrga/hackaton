@@ -80,10 +80,10 @@ async function questions(runs: Run[], extra: object = {}) {
   return page;
 }
 
-/** Analyses and opens the one-page form ("Alles bearbeiten"). */
+/** Analyses and opens the one-page form ("Zur Übersicht"). */
 async function full(draft: ListingDraft, extra: object = {}, place = vi.fn(), places: object = {}) {
   const page = await analyse([streams(done(draft))], extra, place, places);
-  button(page.element, 'Alles bearbeiten').click();
+  button(page.element, 'Zur Übersicht').click();
   await page.fixture.whenStable();
   return page;
 }
@@ -126,7 +126,7 @@ describe('Sell', () => {
     expect(element.textContent).toContain('1 von 4');
   });
 
-  it('opens every section of the one-page form with "Alles bearbeiten"', async () => {
+  it('opens every section of the one-page form with "Zur Übersicht"', async () => {
     const { element } = await full(DRAFT);
 
     const headings = Array.from(element.querySelectorAll('h2')).map((h) => h.textContent!.trim());
