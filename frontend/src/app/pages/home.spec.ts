@@ -4,6 +4,8 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { of } from 'rxjs';
 import { ListingsService } from '../api/services';
 import { Home } from './home';
+import { Header } from '../shell/header';
+import { HeroSearch } from '../shell/hero-search';
 
 describe('Home', () => {
   async function setup(items: unknown[]) {
@@ -51,6 +53,31 @@ describe('Home', () => {
     expect(card.textContent).toContain('2 Gebote');
   });
 
+  it('keeps the hero and docked search in sync in both directions', async () => {
+    const { harness, element } = await setup([]);
+    const header = TestBed.createComponent(Header);
+    const hero = TestBed.inject(HeroSearch);
+    await header.whenStable();
+    const input = element.querySelector<HTMLInputElement>('#hero-q')!;
+    input.value = 'iMac 2017';
+    input.dispatchEvent(new Event('input'));
+    hero.visible.set(false);
+    await header.whenStable();
+    const dockedInput = header.nativeElement.querySelector('#header-q') as HTMLInputElement;
+    expect(dockedInput.value).toBe('iMac 2017');
+
+    dockedInput.value = 'MacBook';
+    dockedInput.dispatchEvent(new Event('input'));
+    hero.visible.set(true);
+    await harness.fixture.whenStable();
+    expect(input.value).toBe('MacBook');
+
+    hero.visible.set(false);
+    await header.whenStable();
+    header.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+    await header.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/find?q=MacBook');
+  });
   it('sends the hero search to the search page', async () => {
     const { harness, element } = await setup([]);
     expect(element.textContent).toContain('Noch keine Inserate in deiner Nähe.');
