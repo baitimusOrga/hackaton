@@ -53,6 +53,9 @@ Run locally: `cd backend && ./mvnw spring-boot:run` (starts Postgres via Docker)
 - **The frontend calls the backend only through the generated client** in `frontend/src/app/api/`
   (e.g. `inject(InfoService).info()`). Never edit it and never write `HttpClient` calls to `/api`
   by hand: change the backend, then regenerate. No hardcoded hosts, no CORS setup.
+  Only exception: the draft stream (`POST /api/listing-drafts/stream`, server-sent events) is read by
+  `frontend/src/app/draft-stream.ts` with `fetch`, because the generator cannot read a stream. Its
+  event types still come from the generated models.
 - **Errors are Problem Details.** Expected errors: `throw new ResponseStatusException(HttpStatus.NOT_FOUND,
   "...")` — the reason is what the user sees. `ApiExceptionHandler` turns everything into
   `application/problem+json`; the frontend's `errorInterceptor` shows `detail` in the error banner.

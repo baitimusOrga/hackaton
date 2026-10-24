@@ -661,11 +661,20 @@ textarea.zw-input {
   line-height: 20px;
 }
 .zw-footer__bar a,
-.zw-footer__bar a:hover {
+.zw-footer__bar a:hover,
+.zw-footer__langs button {
   color: var(--ink-muted);
   text-decoration: none;
 }
-.zw-footer__bar a[aria-current] {
+.zw-footer__langs button {
+  padding: 0;
+  font: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.zw-footer__bar a[aria-current],
+.zw-footer__langs button[aria-current] {
   color: var(--ink);
   font-weight: 600;
 }

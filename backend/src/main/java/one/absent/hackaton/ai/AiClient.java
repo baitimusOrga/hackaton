@@ -1,11 +1,17 @@
 package one.absent.hackaton.ai;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +68,7 @@ public class AiClient {
 
     /** Like {@link #ask(String, String, List, String, Class)}, but on the given {@code model}. */
     public <T> T ask(String model, String system, String text, List<Image> images, String schema, Class<T> type) {
-        return send(request(model, system, text, images, schema), type);
+        return send(request(model, system, text, images, schema, false), type);
     }
 
     /**
@@ -71,7 +77,83 @@ public class AiClient {
      * parsed leniently.
      */
     public <T> T askWithWebSearch(String system, String text, Class<T> type) {
-        return send(request(model, system, text, List.of(), null), type);
+        return send(request(model, system, text, List.of(), null, true), type);
+    }
+
+    /**
+     * Streams the answer and hands each complete, non-blank line to {@code onLine} as soon as it arrives.
+     * For prompts that ask for JSON lines; structured output is not used since it is only valid when complete.
+     */
+    public void streamLines(String system, String text, List<Image> images, Consumer<String> onLine) {
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("AI call skipped: ai.api-key (ANTHROPIC_API_KEY) is not set");
+            throw unavailable();
+        }
+        Map<String, Object> request = request(model, system, text, images, null, false);
+        request.put("stream", true);
+        // without it the model thinks silently first and then writes every line in one burst
+        request.put("output_config", Map.of("effort", "low"));
+        try {
+            http.post().uri("/v1/messages")
+                    .header("x-api-key", apiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(json.writeValueAsString(request))
+                    .exchange((req, res) -> {
+                        if (res.getStatusCode().isError()) {
+                            log.warn("AI stream failed: {}", res.getStatusCode());
+                            throw unavailable();
+                        }
+                        readLines(res.getBody(), onLine);
+                        return null;
+                    });
+        } catch (RestClientException e) {
+            log.warn("AI stream failed: {}", e.getMessage());
+            throw unavailable();
+        } catch (JacksonException e) {
+            log.warn("AI stream is not the expected JSON: {}", e.getOriginalMessage());
+            throw unusable();
+        }
+    }
+
+    private void readLines(InputStream body, Consumer<String> onLine) throws IOException {
+        var reader = new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8));
+        var pending = new StringBuilder();
+        String stopReason = null;
+        for (String sse; (sse = reader.readLine()) != null; ) {
+            if (!sse.startsWith("data:")) {
+                continue;
+            }
+            JsonNode event = json.readTree(sse.substring(5));
+            switch (event.path("type").asString()) {
+                case "content_block_delta" -> {
+                    if ("text_delta".equals(event.path("delta").path("type").asString())) {
+                        pending.append(event.path("delta").path("text").asString());
+                        for (int nl; (nl = pending.indexOf("\n")) >= 0; ) {
+                            emit(pending.substring(0, nl), onLine);
+                            pending.delete(0, nl + 1);
+                        }
+                    }
+                }
+                case "message_delta" -> stopReason = event.path("delta").path("stop_reason").asString();
+                case "error" -> {
+                    log.warn("AI stream error: {}", event.path("error").path("message").asString());
+                    throw unusable();
+                }
+                default -> {
+                }
+            }
+        }
+        if (!"end_turn".equals(stopReason)) {
+            log.warn("AI stream unusable, stop_reason={}", stopReason);
+            throw unusable();
+        }
+        emit(pending.toString(), onLine);
+    }
+
+    private static void emit(String line, Consumer<String> onLine) {
+        if (!line.isBlank()) {
+            onLine.accept(line.strip());
+        }
     }
 
     private <T> T send(Map<String, Object> request, Class<T> type) {
@@ -117,7 +199,8 @@ public class AiClient {
         }
     }
 
-    private Map<String, Object> request(String model, String system, String text, List<Image> images, String schema) {
+    private Map<String, Object> request(String model, String system, String text, List<Image> images, String schema,
+                                        boolean webSearch) {
         List<Map<String, Object>> content = new ArrayList<>();
         for (Image image : images) {
             content.add(Map.of("type", "image", "source", Map.of("type", "base64", "media_type", image.mediaType(),
@@ -129,11 +212,11 @@ public class AiClient {
         request.put("model", model);
         request.put("max_tokens", maxTokens);
         request.put("system", system);
-        if (schema == null) {
+        if (webSearch) {
             request.put("output_config", Map.of("effort", "low"));
             request.put("tools", List.of(Map.of("type", "web_search_20260209", "name", "web_search", "max_uses", 3,
                     "user_location", Map.of("type", "approximate", "country", "CH"))));
-        } else {
+        } else if (schema != null) {
             request.put("output_config",
                     Map.of("format", Map.of("type", "json_schema", "schema", json.readTree(schema))));
         }
@@ -148,6 +231,8 @@ public class AiClient {
     private static JdkClientHttpRequestFactory timeout() {
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory();
         factory.setReadTimeout(Duration.ofSeconds(120));
+        // the gzip decompression buffers a streamed answer until it is complete
+        factory.enableCompression(false);
         return factory;
     }
 

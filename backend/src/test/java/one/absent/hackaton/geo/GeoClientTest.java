@@ -24,10 +24,11 @@ class GeoClientTest {
     @Test
     void readsTheCentroidAndCachesIt() {
         server.expect(once(), requestTo(URL)).andRespond(withSuccess(
-                "{\"results\":[{\"attrs\":{\"lat\":47.378,\"lon\":8.5233}}]}", MediaType.APPLICATION_JSON));
+                "{\"results\":[{\"attrs\":{\"lat\":47.378,\"lon\":8.5233,\"label\":\"<b>8004 - Zürich</b>\"}}]}",
+                MediaType.APPLICATION_JSON));
 
         assertThat(client.locate("8004")).contains(new Coordinates(47.378, 8.5233));
-        assertThat(client.locate("8004")).isPresent(); // second call: no request, the mock allows only one
+        assertThat(client.locality("8004")).contains("Zürich"); // second call: no request, the mock allows only one
         server.verify();
     }
 
@@ -42,6 +43,23 @@ class GeoClientTest {
         server.reset();
         server.expect(requestTo(URL.replace("8004", "3011"))).andRespond(withServerError());
         assertThat(failing.locate("3011")).isEmpty();
+    }
+
+    @Test
+    void findsThePostcodeAtCoordinates() {
+        server.expect(requestTo("https://geo.test/rest/services/api/MapServer/identify?geometry=7.152,46.802"
+                        + "&geometryType=esriGeometryPoint&layers=all:ch.swisstopo-vd.ortschaftenverzeichnis_plz"
+                        + "&sr=4326&tolerance=0&returnGeometry=false"))
+                .andRespond(withSuccess("{\"results\":[{\"attributes\":{\"plz\":1700,\"langtext\":\"Fribourg\"}}]}",
+                        MediaType.APPLICATION_JSON));
+
+        assertThat(client.placeAt(46.802, 7.152)).contains(new GeoClient.Place("1700", "Fribourg"));
+        server.verify();
+    }
+
+    @Test
+    void outsideSwitzerlandThereIsNoPostcode() {
+        assertThat(client.placeAt(48.85, 2.35)).isEmpty(); // Paris: no request at all
     }
 
     @Test

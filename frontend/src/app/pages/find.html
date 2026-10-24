@@ -1,5 +1,5 @@
 <form class="find__query" role="search" (ngSubmit)="find()">
-  <label for="find-text" class="zw-sr-only">Was suchst du?</label>
+  <label for="find-text" class="zw-sr-only">{{ 'Was suchst du?' | t }}</label>
   <textarea
     id="find-text"
     name="text"
@@ -10,21 +10,28 @@
     required
     maxlength="500"
     rows="2"
-    placeholder="z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich"
+    [placeholder]="'z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich' | t"
     aria-describedby="find-tip"
   ></textarea>
   <button appButton type="submit" [disabled]="loading() || !text().trim()">
     <app-icon name="search" />
-    <span>{{ loading() ? 'Suche läuft…' : 'Suchen' }}</span>
+    <span>{{ (loading() ? 'Suche läuft…' : 'Suchen') | t }}</span>
   </button>
 </form>
-<p id="find-tip" class="zw-help">Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter</p>
+<p id="find-tip" class="zw-help">{{ 'Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter' | t }}</p>
+@if (refinements().length) {
+  <ul class="find__history zw-help" [attr.aria-label]="'Deine Anpassungen' | t">
+    @for (r of refinements(); track $index) {
+      <li>↳ {{ r }}</li>
+    }
+  </ul>
+}
 
-<p role="status" aria-live="polite" class="find__status">{{ progress() }}</p>
+<p role="status" aria-live="polite" class="zw-help">{{ progress() }}</p>
 
 @if (searched()) {
   <div class="find__strip">
-    <span class="zw-help">Aus deinem Satz übernommen:</span>
+    <span class="zw-help">{{ 'Aus deinem Satz übernommen:' | t }}</span>
     @for (row of rows; track row.key) {
       @for (r of list(row.key); track r.attribute + r.value) {
         <button
@@ -36,90 +43,61 @@
           @if (row.key === 'mustHave') {
             <app-icon name="check" [size]="16" />
           }
-          <span>{{ label(r) }}<span class="zw-sr-only"> entfernen</span></span>
+          <span
+            >{{ label(r) }}<span class="zw-sr-only"> {{ 'entfernen' | t }}</span></span
+          >
         </button>
       }
     }
     @if (budget() !== null) {
       <button type="button" class="zw-chip" aria-pressed="true" (click)="budget.set(null)">
         <app-icon name="check" [size]="16" />
-        <span>{{ budgetLabel() }}<span class="zw-sr-only"> entfernen</span></span>
+        <span
+          >{{ budgetLabel() }}<span class="zw-sr-only"> {{ 'entfernen' | t }}</span></span
+        >
       </button>
     }
-    @if (postcode().trim()) {
+    @if (postcode().trim() || position()) {
       <button type="button" class="zw-chip" aria-pressed="true" (click)="clearRegion()">
         <app-icon name="check" [size]="16" />
-        <span>{{ regionLabel() }}<span class="zw-sr-only"> entfernen</span></span>
+        <span
+          >{{ regionLabel() }}<span class="zw-sr-only"> {{ 'entfernen' | t }}</span></span
+        >
       </button>
     }
-    <span class="zw-help">Antippen zum Entfernen, links alles im Detail.</span>
+    <span class="zw-help">{{ 'Antippen zum Entfernen, links alles im Detail.' | t }}</span>
     <!-- TODO: "Suche speichern" needs a saved-search/alert API (immediate, daily, weekly; dedup of relists). -->
-    <button appButton variant="primary" type="button" disabled>Suche speichern</button>
+    <button appButton variant="primary" type="button" disabled>
+      {{ 'Suche speichern' | t }}
+    </button>
   </div>
 
+  <form
+    class="find__adjust"
+    role="search"
+    [attr.aria-label]="'Suche anpassen' | t"
+    (ngSubmit)="refine()"
+  >
+    <label for="find-adjust" class="zw-sr-only">{{ 'Suche anpassen' | t }}</label>
+    <input
+      id="find-adjust"
+      name="adjust"
+      class="zw-input"
+      maxlength="200"
+      [placeholder]="'Suche anpassen, z.B. „doch etwas neuere Modelle“' | t"
+      [(ngModel)]="adjust"
+    />
+    <button appButton type="submit" [disabled]="loading() || !adjust().trim()">
+      {{ 'Anpassen' | t }}
+    </button>
+  </form>
+
   <div class="find__cols">
-    <form class="find__filters" aria-label="Filter" (ngSubmit)="showMatches()">
+    <form class="find__filters" [attr.aria-label]="'Filter' | t" (ngSubmit)="showMatches()">
       <div class="find__f">
-        <label class="zw-label" for="find-keywords">Modell, Stichwort</label>
-        <input
-          id="find-keywords"
-          name="keywords"
-          class="zw-input"
-          placeholder="z. B. iMac, 27 Zoll"
-          [(ngModel)]="keywords"
-        />
-        <span class="zw-help">Mehrere mit Komma trennen</span>
-      </div>
-      <div class="find__f">
-        <label class="zw-label" for="find-cat">Kategorie</label>
-        <input id="find-cat" name="category" class="zw-input" [(ngModel)]="category" />
-      </div>
-      <div class="find__f">
-        <label class="zw-label" for="find-budget">Höchstpreis (CHF)</label>
-        <input
-          id="find-budget"
-          class="zw-input zw-input--price"
-          type="number"
-          min="0"
-          name="budget"
-          [(ngModel)]="budget"
-        />
-      </div>
-      <div class="find__pair">
-        <div class="find__f">
-          <label class="zw-label" for="find-plz">PLZ</label>
-          <input
-            id="find-plz"
-            class="zw-input"
-            name="postcode"
-            inputmode="numeric"
-            maxlength="4"
-            [(ngModel)]="postcode"
-          />
-        </div>
-        <div class="find__f zw-field">
-          <label class="zw-label" for="find-radius">Umkreis</label>
-          <select
-            id="find-radius"
-            class="zw-input"
-            name="radius"
-            [disabled]="!postcode().trim()"
-            [(ngModel)]="radius"
-          >
-            <option [ngValue]="null">Ganze Schweiz</option>
-            @for (km of radii; track km) {
-              <option [ngValue]="km">{{ km }} km</option>
-            }
-          </select>
-          @if (!postcode().trim()) {
-            <span class="zw-help">Zuerst PLZ eingeben</span>
-          }
-        </div>
-      </div>
-      <div class="find__f">
-        <span class="zw-label">Anforderungen</span>
+        <span class="zw-label">{{ 'Anforderungen' | t }}</span>
         @for (row of rows; track row.key) {
-          <span class="zw-help">{{ row.label }}</span>
+          <span class="zw-help">{{ row.label | t }}</span>
           <ul class="zw-list find__reqs" [attr.data-testid]="row.key">
             @for (r of list(row.key); track r.attribute + r.value) {
               <li class="zw-row">
@@ -130,78 +108,138 @@
                   size="sm"
                   type="button"
                   (click)="move(r, row.key)"
-                  [attr.aria-label]="r.attribute + ' zu ' + row.other + ' verschieben'"
+                  [attr.aria-label]="
+                    '{attribute} zu {other} verschieben'
+                      | t: { attribute: r.attribute, other: row.other | t }
+                  "
                 >
-                  → {{ row.other }}
+                  → {{ row.other | t }}
                 </button>
               </li>
+            } @empty {
+              <li class="zw-help">{{ 'Keine.' | t }}</li>
             }
           </ul>
         }
       </div>
-      <label class="zw-check find__check">
-        <input type="checkbox" name="acceptUnknown" [(ngModel)]="acceptUnknown" />
-        <span>Auch Inserate mit fehlenden Angaben</span>
-      </label>
+      <div class="find__f">
+        <label class="zw-label" for="find-cat">{{ 'Kategorie' | t }}</label>
+        <input
+          id="find-cat"
+          name="category"
+          class="zw-input"
+          [ngModel]="category()"
+          (ngModelChange)="category.set($event); changed(400)"
+        />
+      </div>
+      <div class="find__f">
+        <label class="zw-label" for="find-keywords">{{ 'Modell, Stichwort' | t }}</label>
+        <input
+          id="find-keywords"
+          name="keywords"
+          class="zw-input"
+          [ngModel]="keywords()"
+          (ngModelChange)="keywords.set($event); changed(400)"
+        />
+        <span class="zw-help">{{ 'Mehrere mit Komma trennen' | t }}</span>
+      </div>
+      <fieldset class="zw-fieldset find__f">
+        <legend class="zw-label">{{ 'Preis' | t }}</legend>
+        <div class="find__pair">
+          <input
+            class="zw-input zw-input--price"
+            type="number"
+            min="0"
+            name="budget"
+            [placeholder]="'bis' | t"
+            [attr.aria-label]="'Preis bis' | t"
+            [ngModel]="budget()"
+            (ngModelChange)="budget.set($event); changed(400)"
+          />
+        </div>
+      </fieldset>
+      <fieldset class="zw-fieldset find__f">
+        <legend class="zw-label">{{ 'Region' | t }}</legend>
+        <div class="find__pair">
+          <input
+            class="zw-input"
+            name="postcode"
+            inputmode="numeric"
+            maxlength="4"
+            [attr.aria-label]="'PLZ' | t"
+            [ngModel]="postcode()"
+            (ngModelChange)="postcode.set($event); position.set(null); changed(400)"
+          />
+          <select
+            id="find-radius"
+            class="zw-input"
+            name="radius"
+            [disabled]="!postcode().trim() && !position()"
+            [attr.aria-label]="'Umkreis' | t"
+            [ngModel]="radius()"
+            (ngModelChange)="radius.set($event); changed()"
+          >
+            <option [ngValue]="null">{{ 'Ganze Schweiz' | t }}</option>
+            @for (km of radii; track km) {
+              <option [ngValue]="km">{{ km }} km</option>
+            }
+          </select>
+        </div>
+        <button appButton variant="ghost" size="sm" type="button" (click)="useMyPosition()">
+          <app-icon name="pin" [size]="16" />
+          <span>{{ (position() ? 'Standort aktualisieren' : 'Mein Standort') | t }}</span>
+        </button>
+      </fieldset>
+      <button appButton type="submit" [disabled]="matching()">
+        {{ (matching() ? 'Suche läuft…' : 'Treffer aktualisieren') | t }}
+      </button>
       <button appButton variant="ghost" size="sm" type="button" (click)="reset()">
-        Filter zurücksetzen
+        {{ 'Filter zurücksetzen' | t }}
       </button>
     </form>
 
-    <div
-      class="find__results"
-      [class.find__results--busy]="matching()"
-      [attr.aria-busy]="matching()"
-    >
+    <div class="find__results" [class.find__busy]="matching()" [attr.aria-busy]="matching()">
       @if (results(); as res) {
+        @let found = res.matches ?? [];
         <div class="find__bar">
-          <span>{{ total(res) }} Inserate</span>
-          <span class="zw-help">{{ res.compared }} verglichen</span>
-          <!-- TODO: sort order; the backend returns a fixed best-fit order. -->
-          <label for="find-sort">Sortieren</label>
+          <span>{{ '{count} Inserate' | t: { count: found.length } }}</span>
+          <span class="zw-help">{{ '{count} verglichen' | t: { count: res.compared ?? 0 } }}</span>
+          <!-- TODO: other sort orders; the backend returns the list by score. -->
+          <label for="find-sort">{{ 'Sortieren' | t }}</label>
           <select id="find-sort" class="zw-input" disabled>
-            <option>Beste Passung</option>
+            <option>{{ 'Beste Passung' | t }}</option>
           </select>
         </div>
         <!-- TODO: "Letzter Scan" line; the backend does not expose when listings were last scanned. -->
 
-        @if (!total(res)) {
-          <p>Noch nichts Passendes.</p>
+        @if (!found.length) {
+          <p>
+            {{
+              'Noch nichts Passendes. Entferne eine Anforderung oder vergrössere den Umkreis.' | t
+            }}
+          </p>
         } @else {
-          @for (group of groups; track group.key) {
-            <section class="find__grp" [attr.aria-labelledby]="'find-' + group.key">
-              <h2 [id]="'find-' + group.key">
-                {{ group.title }} <span>{{ res[group.key].length }} · {{ group.note }}</span>
-              </h2>
-              @if (res[group.key].length) {
-                <div class="zw-grid">
-                  @for (m of res[group.key]; track m.listing?.id) {
-                    <div class="find__item">
-                      <!-- TODO: sale mode, current bid ("Gebot, nicht Endpreis") and total cost incl. shipping are not in ListingSummary yet; all cards show as Festpreis. -->
-                      <app-summary-card [listing]="m.listing ?? {}" />
-                      <p
-                        class="zw-small zw-muted"
-                        [class.find__why--ok]="group.key === 'confirmed'"
-                      >
-                        {{ why(m, group.key) }}
-                      </p>
-                    </div>
-                  }
-                </div>
-              } @else {
-                <p class="zw-muted">{{ group.empty }}</p>
-              }
-            </section>
-          }
+          <div class="zw-grid" [attr.aria-label]="'Treffer' | t">
+            @for (m of found; track m.listing?.id) {
+              <div class="find__item">
+                <!-- TODO: sale mode, current bid ("Gebot, nicht Endpreis") and total cost incl. shipping are not in ListingSummary yet; all cards show as Festpreis. -->
+                <app-summary-card [listing]="m.listing ?? {}" />
+                <p class="zw-small" [class.find__why--ok]="m.fit === 'MATCH'">{{ scoreLine(m) }}</p>
+                @for (d of details(m); track d) {
+                  <p class="zw-small zw-muted">{{ d }}</p>
+                }
+              </div>
+            }
+          </div>
         }
 
         <p class="zw-help">
-          Nichts dabei?
+          {{ 'Nichts dabei?' | t }}
           <!-- TODO: "Gesuch aufgeben" needs a wanted-listing API; the buyer's budget must stay private. -->
           <button appButton variant="ghost" size="sm" type="button" disabled>
-            Gesuch aufgeben
+            {{ 'Gesuch aufgeben' | t }}
           </button>
-          Verkäufer sehen, dass jemand sucht. Dein Budget bleibt privat.
+          {{ 'Verkäufer sehen, dass jemand sucht. Dein Budget bleibt privat.' | t }}
         </p>
       }
     </div>

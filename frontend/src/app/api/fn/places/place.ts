@@ -7,18 +7,16 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { ListingDraft } from '../../models/listing-draft';
+import { Place } from '../../models/place';
 
-export interface CreateDraft$Params {
-      body?: {
-'photos': Array<Blob>;
-}
+export interface Place$Params {
+  postcode: string;
 }
 
-export function createDraft(http: HttpClient, rootUrl: string, params?: CreateDraft$Params, context?: HttpContext): Observable<StrictHttpResponse<ListingDraft>> {
-  const rb = new RequestBuilder(rootUrl, createDraft.PATH, 'post');
+export function place(http: HttpClient, rootUrl: string, params: Place$Params, context?: HttpContext): Observable<StrictHttpResponse<Place>> {
+  const rb = new RequestBuilder(rootUrl, place.PATH, 'get');
   if (params) {
-    rb.body(params.body, 'multipart/form-data');
+    rb.path('postcode', params.postcode, {});
   }
 
   return http.request(
@@ -26,9 +24,9 @@ export function createDraft(http: HttpClient, rootUrl: string, params?: CreateDr
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<ListingDraft>;
+      return r as StrictHttpResponse<Place>;
     })
   );
 }
 
-createDraft.PATH = '/api/listing-drafts';
+place.PATH = '/api/places/{postcode}';

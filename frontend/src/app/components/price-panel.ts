@@ -1,7 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, input, model, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  model,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PriceEstimate } from '../api/models';
 import { conditionLabel } from '../conditions';
+import { I18n, TranslatePipe } from '../i18n/i18n';
 import { chf, ChfPipe } from '../ui/chf';
 
 type EvidenceItem = NonNullable<PriceEstimate['evidence']>[number];
@@ -26,15 +36,11 @@ const STRATEGIES = [
 ] as const;
 const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW: 'tief' };
 
-const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-const since = (days: number) =>
-  days <= 0 ? 'heute' : days === 1 ? 'seit gestern' : `letzte ${days} Tage`;
-
 /** Price step (Sell4): evidence range in one sentence, 3 suggested prices + own price, sale mode. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-price-panel',
-  imports: [ChfPipe, RouterLink],
+  imports: [ChfPipe, NgTemplateOutlet, RouterLink, TranslatePipe],
   styles: `
     :host {
       display: flex;
@@ -60,6 +66,17 @@ const since = (days: number) =>
       font-weight: 600;
       cursor: pointer;
     }
+    .compact {
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr);
+      gap: var(--space-4);
+      align-items: start;
+    }
+    @media (max-width: 480px) {
+      .compact {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
     .modes {
       display: flex;
       gap: var(--space-2);
@@ -69,21 +86,24 @@ const since = (days: number) =>
   template: `
     @if (view(); as v) {
       @if (v.noEstimate) {
-        <p class="zw-muted zw-small"><strong>Keine Schätzung.</strong> {{ v.explanation }}</p>
+        <p class="zw-muted zw-small">
+          <strong>{{ 'Keine Schätzung.' | t }}</strong> {{ v.explanation }}
+        </p>
       } @else {
         <div>
           <p class="zw-muted zw-small">
-            Ähnliche Artikel auf Zweit: <strong>{{ v.rangeText }}</strong
+            {{ 'Ähnliche Artikel auf Zweit:' | t }} <strong>{{ v.rangeText }}</strong
             >. {{ v.evidenceText }}
             @if (v.provisional) {
-              <strong>Vorläufig:</strong> zu wenig Vergleiche für eine feste Spanne.
+              <strong>{{ 'Vorläufig:' | t }}</strong>
+              {{ 'zu wenig Vergleiche für eine feste Spanne.' | t }}
             } @else {
-              Sicherheit {{ v.confidenceText }}.
+              {{ 'Sicherheit {level}.' | t: { level: v.confidenceText } }}
             }
           </p>
           @if (v.items.length) {
             <details>
-              <summary>Vergleiche ansehen</summary>
+              <summary>{{ 'Vergleiche ansehen' | t }}</summary>
               <ul class="zw-list">
                 @for (item of v.items; track item.listingId) {
                   <li class="zw-row">
@@ -91,7 +111,7 @@ const since = (days: number) =>
                       <a [routerLink]="['/listings', item.listingId]">{{ item.title }}</a>
                       <span class="zw-option__text">
                         {{ item.similarityLabel }} {{ item.similarityPercent }} % ·
-                        {{ item.sold ? 'Verkauft' : 'Angebot' }} · {{ item.conditionLabel }} ·
+                        {{ (item.sold ? 'Verkauft' : 'Angebot') | t }} · {{ item.conditionLabel }} ·
                         {{ item.age }}
                       </span>
                     </span>
@@ -110,76 +130,108 @@ const since = (days: number) =>
       }
     }
 
-    <fieldset class="zw-fieldset">
-      <legend class="zw-sr-only">Preis</legend>
-      @for (s of strategies(); track s.label) {
-        <label class="zw-option">
-          <input
-            type="radio"
-            name="price-choice"
-            required
-            [checked]="!own() && price() === s.amount"
-            (change)="choose(s.amount)"
-          />
-          <span>
-            <span class="zw-option__title">{{ s.label }}</span>
-            <span class="zw-option__text">{{ s.hint }}</span>
+    @if (compact()) {
+      <div class="compact">
+        <div class="zw-field">
+          <label class="zw-label" for="price-compact">{{ 'Preis' | t }}</label>
+          <span class="zw-affix">
+            <span class="zw-affix__unit">CHF</span>
+            <input
+              id="price-compact"
+              class="zw-input zw-input--price"
+              name="price"
+              type="number"
+              inputmode="decimal"
+              min="0.01"
+              max="9999999999.99"
+              step="0.01"
+              required
+              [placeholder]="placeholder()"
+              [value]="price() ?? ''"
+              (input)="typeOwn($any($event.target).valueAsNumber)"
+            />
           </span>
-          <span class="zw-price opt__p">{{ s.amount | chf }}</span>
-        </label>
-      }
-      <label class="zw-option">
-        @if (strategies().length) {
-          <input
-            type="radio"
-            name="price-choice"
-            required
-            [checked]="own()"
-            (change)="own.set(true); price.set(ownValue())"
-          />
-        }
-        <span class="zw-option__title">Eigener Preis</span>
-        <span class="zw-affix own">
-          <span class="zw-affix__unit">CHF</span>
-          <input
-            class="zw-input zw-input--price"
-            name="price"
-            type="number"
-            inputmode="decimal"
-            min="0.01"
-            max="9999999999.99"
-            step="0.01"
-            placeholder="0.–"
-            aria-label="Eigener Preis in CHF"
-            [required]="own() || !strategies().length"
-            [value]="ownValue() ?? ''"
-            (input)="typeOwn($any($event.target).valueAsNumber)"
-          />
-        </span>
-      </label>
-    </fieldset>
-
-    <div class="zw-field">
-      <span class="zw-label" id="sale-mode">Wie verkaufen?</span>
-      <!-- TODO: the backend only publishes fixed-price listings; Preisvorschlag, Auktion (with a secret seller-set reserve) and Verschenken need sale modes in CreateListingRequest. -->
-      <div class="modes" role="group" aria-labelledby="sale-mode">
-        <button type="button" class="zw-chip" aria-pressed="true">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
-          <span>Festpreis</span>
-        </button>
-        @for (mode of laterModes; track mode) {
-          <button type="button" class="zw-chip" aria-pressed="false" disabled>
-            <span>{{ mode }}</span>
-          </button>
-        }
+        </div>
+        <ng-container *ngTemplateOutlet="modes" />
       </div>
-    </div>
+    } @else {
+      <fieldset class="zw-fieldset">
+        <legend class="zw-sr-only">{{ 'Preis' | t }}</legend>
+        @for (s of strategies(); track s.label) {
+          <label class="zw-option">
+            <input
+              type="radio"
+              name="price-choice"
+              required
+              [checked]="!own() && price() === s.amount"
+              (change)="choose(s.amount)"
+            />
+            <span>
+              <span class="zw-option__title">{{ s.label | t }}</span>
+              <span class="zw-option__text">{{ s.hint | t }}</span>
+            </span>
+            <span class="zw-price opt__p">{{ s.amount | chf }}</span>
+          </label>
+        }
+        <label class="zw-option">
+          @if (strategies().length) {
+            <input
+              type="radio"
+              name="price-choice"
+              required
+              [checked]="own()"
+              (change)="own.set(true); price.set(ownValue())"
+            />
+          }
+          <span class="zw-option__title">{{ 'Eigener Preis' | t }}</span>
+          <span class="zw-affix own">
+            <span class="zw-affix__unit">CHF</span>
+            <input
+              class="zw-input zw-input--price"
+              name="price"
+              type="number"
+              inputmode="decimal"
+              min="0.01"
+              max="9999999999.99"
+              step="0.01"
+              placeholder="0.–"
+              [attr.aria-label]="'Eigener Preis in CHF' | t"
+              [required]="own() || !strategies().length"
+              [value]="ownValue() ?? ''"
+              (input)="typeOwn($any($event.target).valueAsNumber)"
+            />
+          </span>
+        </label>
+      </fieldset>
+      <ng-container *ngTemplateOutlet="modes" />
+    }
+
+    <ng-template #modes>
+      <div class="zw-field">
+        <span class="zw-label" id="sale-mode">{{ 'Wie verkaufen?' | t }}</span>
+        <!-- TODO: the backend only publishes fixed-price listings; Preisvorschlag, Auktion (with a secret seller-set reserve) and Verschenken need sale modes in CreateListingRequest. -->
+        <div class="modes" role="group" aria-labelledby="sale-mode">
+          <button type="button" class="zw-chip" aria-pressed="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
+            <span>{{ 'Festpreis' | t }}</span>
+          </button>
+          @for (mode of laterModes; track mode) {
+            <button type="button" class="zw-chip" aria-pressed="false" disabled>
+              <span>{{ mode | t }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    </ng-template>
   `,
 })
 export class PricePanel {
+  private readonly i18n = inject(I18n);
   readonly estimate = input<PriceEstimate | null | undefined>();
   readonly condition = input<string | null | undefined>();
   readonly price = model<number | null>(null);
+  /** One price field beside the sale modes (one-page form) instead of the three suggestions (wizard step). */
+  readonly compact = input(false);
   protected readonly laterModes = ['Preisvorschlag', 'Auktion', 'Verschenken'];
   protected readonly own = signal(false);
   protected readonly ownValue = signal<number | null>(null);
@@ -198,6 +250,12 @@ export class PricePanel {
     return v && !v.noEstimate ? v.strategies : [];
   });
 
+  // The middle suggestion as a hint in the compact field; the seller still types the price.
+  protected readonly placeholder = computed(() => {
+    const middle = this.strategies()[1];
+    return middle ? chf(middle.amount).replace('CHF ', '') : '0.–';
+  });
+
   private estimateView(est: PriceEstimate, items: EvidenceItem[]) {
     const from = FACTORS[est.condition ?? 'GOOD'] ?? 1;
     const ratio = (FACTORS[this.condition() || (est.condition ?? 'GOOD')] ?? from) / from;
@@ -214,16 +272,32 @@ export class PricePanel {
     return {
       noEstimate: false as const,
       provisional: est.provisional || est.confidence === 'LOW',
-      confidenceText: CONFIDENCE[est.confidence ?? ''] ?? '',
-      rangeText: `${chf(low)} bis ${chf(high).slice(4)}`,
+      confidenceText: this.i18n.t(CONFIDENCE[est.confidence ?? ''] ?? ''),
+      rangeText: this.i18n.t('{low} bis {high}', { low: chf(low), high: chf(high).slice(4) }),
       evidenceText: items.length
-        ? `${count(sold, 'Verkauf', 'Verkäufe')} und ${count(items.length - sold, 'Angebot', 'Angebote')}, ${since(oldest)}.`
+        ? this.i18n.t('{sales} und {offers}, {since}.', {
+            sales: this.count(sold, 'Verkauf', 'Verkäufe'),
+            offers: this.count(items.length - sold, 'Angebot', 'Angebote'),
+            since: this.since(oldest),
+          })
         : '',
       strategies: STRATEGIES.map((s) => ({ ...s, amount: amounts[s.key] })),
       items: items.map((item) =>
         this.row(item, (item.adjustedPriceChf ?? item.priceChf ?? 0) * ratio),
       ),
     };
+  }
+
+  private count(n: number, one: string, many: string): string {
+    return `${n} ${this.i18n.t(n === 1 ? one : many)}`;
+  }
+
+  private since(days: number): string {
+    return days <= 0
+      ? this.i18n.t('heute')
+      : days === 1
+        ? this.i18n.t('seit gestern')
+        : this.i18n.t('letzte {days} Tage', { days });
   }
 
   protected choose(amount: number): void {
@@ -247,9 +321,14 @@ export class PricePanel {
       sold: item.sold,
       priceChf: price,
       similarityPercent: item.similarityPercent,
-      similarityLabel: SIMILARITY[item.similarity ?? ''] ?? '',
-      conditionLabel: conditionLabel(item.condition),
-      age: days <= 0 ? 'heute' : days === 1 ? 'vor 1 Tag' : `vor ${days} Tagen`,
+      similarityLabel: this.i18n.t(SIMILARITY[item.similarity ?? ''] ?? ''),
+      conditionLabel: this.i18n.t(conditionLabel(item.condition)),
+      age:
+        days <= 0
+          ? this.i18n.t('heute')
+          : days === 1
+            ? this.i18n.t('vor 1 Tag')
+            : this.i18n.t('vor {days} Tagen', { days }),
       adjusted,
       showAdjusted: Math.abs(adjusted - price) >= 0.005,
     };

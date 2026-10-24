@@ -150,6 +150,34 @@
         }
       }
     },
+    "/api/searches/refine" : {
+      "post" : {
+        "tags" : [ "Search" ],
+        "operationId" : "refine",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RefineRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SearchRequirements"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/searches/matches" : {
       "post" : {
         "tags" : [ "Search" ],
@@ -171,6 +199,47 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/SearchResults"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/photos" : {
+      "post" : {
+        "tags" : [ "Selling" ],
+        "operationId" : "uploadPhotos",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "photos" : {
+                    "type" : "array",
+                    "items" : {
+                      "type" : "string",
+                      "format" : "binary"
+                    }
+                  }
+                },
+                "required" : [ "photos" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "integer",
+                    "format" : "int64"
+                  }
                 }
               }
             }
@@ -262,43 +331,6 @@
         }
       }
     },
-    "/api/listing-drafts" : {
-      "post" : {
-        "tags" : [ "Selling" ],
-        "operationId" : "createDraft",
-        "requestBody" : {
-          "content" : {
-            "multipart/form-data" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "photos" : {
-                    "type" : "array",
-                    "items" : {
-                      "type" : "string",
-                      "format" : "binary"
-                    }
-                  }
-                },
-                "required" : [ "photos" ]
-              }
-            }
-          }
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ListingDraft"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/listing-drafts/web-facts" : {
       "post" : {
         "tags" : [ "Selling" ],
@@ -323,6 +355,62 @@
                   "items" : {
                     "$ref" : "#/components/schemas/DraftFact"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/listing-drafts/text" : {
+      "post" : {
+        "tags" : [ "Selling" ],
+        "operationId" : "rewriteText",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DraftTextRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DraftText"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/listing-drafts/stream" : {
+      "post" : {
+        "tags" : [ "Selling" ],
+        "operationId" : "streamDraft",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DraftRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "One `data:` line per DraftEvent",
+            "content" : {
+              "text/event-stream" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DraftEvent"
                 }
               }
             }
@@ -489,6 +577,67 @@
         }
       }
     },
+    "/api/places/{postcode}" : {
+      "get" : {
+        "tags" : [ "Places" ],
+        "operationId" : "place",
+        "parameters" : [ {
+          "name" : "postcode",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Place"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/places/near" : {
+      "get" : {
+        "tags" : [ "Places" ],
+        "operationId" : "near",
+        "parameters" : [ {
+          "name" : "latitude",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        }, {
+          "name" : "longitude",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Place"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/photos/{id}" : {
       "get" : {
         "tags" : [ "Selling" ],
@@ -582,6 +731,27 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/categories" : {
+      "get" : {
+        "tags" : [ "Listings" ],
+        "operationId" : "categories",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CategoryInfo"
+                  }
                 }
               }
             }
@@ -876,11 +1046,61 @@
             "maximum" : 500,
             "minimum" : 0
           },
-          "acceptUnknown" : {
-            "type" : "boolean"
+          "nearMe" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "latitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double",
+            "maximum" : 90,
+            "minimum" : -90
+          },
+          "longitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double",
+            "maximum" : 180,
+            "minimum" : -180
           }
         },
         "required" : [ "keywords", "mustHave", "niceToHave" ]
+      },
+      "RefineRequest" : {
+        "type" : "object",
+        "properties" : {
+          "originalText" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "refinements" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 200,
+              "minLength" : 0
+            },
+            "maxItems" : 5,
+            "minItems" : 0
+          },
+          "current" : {
+            "$ref" : "#/components/schemas/SearchRequirements"
+          },
+          "text" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "topListingIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "maxItems" : 5,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "current", "originalText", "refinements", "text", "topListingIds" ]
       },
       "ListingSummary" : {
         "type" : "object",
@@ -927,8 +1147,22 @@
           "listing" : {
             "$ref" : "#/components/schemas/ListingSummary"
           },
+          "score" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "fit" : {
+            "type" : "string",
+            "enum" : [ "MATCH", "NEEDS_DETAILS", "ALTERNATIVE" ]
+          },
           "reason" : {
             "type" : "string"
+          },
+          "matched" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           },
           "missingDetails" : {
             "type" : "array",
@@ -947,19 +1181,7 @@
       "SearchResults" : {
         "type" : "object",
         "properties" : {
-          "confirmed" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SearchMatch"
-            }
-          },
-          "possible" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SearchMatch"
-            }
-          },
-          "alternatives" : {
+          "matches" : {
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/SearchMatch"
@@ -1079,6 +1301,50 @@
           }
         }
       },
+      "KnownFact" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "value" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "LABEL", "SELLER", "SUGGESTION", "WEB" ]
+          }
+        },
+        "required" : [ "name", "source", "value" ]
+      },
+      "WebFactsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "category" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "facts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/KnownFact"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "category", "facts", "title" ]
+      },
       "DraftFact" : {
         "type" : "object",
         "properties" : {
@@ -1097,49 +1363,50 @@
           }
         }
       },
-      "ListingDraft" : {
+      "DraftTextRequest" : {
         "type" : "object",
         "properties" : {
-          "photoIds" : {
+          "category" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "condition" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "description" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          },
+          "facts" : {
             "type" : "array",
             "items" : {
-              "type" : "integer",
-              "format" : "int64"
-            }
-          },
-          "category" : {
-            "type" : "string"
-          },
+              "$ref" : "#/components/schemas/KnownFact"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "category", "description", "facts", "title" ]
+      },
+      "DraftText" : {
+        "type" : "object",
+        "properties" : {
           "title" : {
             "type" : "string"
           },
           "description" : {
             "type" : "string"
           },
-          "condition" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
-          },
-          "facts" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/DraftFact"
-            }
-          },
-          "questions" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          },
           "price" : {
             "$ref" : "#/components/schemas/PriceEstimate"
-          },
-          "privacyWarnings" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/PrivacyWarning"
-            }
           }
         }
       },
@@ -1223,6 +1490,137 @@
           }
         }
       },
+      "Detection" : {
+        "type" : "object",
+        "properties" : {
+          "photo" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "box" : {
+            "type" : "array",
+            "items" : {
+              "type" : "number",
+              "format" : "double"
+            }
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "fact" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/DraftFact"
+          }
+        }
+      },
+      "DraftEvent" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "enum" : [ "DETECTION", "PRIVACY", "GAP", "DRAFT", "ERROR" ]
+          },
+          "detection" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/Detection"
+          },
+          "privacy" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/PrivacyMark"
+          },
+          "gap" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/Gap"
+          },
+          "draft" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/ListingDraft"
+          },
+          "detail" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "Gap" : {
+        "type" : "object",
+        "properties" : {
+          "fact" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "PHOTO", "ASK", "CONFIRM" ]
+          },
+          "prompt" : {
+            "type" : "string"
+          },
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "ListingDraft" : {
+        "type" : "object",
+        "properties" : {
+          "photoIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "condition" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+          },
+          "facts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DraftFact"
+            }
+          },
+          "price" : {
+            "$ref" : "#/components/schemas/PriceEstimate"
+          },
+          "privacyWarnings" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrivacyWarning"
+            }
+          }
+        }
+      },
+      "PrivacyMark" : {
+        "type" : "object",
+        "properties" : {
+          "photo" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "box" : {
+            "type" : "array",
+            "items" : {
+              "type" : "number",
+              "format" : "double"
+            }
+          },
+          "text" : {
+            "type" : "string"
+          }
+        }
+      },
       "PrivacyWarning" : {
         "type" : "object",
         "properties" : {
@@ -1235,49 +1633,42 @@
           }
         }
       },
-      "KnownFact" : {
+      "ConfirmedFact" : {
         "type" : "object",
         "properties" : {
           "name" : {
             "type" : "string",
-            "maxLength" : 80,
+            "maxLength" : 100,
             "minLength" : 0
           },
           "value" : {
             "type" : "string",
             "maxLength" : 500,
             "minLength" : 0
-          },
-          "source" : {
-            "type" : "string",
-            "enum" : [ "LABEL", "SELLER", "SUGGESTION", "WEB" ]
           }
         },
-        "required" : [ "name", "source", "value" ]
+        "required" : [ "name", "value" ]
       },
-      "WebFactsRequest" : {
+      "DraftRequest" : {
         "type" : "object",
         "properties" : {
-          "title" : {
-            "type" : "string",
-            "maxLength" : 120,
-            "minLength" : 0
-          },
-          "category" : {
-            "type" : "string",
-            "maxLength" : 80,
-            "minLength" : 0
-          },
-          "facts" : {
+          "photoIds" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/KnownFact"
+              "type" : "integer",
+              "format" : "int64"
             },
-            "maxItems" : 30,
-            "minItems" : 0
+            "maxItems" : 5,
+            "minItems" : 1
+          },
+          "confirmedFacts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ConfirmedFact"
+            }
           }
         },
-        "required" : [ "category", "facts", "title" ]
+        "required" : [ "confirmedFacts", "photoIds" ]
       },
       "CreateProjectRequest" : {
         "type" : "object",
@@ -1318,6 +1709,17 @@
         },
         "required" : [ "itemIds" ]
       },
+      "Place" : {
+        "type" : "object",
+        "properties" : {
+          "postcode" : {
+            "type" : "string"
+          },
+          "locality" : {
+            "type" : "string"
+          }
+        }
+      },
       "Info" : {
         "type" : "object",
         "properties" : {
@@ -1356,6 +1758,20 @@
           "itemLines" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "CategoryInfo" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "keyFacts" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           }
         }
       }

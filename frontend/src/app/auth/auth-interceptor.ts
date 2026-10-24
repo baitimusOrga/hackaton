@@ -2,7 +2,8 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, from, switchMap, throwError } from 'rxjs';
-import { ErrorBanner } from '../errors';
+import { I18n } from '../i18n/i18n';
+import { ErrorBanner, translateError } from '../errors';
 import { Auth, AuthRequestError, safeReturnUrl } from './auth';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
@@ -11,6 +12,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const auth = inject(Auth);
   const router = inject(Router);
   const banner = inject(ErrorBanner);
+  const i18n = inject(I18n);
   return from(auth.token()).pipe(
     switchMap((token) =>
       next(token ? request.clone({ setHeaders: { Authorization: 'Bearer ' + token } }) : request),
@@ -25,7 +27,10 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         void router.navigate(['/login'], { queryParams: { returnUrl: safeReturnUrl(router.url) } });
       } else if (!(error instanceof HttpErrorResponse)) {
         banner.show(
-          error instanceof Error ? error.message : 'Authentication is temporarily unavailable.',
+          translateError(
+            error instanceof Error ? error.message : 'Authentication is temporarily unavailable.',
+            i18n,
+          ),
         );
       }
       return throwError(() => error);

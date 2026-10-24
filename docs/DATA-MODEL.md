@@ -12,7 +12,7 @@ Rules:
 
 - `listing`: listing content, CHF price, condition, postcode/locality, the postcode centroid (`latitude`/`longitude`, nullable) and creation time. V4 persists the three public contract demos; new identities start at 4.
 - `listing_attribute`: attribute names/values owned by a listing. Demo data uses only the canonical keys `Brand, Model, Year, Color, Size, Display, Resolution, CPU, RAM, Storage, Material, Dimensions`.
-- `listing.status`: `AVAILABLE` (default) or `SOLD`; `GET /api/listings` only returns `AVAILABLE`, newest first. V6 adds 20 fictional demo listings with ids 1001–1020.
+- `listing.status`: `AVAILABLE` (default) or `SOLD`; `GET /api/listings` only returns `AVAILABLE`, newest first. V6 adds 20 fictional demo listings with ids 1001–1020, V15 another 90 for the buying assistant (ids 1201–1290).
 - Nullable `listing.seller_id` and `seller_name` store the verified Better Auth subject and a display-name snapshot at publication. Existing demos retain null sellers. Auth owns the separate `auth` schema, with no cross-schema user foreign key.
 - `photo`: uploaded listing photos (content type, and either the S3 `storage_key` or, for older rows and local dev without S3 credentials, the bytes in `data`) with the uploading seller's subject. `listing_id` stays null until the photo is published with a listing; `listing.image_url` then points at `/api/photos/{first photo id}`. Only published photos are served; unpublished draft photos are deleted by `PhotoCleanup` after 24 hours (and right away when the AI draft fails). JPEG and PNG uploads are re-encoded to drop EXIF metadata.
 - `clearance_project`: a company's office clearance (owner = Better Auth subject, no cross-schema FK; postcode, locality, deadline, chosen `route` null until chosen).
@@ -35,7 +35,8 @@ Rules:
 | V12 | nullable `latitude`, `longitude` on `listing` (postcode centroid from swisstopo, set when a listing is published; demo listings backfilled) |
 | V13 | `photo.storage_key` (S3 object key for new photos); `photo.data` nullable, kept for older rows |
 | V14 | nullable `unit_price_chf` on `clearance_item` (the company's price per piece, used when publishing) |
-| V15 | index on `listing (status, created_at desc)` for the search |
+| V15 | 90 fictional demo listings for the buying assistant (ids 1201–1290, with attributes and postcode centroids) |
+| V16 | index on `listing (status, created_at desc)` for the search |
 
 ## Backups
 
