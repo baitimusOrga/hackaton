@@ -2,7 +2,7 @@ import { DatePipe, KeyValuePipe, NgTemplateOutlet } from '@angular/common';
 import { HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, linkedSignal, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   catchError,
   distinctUntilChanged,
@@ -53,6 +53,7 @@ interface BidStatus {
     Icon,
     ListingMap,
     PhotoGallery,
+    RouterLink,
     SectionHeading,
     SummaryCard,
     TranslatePipe,

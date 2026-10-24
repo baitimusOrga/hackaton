@@ -3,6 +3,7 @@
 
 export { SearchService } from './services/search.service';
 export { SellingService } from './services/selling.service';
+export { OrdersService } from './services/orders.service';
 export { ListingsService } from './services/listings.service';
 export { PurchasesService } from './services/purchases.service';
 export { AuctionsService } from './services/auctions.service';

@@ -132,6 +132,33 @@
         }
       }
     },
+    "/api/orders/{id}/ship" : {
+      "post" : {
+        "tags" : [ "Orders" ],
+        "operationId" : "ship",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Order"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/listings" : {
       "get" : {
         "tags" : [ "Listings" ],
@@ -473,6 +500,33 @@
                 "schema" : {
                   "type" : "string",
                   "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}" : {
+      "get" : {
+        "tags" : [ "Orders" ],
+        "operationId" : "getOrder",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Order"
                 }
               }
             }
@@ -874,6 +928,21 @@
           "compared" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "Order" : {
+        "type" : "object",
+        "properties" : {
+          "listing" : {
+            "$ref" : "#/components/schemas/ListingSummary"
+          },
+          "seller" : {
+            "type" : "boolean"
+          },
+          "shippedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
           }
         }
       },

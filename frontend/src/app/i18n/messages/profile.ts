@@ -1,6 +1,28 @@
 import type { Messages } from '../i18n';
 
 export const PROFILE_MESSAGES: Messages = {
+  Bestellung: { fr: 'Commande', it: 'Ordine', en: 'Order' },
+  'Zur Bestellung': { fr: 'Voir la commande', it: 'Vai all’ordine', en: 'View order' },
+  'Versendet am {date}': {
+    fr: 'Expédié le {date}',
+    it: 'Spedito il {date}',
+    en: 'Shipped on {date}',
+  },
+  'Verpacke den Artikel und schicke ihn dem Käufer.': {
+    fr: 'Emballe l’article et envoie-le à l’acheteur.',
+    it: 'Imballa l’articolo e spediscilo all’acquirente.',
+    en: 'Pack the item and send it to the buyer.',
+  },
+  'Als versendet markieren': {
+    fr: 'Marquer comme expédié',
+    it: 'Segna come spedito',
+    en: 'Mark as shipped',
+  },
+  'Der Verkäufer hat noch nicht versendet.': {
+    fr: 'Le vendeur n’a pas encore expédié.',
+    it: 'Il venditore non ha ancora spedito.',
+    en: 'The seller has not shipped yet.',
+  },
   'Mein Konto': { fr: 'Mon compte', it: 'Il mio account', en: 'My account' },
   'Meine Inserate': { fr: 'Mes annonces', it: 'I miei annunci', en: 'My listings' },
   Aktiv: { fr: 'Active', it: 'Attivo', en: 'Active' },

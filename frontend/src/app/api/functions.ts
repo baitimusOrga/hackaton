@@ -19,6 +19,10 @@ export type { StreamDraft$Params as StreamDraft$Params } from './fn/selling/stre
 export { streamDraft as streamDraft } from './fn/selling/stream-draft';
 export type { GetPhoto$Params as GetPhoto$Params } from './fn/selling/get-photo';
 export { getPhoto as getPhoto } from './fn/selling/get-photo';
+export type { Ship$Params as Ship$Params } from './fn/orders/ship';
+export { ship as ship } from './fn/orders/ship';
+export type { GetOrder$Params as GetOrder$Params } from './fn/orders/get-order';
+export { getOrder as getOrder } from './fn/orders/get-order';
 export type { List$Params as List$Params } from './fn/listings/list';
 export { list as list } from './fn/listings/list';
 export type { Get$Params as Get$Params } from './fn/listings/get';

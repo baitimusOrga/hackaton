@@ -45,6 +45,8 @@ public class Listing {
     private String sellerName;
     // set when a fixed-price listing is bought; auction winners come from the bids
     private String buyerId;
+    // set when the seller marks the sold item as sent
+    private Instant shippedAt;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20)
     private ListingStatus status = ListingStatus.AVAILABLE;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20)

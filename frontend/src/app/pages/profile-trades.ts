@@ -7,8 +7,7 @@ import { TradesService } from '../api/services';
 import { TranslatePipe } from '../i18n/i18n';
 import { ChfPipe } from '../ui/chf';
 
-// Only auctions record a buyer so far, so "Gekauft" lists won auctions; there is no pickup or
-// payment flow stored yet, so each row links to the listing.
+// Each row links to its order, where the seller marks the item as shipped.
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-profile-trades',
@@ -102,7 +101,7 @@ import { ChfPipe } from '../ui/chf';
               <ul>
                 @for (item of group.items; track item.id) {
                   <li>
-                    <a [routerLink]="['/listings', item.id]">
+                    <a [routerLink]="['/orders', item.id]">
                       @if (item.imageUrl) {
                         <img class="ph" [src]="item.imageUrl" alt="" />
                       } @else {
