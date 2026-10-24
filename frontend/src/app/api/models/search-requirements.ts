@@ -3,7 +3,9 @@
 
 import { Requirement } from '../models/requirement';
 export interface SearchRequirements {
+  budgetPhrase?: (string | null);
   category?: (string | null);
+  conditions?: (Array<'NEW' | 'LIKE_NEW' | 'GOOD' | 'USED' | 'DEFECTIVE'> | null);
   keywords: Array<string>;
   latitude?: (number | null);
   longitude?: (number | null);
@@ -13,4 +15,5 @@ export interface SearchRequirements {
   nearMe?: (boolean | null);
   niceToHave: Array<Requirement>;
   postcode?: string;
+  regionPhrase?: (string | null);
 }
