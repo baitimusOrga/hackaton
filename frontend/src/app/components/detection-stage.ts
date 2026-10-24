@@ -11,7 +11,8 @@ export interface StageMark {
 /**
  * A photo with the AI's findings as in "Sell Erkennung v3" (style "Kurz"): a thin progress bar while
  * it is scanned, then corner marks with labels flash up one after the other and fade out after a few
- * seconds. Privacy marks and "photograph it here" hints stay.
+ * seconds. Privacy marks and "photograph it here" hints stay; a hint shows the projected content (the
+ * camera button) beside its label.
  */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,6 +59,9 @@ export interface StageMark {
                     </svg>
                   }
                   {{ mark.label }}
+                  @if (mark.kind === 'hint') {
+                    <ng-content />
+                  }
                 </span>
               }
             </div>
@@ -169,6 +173,11 @@ export interface StageMark {
       color: #1e1d1a;
       font: 600 13px/18px var(--font-sans);
     }
+    .mark--hint .tag {
+      pointer-events: auto;
+      padding: 4px 4px 4px 8px;
+      gap: 8px;
+    }
     .tag--inside {
       top: 6px;
       left: 6px;
@@ -274,8 +283,10 @@ export class DetectionStage {
     const taken: Rect[] = [];
     return this.marks().map((mark) => {
       const [x, y, , h] = mark.box;
-      const width = Math.min(0.95, (mark.label.length * 7.5 + 44) / 560);
-      const height = 0.075;
+      // a hint label also carries the camera button
+      const button = mark.kind === 'hint' ? 150 : 0;
+      const width = Math.min(0.95, (mark.label.length * 7.5 + 44 + button) / 560);
+      const height = mark.kind === 'hint' ? 0.11 : 0.075;
       const spots: [Pill, Rect][] = [
         ['above', { x, y: y - height - 0.015, w: width, h: height }],
         ['below', { x, y: y + h + 0.015, w: width, h: height }],

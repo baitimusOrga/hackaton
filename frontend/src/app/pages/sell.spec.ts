@@ -313,7 +313,9 @@ describe('Sell', () => {
       'Fotografiere das Typenschild',
     );
 
-    const input = element.querySelector<HTMLInputElement>('.foot2 input[type="file"]')!;
+    const input = element.querySelector<HTMLInputElement>(
+      '.foot2 input[type="file"], [data-testid="hint"] input[type="file"]',
+    )!;
     Object.defineProperty(input, 'files', {
       value: [new File(['y'], 'label.png', { type: 'image/png' })],
     });
@@ -340,7 +342,9 @@ describe('Sell', () => {
       streams(english, done(poorer)),
     ]);
     uploadPhotos.mockReturnValue(of([8]));
-    const input = element.querySelector<HTMLInputElement>('.foot2 input[type="file"]')!;
+    const input = element.querySelector<HTMLInputElement>(
+      '.foot2 input[type="file"], [data-testid="hint"] input[type="file"]',
+    )!;
     Object.defineProperty(input, 'files', {
       value: [new File(['y'], 'label.png', { type: 'image/png' })],
     });
@@ -390,7 +394,9 @@ describe('Sell', () => {
       streams(done(guessed)),
     ]);
     uploadPhotos.mockReturnValue(of([8]));
-    const input = element.querySelector<HTMLInputElement>('.foot2 input[type="file"]')!;
+    const input = element.querySelector<HTMLInputElement>(
+      '.foot2 input[type="file"], [data-testid="hint"] input[type="file"]',
+    )!;
     Object.defineProperty(input, 'files', {
       value: [new File(['y'], 'label.png', { type: 'image/png' })],
     });
@@ -429,9 +435,14 @@ describe('Sell', () => {
       streams(done(read)),
     ]);
     expect(element.querySelector('[data-testid="hint"]')!.textContent).toContain('Modell hier');
+    // the camera button sits on the photo, the footer keeps only skip and typing
+    expect(element.querySelector('.foot2 input[type="file"]')).toBeNull();
+    expect(element.querySelector('.foot2')!.textContent).not.toContain('Zurück');
 
     uploadPhotos.mockReturnValue(of([8]));
-    const input = element.querySelector<HTMLInputElement>('.foot2 input[type="file"]')!;
+    const input = element.querySelector<HTMLInputElement>(
+      '[data-testid="hint"] input[type="file"]',
+    )!;
     Object.defineProperty(input, 'files', {
       value: [new File(['y'], 'label.png', { type: 'image/png' })],
     });

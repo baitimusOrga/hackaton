@@ -250,10 +250,12 @@
                     </div>
                   }
                   <div class="foot2">
-                    <!-- same order on every question: back left, skip and answers right -->
-                    <button type="button" class="zw-link" (click)="back()">
-                      {{ 'Zurück' | t }}
-                    </button>
+                    <!-- same order on every question: back left, skip and answers right; a photo question has no back -->
+                    @if (card.kind !== 'PHOTO') {
+                      <button type="button" class="zw-link" (click)="back()">
+                        {{ 'Zurück' | t }}
+                      </button>
+                    }
                     <button type="button" class="zw-link link--muted push" (click)="skip(card)">
                       {{ (card.kind === 'PHOTO' ? 'Überspringen' : 'Weiss ich nicht') | t }}
                     </button>
@@ -268,17 +270,11 @@
                             {{ 'Selbst eingeben' | t }}
                           </button>
                         }
-                        <label class="zw-btn zw-btn--primary file">
-                          <app-icon name="camera" />
-                          <span>{{ 'Foto aufnehmen' | t }}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            class="zw-sr-only"
-                            (change)="addPhotos($any($event.target), true)"
+                        @if (!stage()?.capture) {
+                          <ng-container
+                            *ngTemplateOutlet="captureTpl; context: { $implicit: false }"
                           />
-                        </label>
+                        }
                       }
                     }
                   </div>
@@ -781,6 +777,20 @@
   <!-- TODO: pickup / shipping checkboxes ("Versand, Käufer zahlt CHF 35.–", "Im Preis inbegriffen"): CreateListingRequest has no delivery options yet. -->
 </ng-template>
 
+<ng-template #captureTpl let-small>
+  <label class="zw-btn zw-btn--primary file" [class.zw-btn--sm]="small">
+    <app-icon name="camera" />
+    <span>{{ 'Foto aufnehmen' | t }}</span>
+    <input
+      type="file"
+      accept="image/*"
+      capture="environment"
+      class="zw-sr-only"
+      (change)="addPhotos($any($event.target), true)"
+    />
+  </label>
+</ng-template>
+
 <ng-template #stageTpl>
   @if (stage(); as st) {
     @if (st.photo; as photo) {
@@ -791,7 +801,11 @@
         [marks]="st.marks"
         [scanning]="st.scanning"
         [compact]="st.compact"
-      />
+      >
+        @if (st.capture) {
+          <ng-container *ngTemplateOutlet="captureTpl; context: { $implicit: true }" />
+        }
+      </app-detection-stage>
       <div class="status">
         <span class="zw-caption">{{ step() === 1 ? analyzeStatus() : '' }}</span>
         @if (photos().length > 1 && step() === 1) {

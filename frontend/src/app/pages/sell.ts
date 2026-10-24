@@ -885,6 +885,8 @@ export class Sell {
       scanning: waiting && !marks.length,
       marks,
       compact: asking && !!card && card.kind !== 'PHOTO',
+      // the camera button sits on the photo where the detail is; without a box it stays in the footer
+      capture: !!hint && this.photos().length < this.maxPhotos,
     };
   });
   protected readonly asideTitle = computed(() =>
