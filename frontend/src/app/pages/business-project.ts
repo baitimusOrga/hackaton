@@ -6,6 +6,7 @@ import { ClearanceService } from '../api/services';
 import { ItemView, ProjectDetail, RouteOption, Totals } from '../api/models';
 import { CATEGORIES } from '../categories';
 import { Condition, CONDITION_LABELS } from '../conditions';
+import { TranslatePipe } from '../i18n/i18n';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
@@ -36,7 +37,7 @@ const CONDITIONS = Object.keys(CONDITION_LABELS) as Condition[];
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business-project',
-  imports: [DatePipe, RouterLink, Badge, Button, ChfPipe],
+  imports: [DatePipe, RouterLink, Badge, Button, ChfPipe, TranslatePipe],
   templateUrl: './business-project.html',
   styles: `
     .bp-head {

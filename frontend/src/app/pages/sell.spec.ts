@@ -46,7 +46,7 @@ async function analyse(runs: Run[], extra: object = {}, place = vi.fn()) {
   TestBed.configureTestingModule({
     providers: [
       provideRouter([{ path: '**', children: [] }]),
-      { provide: SellingService, useValue: { uploadPhotos, ...extra } },
+      { provide: SellingService, useValue: { uploadPhotos, rewriteText: () => of({}), ...extra } },
       { provide: ListingsService, useValue: { categories: () => of(CATEGORIES) } },
       { provide: PlacesService, useValue: { place } },
       { provide: DraftStream, useValue: { run } },

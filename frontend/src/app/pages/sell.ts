@@ -3,6 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { HttpContext } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
+import { I18n, TranslatePipe } from '../i18n/i18n';
 import { ListingsService, PlacesService, SellingService } from '../api/services';
 import {
   CreateListingRequest,
@@ -15,7 +16,7 @@ import {
 import { PricePanel } from '../components/price-panel';
 import { Condition, CONDITION_LABELS } from '../conditions';
 import { DraftStream } from '../draft-stream';
-import { ErrorBanner, HANDLES_ERRORS } from '../errors';
+import { ErrorBanner, HANDLES_ERRORS, translateError } from '../errors';
 import { CONDITION, GapCard, KnownFact, completeness, openGaps } from '../gaps';
 import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
@@ -63,7 +64,7 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-sell',
-  imports: [NgTemplateOutlet, RouterLink, PricePanel, Button, ChfPipe, Icon],
+  imports: [NgTemplateOutlet, RouterLink, PricePanel, Button, ChfPipe, Icon, TranslatePipe],
   templateUrl: './sell.html',
   styles: `
     .dlg {
@@ -287,6 +288,7 @@ export class Sell {
   private readonly places = inject(PlacesService);
   private readonly banner = inject(ErrorBanner);
   private readonly router = inject(Router);
+  private readonly i18n = inject(I18n);
   protected readonly maxPhotos = MAX_PHOTOS;
   protected readonly steps = STEPS;
   protected readonly markers = MARKERS;
@@ -461,7 +463,11 @@ export class Sell {
         },
       );
     } catch (error) {
-      this.banner.show(error instanceof Error ? error.message : 'Der Server ist nicht erreichbar.');
+      this.banner.show(
+        error instanceof Error
+          ? translateError(error.message, this.i18n)
+          : this.i18n.t('Der Server ist nicht erreichbar.'),
+      );
     }
     this.analyzing.set(false);
     if (drafted || hadDraft) {
@@ -493,7 +499,7 @@ export class Sell {
         this.applyDraft(event.draft!);
         return true;
       case 'ERROR':
-        this.banner.show(event.detail ?? 'Der Entwurf konnte nicht erstellt werden.');
+        this.banner.show(event.detail ?? this.i18n.t('Der Entwurf konnte nicht erstellt werden.'));
         return false;
       default:
         return false;

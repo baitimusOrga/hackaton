@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClient, HttpContext, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ErrorBanner, HANDLES_ERRORS, errorInterceptor } from './errors';
+import { ErrorBanner, HANDLES_ERRORS, errorInterceptor, translateError } from './errors';
+import { I18n } from './i18n/i18n';
 
 describe('errorInterceptor', () => {
   let http: HttpClient;
@@ -39,5 +40,16 @@ describe('errorInterceptor', () => {
       .subscribe({ error: () => undefined });
     backend.expectOne('/api/teams').flush({}, { status: 400, statusText: 'Bad Request' });
     expect(banner.message()).toBeNull();
+  });
+});
+
+describe('translateError', () => {
+  it('translates known backend texts and keeps unknown ones', () => {
+    const i18n = TestBed.inject(I18n);
+    i18n.lang.set('fr');
+    expect(translateError('Postcode 9999 not found.', i18n)).toBe('Code postal 9999 introuvable.');
+    expect(translateError('Something else', i18n)).toBe('Something else');
+    i18n.lang.set('de');
+    expect(translateError('Listing not found.', i18n)).toBe('Inserat nicht gefunden.');
   });
 });

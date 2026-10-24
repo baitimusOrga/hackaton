@@ -1,6 +1,6 @@
 @if (listing(); as item) {
   <div class="cols">
-    <section aria-label="Fotos">
+    <section [attr.aria-label]="'Fotos' | t">
       <div class="photo">
         @if (item.imageUrl) {
           <img [src]="item.imageUrl" [alt]="item.title" />
@@ -9,11 +9,13 @@
       <!-- TODO: backend has one imageUrl per listing; add the thumbnail row (zw-thumb buttons, aria-current) once ListingDetail has several photos. -->
     </section>
 
-    <section aria-label="Kaufen" class="stack">
+    <section [attr.aria-label]="'Kaufen' | t" class="stack">
       <div class="group">
         <!-- TODO: backend has no sale mode or auction data; branch here to the auction variant (DetailAuction: timer, current bid, bid field, blue "Jetzt bieten") once ListingDetail has it. -->
         <!-- TODO: backend has no "Grüne Wahl" flag; add <app-badge variant="green">Grüne Wahl</app-badge> once it does. -->
-        <div class="badges"><app-badge>Festpreis</app-badge></div>
+        <div class="badges">
+          <app-badge>{{ 'Festpreis' | t }}</app-badge>
+        </div>
         <h1>{{ item.title }}</h1>
         <!-- TODO: backend has no included accessories or distance to the buyer; extend the meta line once it does. -->
         <p class="meta">{{ meta(item) }}</p>
@@ -26,11 +28,13 @@
 
       <div class="group tight">
         <!-- TODO: backend has no purchase endpoint; wire Kaufen to it (then the Bought flow). -->
-        <button appButton variant="primary" [block]="true" type="button" disabled>Kaufen</button>
+        <button appButton variant="primary" [block]="true" type="button" disabled>
+          {{ 'Kaufen' | t }}
+        </button>
         <div class="links">
           <!-- TODO: backend has no public Q&A or watchlist; enable these once it does. -->
-          <button type="button" class="zw-link" disabled>Frage stellen</button>
-          <button type="button" class="zw-link" disabled>Merken</button>
+          <button type="button" class="zw-link" disabled>{{ 'Frage stellen' | t }}</button>
+          <button type="button" class="zw-link" disabled>{{ 'Merken' | t }}</button>
         </div>
       </div>
 
@@ -38,21 +42,25 @@
         <span class="avatar" aria-hidden="true">{{ (item.sellerName || 'Z').charAt(0) }}</span>
         <div class="group tight">
           <span class="seller-name" data-testid="seller">
-            {{ item.sellerName ? item.sellerName + ' (eigene Angabe)' : 'Demo-Inserat' }}
+            {{
+              item.sellerName
+                ? ('{name} (eigene Angabe)' | t: { name: item.sellerName })
+                : ('Demo-Inserat' | t)
+            }}
           </span>
           <!-- TODO: backend has no seller stats; show "23 Verkäufe · 4.9 von 5 · Telefon und Adresse geprüft" and link to the seller profile once it does. -->
         </div>
       </div>
     </section>
 
-    <section class="details" aria-label="Details">
+    <section class="details" [attr.aria-label]="'Details' | t">
       <div class="group">
-        <h2>Angaben</h2>
+        <h2>{{ 'Angaben' | t }}</h2>
         <!-- TODO: backend has no source per fact; add the grey suffix ("vom Typenschild", "vom Verkäufer bestätigt") once attributes carry one. -->
         <dl class="facts">
           @if (item.category) {
             <div class="fact">
-              <dt>Kategorie</dt>
+              <dt>{{ 'Kategorie' | t }}</dt>
               <dd>{{ item.category }}</dd>
             </div>
           }
@@ -64,7 +72,7 @@
           }
           @if (item.createdAt) {
             <div class="fact">
-              <dt>Inseriert</dt>
+              <dt>{{ 'Inseriert' | t }}</dt>
               <dd>{{ item.createdAt | date: 'dd.MM.yyyy' }}</dd>
             </div>
           }
@@ -73,22 +81,22 @@
 
       @if (item.description) {
         <div class="group">
-          <h2>Beschreibung</h2>
+          <h2>{{ 'Beschreibung' | t }}</h2>
           <p class="text">{{ item.description }}</p>
         </div>
       }
 
       <div class="group tight">
-        <h2>Fragen</h2>
+        <h2>{{ 'Fragen' | t }}</h2>
         <!-- TODO: backend has no public questions; list them here ("Name: Frage" / "Verkäufer: Antwort") once it does. -->
-        <p class="zw-muted">Noch keine Fragen.</p>
+        <p class="zw-muted">{{ 'Noch keine Fragen.' | t }}</p>
       </div>
     </section>
   </div>
 
   @if (similar().length) {
     <section class="similar" aria-labelledby="h-sim">
-      <app-section-heading headingId="h-sim" heading="Ähnlich, in der Nähe" />
+      <app-section-heading headingId="h-sim" [heading]="'Ähnlich, in der Nähe' | t" />
       <div class="zw-grid">
         @for (other of similar(); track other.id) {
           <app-summary-card [listing]="other" />

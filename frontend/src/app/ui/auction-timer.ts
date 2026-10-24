@@ -7,6 +7,7 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { TranslatePipe } from '../i18n/i18n';
 import { Icon } from './icon';
 
 const URGENT_MS = 10 * 60 * 1000;
@@ -15,11 +16,11 @@ const pad = (n: number) => String(n).padStart(2, '0');
 /** Countdown `hh:mm:ss` without animation; inverts to black in the last ten minutes. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon],
+  imports: [Icon, TranslatePipe],
   selector: 'app-auction-timer',
   host: { '[class]': 'classes()', role: 'timer', 'aria-live': 'off' },
   template: `<app-icon name="clock" [size]="16" />
-    <span class="zw-timer__label">{{ ended() ? endedLabel() : label() }}</span>
+    <span class="zw-timer__label">{{ (ended() ? endedLabel() : label()) | t }}</span>
     <span>{{ value() }}</span>`,
 })
 export class AuctionTimer {
