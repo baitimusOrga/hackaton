@@ -8,29 +8,27 @@ import { TranslatePipe } from '../i18n/i18n';
   template: `<h1>{{ 'Über uns' | t }}</h1>
     <p>
       {{
-        'Zweit. ist der Marktplatz für Secondhand in der Schweiz: Du findest, was du suchst, und verkaufst, was du nicht mehr brauchst.'
+        'Wir sind vier Informatiklernende in der Fachrichtung Applikationsentwicklung im dritten Lehrjahr. Wir haben uns in der Schule kennengelernt und arbeiten in vier verschiedenen Unternehmen.'
           | t
       }}
     </p>
-    @for (s of sections; track s.title) {
-      <h2>{{ s.title | t }}</h2>
-      <p>{{ s.text | t }}</p>
-    }`,
-  styles: 'h1, h2, p { margin-bottom: var(--space-4); }',
+    <p>
+      {{ 'Gemeinsam haben wir beschlossen, am Zentral Hack in der Kategorie' | t }}
+      <em>Young Talents</em
+      >{{ ' teilzunehmen. Unser Ziel ist es, einen Online-Marktplatz zu entwickeln.' | t }}
+    </p>
+    <p>
+      {{
+        'Obwohl wir aus verschiedenen Unternehmen kommen, teilen wir die Leidenschaft für Softwareentwicklung und arbeiten gerne an neuen Herausforderungen.'
+          | t
+      }}
+    </p>
+    <p>
+      {{
+        'Mit diesem Projekt möchten wir unsere Programmierkenntnisse verbessern, praktische Erfahrungen sammeln und gemeinsam etwas Nützliches schaffen.'
+          | t
+      }}
+    </p>`,
+  styles: 'h1, p { margin-bottom: var(--space-4); }',
 })
-export class About {
-  protected readonly sections = [
-    {
-      title: 'Genaue Angaben',
-      text: 'Fotos und Fragen führen zu einem Inserat mit klaren Angaben zu Artikel und Zustand.',
-    },
-    {
-      title: 'Passende Treffer',
-      text: 'Beschreibe, was du suchst, und sieh bestätigte Treffer getrennt von Alternativen.',
-    },
-    {
-      title: 'Für Private und Firmen',
-      text: 'Privatpersonen verkaufen einzelne Artikel, Firmen räumen ganze Bestände.',
-    },
-  ];
-}
+export class About {}
