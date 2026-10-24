@@ -20,7 +20,7 @@
 </form>
 <p id="find-tip" class="zw-help">Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter</p>
 
-<p role="status" aria-live="polite" class="zw-help">{{ progress() }}</p>
+<p role="status" aria-live="polite" class="find__status">{{ progress() }}</p>
 
 @if (searched()) {
   <div class="find__strip">
@@ -60,6 +60,63 @@
   <div class="find__cols">
     <form class="find__filters" aria-label="Filter" (ngSubmit)="showMatches()">
       <div class="find__f">
+        <label class="zw-label" for="find-keywords">Modell, Stichwort</label>
+        <input
+          id="find-keywords"
+          name="keywords"
+          class="zw-input"
+          placeholder="z. B. iMac, 27 Zoll"
+          [(ngModel)]="keywords"
+        />
+        <span class="zw-help">Mehrere mit Komma trennen</span>
+      </div>
+      <div class="find__f">
+        <label class="zw-label" for="find-cat">Kategorie</label>
+        <input id="find-cat" name="category" class="zw-input" [(ngModel)]="category" />
+      </div>
+      <div class="find__f">
+        <label class="zw-label" for="find-budget">Höchstpreis (CHF)</label>
+        <input
+          id="find-budget"
+          class="zw-input zw-input--price"
+          type="number"
+          min="0"
+          name="budget"
+          [(ngModel)]="budget"
+        />
+      </div>
+      <div class="find__pair">
+        <div class="find__f">
+          <label class="zw-label" for="find-plz">PLZ</label>
+          <input
+            id="find-plz"
+            class="zw-input"
+            name="postcode"
+            inputmode="numeric"
+            maxlength="4"
+            [(ngModel)]="postcode"
+          />
+        </div>
+        <div class="find__f zw-field">
+          <label class="zw-label" for="find-radius">Umkreis</label>
+          <select
+            id="find-radius"
+            class="zw-input"
+            name="radius"
+            [disabled]="!postcode().trim()"
+            [(ngModel)]="radius"
+          >
+            <option [ngValue]="null">Ganze Schweiz</option>
+            @for (km of radii; track km) {
+              <option [ngValue]="km">{{ km }} km</option>
+            }
+          </select>
+          @if (!postcode().trim()) {
+            <span class="zw-help">Zuerst PLZ eingeben</span>
+          }
+        </div>
+      </div>
+      <div class="find__f">
         <span class="zw-label">Anforderungen</span>
         @for (row of rows; track row.key) {
           <span class="zw-help">{{ row.label }}</span>
@@ -78,106 +135,24 @@
                   → {{ row.other }}
                 </button>
               </li>
-            } @empty {
-              <li class="zw-help">Keine.</li>
             }
           </ul>
         }
       </div>
-      <div class="find__f">
-        <label class="zw-label" for="find-cat">Kategorie</label>
-        <input id="find-cat" name="category" class="zw-input" [(ngModel)]="category" />
-      </div>
-      <!-- TODO: brand filter; the backend has no brand field in SearchRequirements. -->
-      <fieldset class="zw-fieldset find__f" disabled>
-        <label class="zw-label" for="find-brand">Marke</label>
-        <select id="find-brand" class="zw-input">
-          <option>Alle Marken</option>
-        </select>
-      </fieldset>
-      <div class="find__f">
-        <label class="zw-label" for="find-keywords">Modell, Stichwort</label>
-        <input id="find-keywords" name="keywords" class="zw-input" [(ngModel)]="keywords" />
-        <span class="zw-help">Mehrere mit Komma trennen</span>
-      </div>
-      <fieldset class="zw-fieldset find__f">
-        <legend class="zw-label">Preis</legend>
-        <div class="find__pair">
-          <!-- TODO: minimum price; the backend only knows a maximum budget. -->
-          <input
-            class="zw-input zw-input--price"
-            type="number"
-            placeholder="von"
-            aria-label="Preis von"
-            disabled
-          />
-          <input
-            class="zw-input zw-input--price"
-            type="number"
-            min="0"
-            name="budget"
-            placeholder="bis"
-            aria-label="Preis bis"
-            [(ngModel)]="budget"
-          />
-        </div>
-        <!-- TODO: total price incl. shipping; listings have no shipping cost yet. -->
-        <label class="zw-check"><input type="checkbox" disabled />Gesamtpreis inkl. Versand</label>
-      </fieldset>
-      <fieldset class="zw-fieldset find__f">
-        <legend class="zw-label">Region</legend>
-        <div class="find__pair">
-          <input
-            class="zw-input"
-            name="postcode"
-            inputmode="numeric"
-            maxlength="4"
-            aria-label="PLZ"
-            [(ngModel)]="postcode"
-          />
-          <select class="zw-input" name="radius" aria-label="Umkreis" [(ngModel)]="radius">
-            <option [ngValue]="null">Ganze Schweiz</option>
-            @for (km of radii; track km) {
-              <option [ngValue]="km">{{ km }} km</option>
-            }
-          </select>
-        </div>
-        <!-- TODO: pickup / shipping filter; listings have no delivery options yet. -->
-        <label class="zw-check"><input type="checkbox" disabled />Abholung</label>
-        <label class="zw-check"><input type="checkbox" disabled />Versand</label>
-      </fieldset>
-      <!-- TODO: condition, sale mode and "Nur" filters are not in SearchRequirements yet. -->
-      <fieldset class="zw-fieldset find__f" disabled>
-        <legend class="zw-label">Zustand</legend>
-        @for (c of conditionOptions; track c) {
-          <label class="zw-check"><input type="checkbox" />{{ c }}</label>
-        }
-      </fieldset>
-      <fieldset class="zw-fieldset find__f" disabled>
-        <legend class="zw-label">Verkaufsart</legend>
-        @for (m of modeOptions; track m) {
-          <label class="zw-check"><input type="checkbox" />{{ m }}</label>
-        }
-      </fieldset>
-      <fieldset class="zw-fieldset find__f">
-        <legend class="zw-label">Nur</legend>
-        @for (o of onlyOptions; track o) {
-          <label class="zw-check"><input type="checkbox" disabled />{{ o }}</label>
-        }
-        <label class="zw-check">
-          <input type="checkbox" name="acceptUnknown" [(ngModel)]="acceptUnknown" />
-          Auch Inserate mit fehlenden Angaben
-        </label>
-      </fieldset>
-      <button appButton type="submit" [disabled]="matching()">
-        {{ matching() ? 'Suche läuft…' : results() ? 'Treffer aktualisieren' : 'Treffer zeigen' }}
-      </button>
+      <label class="zw-check find__check">
+        <input type="checkbox" name="acceptUnknown" [(ngModel)]="acceptUnknown" />
+        <span>Auch Inserate mit fehlenden Angaben</span>
+      </label>
       <button appButton variant="ghost" size="sm" type="button" (click)="reset()">
         Filter zurücksetzen
       </button>
     </form>
 
-    <div class="find__results">
+    <div
+      class="find__results"
+      [class.find__results--busy]="matching()"
+      [attr.aria-busy]="matching()"
+    >
       @if (results(); as res) {
         <div class="find__bar">
           <span>{{ total(res) }} Inserate</span>

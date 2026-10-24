@@ -106,6 +106,16 @@
   outline-offset: 2px;
   background: var(--bg-000);
 }
+.zw-input:disabled {
+  border-style: dashed;
+  border-color: var(--line-soft);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+.zw-field:has(:disabled) .zw-label {
+  color: var(--ink-muted);
+}
 .zw-input--price {
   font-variant-numeric: tabular-nums;
   font-weight: 700;

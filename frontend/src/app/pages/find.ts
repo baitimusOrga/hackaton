@@ -1,14 +1,29 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
+import { EMPTY, Subject, catchError, debounceTime, filter, map, merge, switchMap, tap } from 'rxjs';
 import { SearchService } from '../api/services';
 import { Requirement, SearchMatch, SearchRequirements } from '../api/models';
-import { CONDITION_LABELS } from '../conditions';
 import { Button } from '../ui/button';
 import { chf } from '../ui/chf';
 import { Icon } from '../ui/icon';
 import { SummaryCard } from '../ui/summary-card';
+
+const FILTER_KEYS = ['kw', 'cat', 'max', 'plz', 'km', 'unknown', 'must', 'nice'];
+
+/** True when the URL already holds exactly the filters the form shows (our own navigation). */
+function sameQuery(params: ParamMap, query: Record<string, string | null>): boolean {
+  return Object.entries(query).every(([k, v]) => params.get(k) === v);
+}
 
 type Row = 'mustHave' | 'niceToHave';
 type Results = Record<'confirmed' | 'possible' | 'alternatives', SearchMatch[]> & {
@@ -63,12 +78,15 @@ type Results = Record<'confirmed' | 'possible' | 'alternatives', SearchMatch[]> 
     .find__filters {
       display: flex;
       flex-direction: column;
-      gap: 28px;
+      gap: var(--space-6);
     }
     .find__f {
       display: flex;
       flex-direction: column;
       gap: var(--space-2);
+    }
+    .find__check {
+      flex-wrap: nowrap;
     }
     .find__pair {
       display: grid;
@@ -80,6 +98,15 @@ type Results = Record<'confirmed' | 'possible' | 'alternatives', SearchMatch[]> 
       min-height: 44px;
       font-size: 14px;
       line-height: 20px;
+    }
+    .find__status {
+      min-height: 1.5em;
+      margin: var(--space-2) 0;
+      font-weight: 500;
+    }
+    .find__results--busy {
+      opacity: 0.5;
+      transition: opacity 0.15s;
     }
     .find__results {
       display: flex;
@@ -145,10 +172,6 @@ export class Find {
     },
   ] as const;
   protected readonly radii = [5, 10, 25, 50, 100];
-  // TODO: the backend has no filters for these yet (condition, sale mode, "Nur" flags); wire them up once SearchRequirements has them.
-  protected readonly conditionOptions = Object.values(CONDITION_LABELS);
-  protected readonly modeOptions = ['Festpreis', 'Preisvorschlag', 'Auktion'];
-  protected readonly onlyOptions = ['Getestet, funktioniert', 'Grüne Wahl', 'Geprüfte Verkäufer'];
 
   protected readonly text = signal('');
   protected readonly loading = signal(false);
@@ -164,19 +187,133 @@ export class Find {
   protected readonly matching = signal(false);
   protected readonly results = signal<Results | null>(null);
   protected readonly progress = signal('');
+  private readonly body = computed(() => ({
+    mustHave: this.mustHave(),
+    niceToHave: this.niceToHave(),
+    category: this.category()?.trim() || null,
+    keywords: this.keywords()
+      .split(',')
+      .map((k) => k.trim().toLowerCase())
+      .filter((k) => k),
+    maxBudgetChf: this.budget() ?? undefined,
+    postcode: this.postcode().trim() || undefined,
+    maxDistanceKm: this.postcode().trim() ? (this.radius() ?? undefined) : undefined,
+    acceptUnknown: this.acceptUnknown(),
+  }));
+  /** The text the filters were read from; it stays in the URL next to the filters. */
+  private readonly asked = signal('');
+  /** Everything the filter form holds, as URL query params (null = not in the URL). */
+  private readonly query = computed(() => {
+    const pc = this.postcode().trim();
+    const json = (list: Requirement[]) => (list.length ? JSON.stringify(list) : null);
+    return {
+      q: this.asked() || null,
+      kw: this.keywords().trim() || null,
+      cat: this.category()?.trim() || null,
+      max: this.budget() === null ? null : String(this.budget()),
+      plz: pc || null,
+      km: pc && this.radius() ? String(this.radius()) : null,
+      unknown: this.acceptUnknown() ? null : '0',
+      must: json(this.mustHave()),
+      nice: json(this.niceToHave()),
+    };
+  });
+  private readonly router = inject(Router);
+  private readonly now = new Subject<void>();
+  private lastKey = '';
   private initial: SearchRequirements | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
-    // The header and the landing page search by navigating to /find?q=…
+    // Every filter change searches again once the user pauses; switchMap drops the answer of a replaced request.
+    merge(
+      toObservable(this.body).pipe(
+        filter(() => this.searched()),
+        debounceTime(600),
+        filter((body) => JSON.stringify(body) !== this.lastKey),
+      ),
+      this.now.pipe(map(() => this.body())),
+    )
+      .pipe(
+        tap((body) => {
+          this.lastKey = JSON.stringify(body);
+          this.matching.set(true);
+          this.status(
+            'Durchsuche die Inserate…',
+            'Vergleiche die Inserate mit deinen Anforderungen…',
+          );
+        }),
+        switchMap((body) =>
+          this.search.matches({ body }).pipe(
+            map((res) => {
+              this.results.set({
+                confirmed: res.confirmed ?? [],
+                possible: res.possible ?? [],
+                alternatives: res.alternatives ?? [],
+                compared: res.compared ?? 0,
+              });
+              this.matching.set(false);
+              this.status('');
+            }),
+            catchError(() => {
+              this.matching.set(false);
+              this.status('');
+              return EMPTY;
+            }),
+          ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe();
+
+    // Keep the filters in the URL so a reload or a shared link shows the same search.
+    effect(() => {
+      const queryParams = this.query();
+      if (!this.searched()) return;
+      untracked(() =>
+        this.router.navigate([this.router.url.split('?')[0]], { queryParams, replaceUrl: true }),
+      );
+    });
+
+    // The header and the landing page search by navigating to /find?q=…; a URL with filters restores them.
     inject(ActivatedRoute)
       .queryParamMap.pipe(takeUntilDestroyed())
       .subscribe((params) => {
+        if (FILTER_KEYS.some((k) => params.has(k))) {
+          if (!this.searched() || !sameQuery(params, this.query())) this.restore(params);
+          return;
+        }
         const q = params.get('q')?.trim();
-        if (!q) return;
+        if (!q || (this.searched() && sameQuery(params, this.query()))) return;
         this.text.set(q);
         this.find();
       });
+  }
+
+  private restore(params: ParamMap): void {
+    const list = (key: string): Requirement[] => {
+      try {
+        return JSON.parse(params.get(key) ?? '[]');
+      } catch {
+        return [];
+      }
+    };
+    const max = params.get('max');
+    const km = params.get('km');
+    this.text.set(params.get('q') ?? '');
+    this.asked.set(params.get('q') ?? '');
+    this.searched.set(true);
+    this.apply({
+      mustHave: list('must'),
+      niceToHave: list('nice'),
+      category: params.get('cat'),
+      keywords: (params.get('kw') ?? '').split(',').filter((k) => k.trim()),
+      maxBudgetChf: max === null ? undefined : Number(max),
+      postcode: params.get('plz') ?? undefined,
+      maxDistanceKm: km === null ? undefined : Number(km),
+      acceptUnknown: params.get('unknown') !== '0',
+    });
+    this.showMatches();
   }
 
   find(): void {
@@ -186,9 +323,10 @@ export class Find {
     this.search.create({ body: { text: this.text() } }).subscribe({
       next: (req) => {
         this.initial = req;
+        this.asked.set(this.text().trim());
+        this.searched.set(true);
         this.apply(req);
         this.results.set(null);
-        this.searched.set(true);
         this.loading.set(false);
         this.showMatches();
       },
@@ -201,7 +339,7 @@ export class Find {
 
   /** "Filter zurücksetzen": back to what the assistant read from the sentence. */
   protected reset(): void {
-    if (this.initial) this.apply(this.initial);
+    this.apply(this.initial ?? { mustHave: [], niceToHave: [], keywords: [], acceptUnknown: true });
   }
 
   private apply(req: SearchRequirements): void {
@@ -230,39 +368,9 @@ export class Find {
     this.radius.set(null);
   }
 
+  /** Searches right away, without waiting for the debounce. */
   showMatches(): void {
-    if (this.matching()) return;
-    this.matching.set(true);
-    this.status('Durchsuche die Inserate…', 'Vergleiche die Inserate mit deinen Anforderungen…');
-    const body = {
-      mustHave: this.mustHave(),
-      niceToHave: this.niceToHave(),
-      category: this.category()?.trim() || null,
-      keywords: this.keywords()
-        .split(',')
-        .map((k) => k.trim().toLowerCase())
-        .filter((k) => k),
-      maxBudgetChf: this.budget() ?? undefined,
-      postcode: this.postcode().trim() || undefined,
-      maxDistanceKm: this.radius() ?? undefined,
-      acceptUnknown: this.acceptUnknown(),
-    };
-    this.search.matches({ body }).subscribe({
-      next: (res) => {
-        this.results.set({
-          confirmed: res.confirmed ?? [],
-          possible: res.possible ?? [],
-          alternatives: res.alternatives ?? [],
-          compared: res.compared ?? 0,
-        });
-        this.matching.set(false);
-        this.status('');
-      },
-      error: () => {
-        this.matching.set(false);
-        this.status('');
-      },
-    });
+    this.now.next();
   }
 
   /** Shows `first`, and `second` after 1.5 s if the call is still running. */
@@ -286,8 +394,8 @@ export class Find {
   }
 
   protected regionLabel(): string {
-    const pc = this.postcode().trim();
-    return this.radius() ? `${this.radius()} km um ${pc}` : pc;
+    const pc = `PLZ ${this.postcode().trim()}`;
+    return this.radius() ? `${pc} · ${this.radius()} km` : pc;
   }
 
   protected total(res: Results): number {

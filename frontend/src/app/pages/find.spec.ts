@@ -49,9 +49,7 @@ describe('Find', () => {
     expect(el.querySelector('[data-testid="niceToHave"]')!.textContent).toContain('Year: 2017');
 
     expect(matches).toHaveBeenCalledTimes(1);
-    [...el.querySelectorAll('button')]
-      .find((b) => b.textContent?.includes('Treffer aktualisieren'))!
-      .click();
+    el.querySelector('form[aria-label="Filter"]')!.dispatchEvent(new Event('submit'));
     await fixture.whenStable();
 
     const body = matches.mock.calls[1][0].body;
@@ -130,5 +128,79 @@ describe('Find', () => {
     expect(create).toHaveBeenCalledWith({ body: { text: 'iMac 2017' } });
     expect(matches).toHaveBeenCalledTimes(1);
     expect(fixture.nativeElement.querySelector('textarea').value).toBe('iMac 2017');
+  });
+
+  it('searches again once after several quick filter changes', async () => {
+    vi.useFakeTimers();
+    try {
+      const create = vi
+        .fn()
+        .mockReturnValue(of({ mustHave: [], niceToHave: [], keywords: [], acceptUnknown: true }));
+      const matches = vi
+        .fn()
+        .mockReturnValue(of({ confirmed: [], possible: [], alternatives: [], compared: 0 }));
+      TestBed.configureTestingModule({
+        providers: [provideRouter([]), { provide: SearchService, useValue: { create, matches } }],
+      });
+      const fixture = TestBed.createComponent(Find);
+      const el: HTMLElement = fixture.nativeElement;
+      fixture.detectChanges();
+      await vi.advanceTimersByTimeAsync(0);
+      const textarea = el.querySelector('textarea')!;
+      textarea.value = 'laptop';
+      textarea.dispatchEvent(new Event('input'));
+      await vi.advanceTimersByTimeAsync(0);
+      textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true }));
+      await vi.advanceTimersByTimeAsync(1000);
+      fixture.detectChanges();
+      expect(matches).toHaveBeenCalledTimes(1);
+
+      const budget = el.querySelector<HTMLInputElement>('input[name="budget"]')!;
+      fixture.detectChanges();
+      await vi.advanceTimersByTimeAsync(0);
+      for (const value of ['5', '50', '500']) {
+        budget.value = value;
+        budget.dispatchEvent(new Event('input'));
+        await vi.advanceTimersByTimeAsync(200);
+      }
+      expect(matches).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(matches).toHaveBeenCalledTimes(2);
+      expect(matches.mock.calls[1][0].body.maxBudgetChf).toBe(500);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('restores the filters from the URL without asking the assistant again', async () => {
+    const create = vi.fn();
+    const matches = vi
+      .fn()
+      .mockReturnValue(of({ confirmed: [], possible: [], alternatives: [], compared: 0 }));
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: SearchService, useValue: { create, matches } },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParamMap: of(
+              convertToParamMap({ q: 'iMac', kw: 'imac', max: '600', plz: '7000', km: '25' }),
+            ),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(Find);
+    await fixture.whenStable();
+
+    expect(create).not.toHaveBeenCalled();
+    expect(matches).toHaveBeenCalledTimes(1);
+    expect(matches.mock.calls[0][0].body).toMatchObject({
+      keywords: ['imac'],
+      maxBudgetChf: 600,
+      postcode: '7000',
+      maxDistanceKm: 25,
+    });
   });
 });

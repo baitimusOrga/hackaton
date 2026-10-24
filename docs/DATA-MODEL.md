@@ -35,6 +35,7 @@ Rules:
 | V12 | nullable `latitude`, `longitude` on `listing` (postcode centroid from swisstopo, set when a listing is published; demo listings backfilled) |
 | V13 | `photo.storage_key` (S3 object key for new photos); `photo.data` nullable, kept for older rows |
 | V14 | nullable `unit_price_chf` on `clearance_item` (the company's price per piece, used when publishing) |
+| V15 | index on `listing (status, created_at desc)` for the search |
 
 ## Backups
 
