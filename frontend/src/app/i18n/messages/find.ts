@@ -263,4 +263,48 @@ export const FIND_MESSAGES: Messages = {
   Passt: { fr: 'Correspond', it: 'Adatto', en: 'Match' },
   'Angaben fehlen': { fr: 'Informations manquantes', it: 'Dati mancanti', en: 'Details missing' },
   Alternative: { fr: 'Alternative', it: 'Alternativa', en: 'Alternative' },
+  // results screen after the Claude Design
+  'Du suchst': { fr: 'Tu cherches', it: 'Cerchi', en: 'You are looking for' },
+  'Deine Suche': { fr: 'Ta recherche', it: 'La tua ricerca', en: 'Your search' },
+  'Unterstrichen ist, was wir verstanden haben. Antippen, um es nicht mehr zu verlangen.': {
+    fr: 'Ce qui est souligné, nous l’avons compris. Touche pour ne plus l’exiger.',
+    it: 'Sottolineato è ciò che abbiamo capito. Tocca per non richiederlo più.',
+    en: 'Underlined is what we understood. Tap to stop requiring it.',
+  },
+  '{count} entfernt. Nochmals antippen, um es wieder zu verlangen.': {
+    fr: '{count} retiré(s). Touche à nouveau pour l’exiger de nouveau.',
+    it: '{count} rimossi. Tocca di nuovo per richiederlo ancora.',
+    en: '{count} removed. Tap again to require it again.',
+  },
+  '{label} nicht mehr verlangen': {
+    fr: 'Ne plus exiger {label}',
+    it: 'Non richiedere più {label}',
+    en: 'Stop requiring {label}',
+  },
+  '{label} wieder verlangen': {
+    fr: 'Exiger à nouveau {label}',
+    it: 'Richiedere di nuovo {label}',
+    en: 'Require {label} again',
+  },
+  'Dazu:': { fr: 'En plus :', it: 'Inoltre:', en: 'Also:' },
+  'Anpassen, z.B. „doch etwas neuere Modelle“': {
+    fr: 'Ajuster, p. ex. « plutôt des modèles plus récents »',
+    it: 'Modifica, p. es. «meglio modelli più recenti»',
+    en: 'Adjust, e.g. “rather newer models”',
+  },
+  'Alle entfernen': { fr: 'Tout retirer', it: 'Rimuovi tutto', en: 'Clear all' },
+  Zurücksetzen: { fr: 'Réinitialiser', it: 'Reimposta', en: 'Reset' },
+  Übernehmen: { fr: 'Appliquer', it: 'Applica', en: 'Apply' },
+  Alle: { fr: 'Toutes', it: 'Tutte', en: 'All' },
+  Stichwort: { fr: 'Mot-clé', it: 'Parola chiave', en: 'Keyword' },
+  '{attribute} entfernen': {
+    fr: 'Retirer {attribute}',
+    it: 'Rimuovi {attribute}',
+    en: 'Remove {attribute}',
+  },
+  'ausserhalb deiner Suche': {
+    fr: 'hors de ta recherche',
+    it: 'fuori dalla tua ricerca',
+    en: 'outside your search',
+  },
 };

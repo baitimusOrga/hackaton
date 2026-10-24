@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { ListingSummary } from '../api/models';
 import { conditionLabel, metaLine } from '../conditions';
 import { I18n } from '../i18n/i18n';
-import { ListingCard } from './listing-card';
+import { CardFit, ListingCard } from './listing-card';
 
 /** A backend listing as a fixed-price or auction card linking to its detail page. */
 @Component({
@@ -19,10 +19,14 @@ import { ListingCard } from './listing-card';
     [endsAt]="listing().endsAt ? endsAt() : null"
     [image]="listing().imageUrl ?? ''"
     [meta]="meta()"
+    [why]="why()"
+    [fit]="fit()"
   />`,
 })
 export class SummaryCard {
   readonly listing = input.required<ListingSummary>();
+  readonly why = input('');
+  readonly fit = input<CardFit | null>(null);
   private readonly i18n = inject(I18n);
   protected readonly endsAt = computed(() => new Date(this.listing().endsAt ?? 0));
   protected readonly meta = computed(() => {

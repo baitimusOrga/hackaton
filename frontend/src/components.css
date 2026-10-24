@@ -312,6 +312,18 @@
   color: var(--green-text);
   margin: 0;
 }
+.zw-card__why {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+.zw-card__why--ok {
+  color: var(--green-text);
+}
 .zw-card:hover .zw-card__title {
   text-decoration: underline;
   text-underline-offset: 3px;
