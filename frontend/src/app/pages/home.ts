@@ -1,6 +1,7 @@
 import {
   afterNextRender,
   ChangeDetectionStrategy,
+  computed,
   Component,
   DestroyRef,
   ElementRef,
@@ -11,10 +12,11 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { catchError, map, of } from 'rxjs';
+import { catchError, of } from 'rxjs';
 import { ListingsService } from '../api/services';
 import { TranslatePipe } from '../i18n/i18n';
 import { HeroSearch } from '../shell/hero-search';
+import { ListingMap } from '../components/listing-map';
 import { Button } from '../ui/button';
 import { Chip } from '../ui/chip';
 import { Icon } from '../ui/icon';
@@ -80,9 +82,9 @@ const SAMPLE_AUCTIONS = [
     Chip,
     Icon,
     ListingCard,
+    ListingMap,
     SectionHeading,
     SummaryCard,
-    TranslatePipe,
   ],
   selector: 'app-home',
   host: { class: 'zw-bleed' },
@@ -99,14 +101,12 @@ export class Home {
     ...a,
     endsAt: Date.now() + a.endsIn * MINUTE,
   }));
-  protected readonly nearby = toSignal(
+  protected readonly listings = toSignal(
     inject(ListingsService)
       .list({})
-      .pipe(
-        map((items) => items.slice(0, 8)),
-        catchError(() => of([])),
-      ),
+      .pipe(catchError(() => of([]))),
   );
+  protected readonly nearby = computed(() => this.listings()?.slice(0, 8));
 
   constructor() {
     const hero = this.hero;

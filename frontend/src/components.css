@@ -853,3 +853,65 @@ textarea.zw-input {
   line-height: 20px;
   color: var(--ink-muted);
 }
+
+/* Map (Leaflet): Zweit palette, square corners, white areas with black outline and count */
+.zw-map {
+  height: 480px;
+  width: 100%;
+  isolation: isolate;
+  border: var(--border-1) solid var(--line);
+  border-radius: var(--radius-1);
+  font-family: var(--font-sans);
+}
+.zw-map-area {
+  fill: var(--bg-000);
+  fill-opacity: 0.5;
+  stroke: var(--line);
+  stroke-width: 2px;
+}
+.zw-map-area:hover {
+  fill-opacity: 0.8;
+}
+.leaflet-tooltip.zw-map-count {
+  padding: 0 var(--space-2);
+  min-width: 28px;
+  text-align: center;
+  font: 700 14px/24px var(--font-sans);
+  color: var(--ink);
+  background: var(--bg-000);
+  border: var(--border-2) solid var(--line);
+  border-radius: var(--radius-1);
+  box-shadow: none;
+}
+.leaflet-tooltip.zw-map-count::before {
+  display: none;
+}
+.zw-map .leaflet-popup-content-wrapper,
+.zw-map .leaflet-popup-tip {
+  background: var(--bg-000);
+  color: var(--ink);
+  border-radius: var(--radius-1);
+  box-shadow: none;
+  border: var(--border-1) solid var(--line);
+}
+.zw-map .leaflet-popup-content {
+  margin: var(--space-3) var(--space-4);
+  font: 400 16px/24px var(--font-sans);
+}
+.zw-map .leaflet-popup-content ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.zw-map .leaflet-popup-content a {
+  color: var(--ink);
+}
+.zw-map .leaflet-popup-content a:hover {
+  color: var(--blue-text);
+}
+.zw-map .leaflet-bar a,
+.zw-map .leaflet-control-attribution {
+  background: var(--bg-000);
+  color: var(--ink);
+  border-radius: var(--radius-0);
+}

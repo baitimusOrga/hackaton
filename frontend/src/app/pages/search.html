@@ -1,0 +1,106 @@
+<div class="zw-container zw-section zw-section--last">
+  <h1>Suchen</h1>
+  <form class="filters" role="search" (submit)="$event.preventDefault()">
+    <div class="zw-field">
+      <label class="zw-label" for="s-q">Suchbegriff</label>
+      <input
+        #q
+        id="s-q"
+        class="zw-input"
+        type="search"
+        name="q"
+        [value]="filters().q ?? ''"
+        (change)="set('q', q.value)"
+      />
+    </div>
+    <div class="zw-field">
+      <label class="zw-label" for="s-category">Kategorie</label>
+      <select
+        #category
+        id="s-category"
+        class="zw-input"
+        name="category"
+        (change)="set('category', category.value)"
+      >
+        <option value="" [selected]="!filters().category">Alle</option>
+        @for (c of categories; track c) {
+          <option [value]="c" [selected]="filters().category === c">{{ c }}</option>
+        }
+      </select>
+    </div>
+    <div class="zw-field">
+      <label class="zw-label" for="s-price">Höchstpreis (CHF)</label>
+      <input
+        #maxPrice
+        id="s-price"
+        class="zw-input"
+        type="number"
+        min="0"
+        name="maxPrice"
+        [value]="filters().maxPrice ?? ''"
+        (change)="set('maxPrice', maxPrice.value)"
+      />
+    </div>
+    <div class="zw-field">
+      <label class="zw-label" for="s-postcode">PLZ</label>
+      <input
+        #postcode
+        id="s-postcode"
+        class="zw-input"
+        inputmode="numeric"
+        maxlength="4"
+        name="postcode"
+        [value]="filters().postcode ?? ''"
+        (change)="set('postcode', postcode.value)"
+      />
+    </div>
+    <div class="zw-field">
+      <label class="zw-label" for="s-radius">Umkreis</label>
+      <select
+        #radius
+        id="s-radius"
+        class="zw-input"
+        name="radiusKm"
+        (change)="nearMe(radius.value)"
+      >
+        <option value="" [selected]="!filters().radiusKm">Beliebig</option>
+        @for (km of radii; track km) {
+          <option [value]="km" [selected]="filters().radiusKm === km">{{ km }} km um mich</option>
+        }
+      </select>
+    </div>
+  </form>
+  @if (locationError()) {
+    <p class="zw-error" role="alert">{{ locationError() }}</p>
+  }
+
+  @if (listings(); as items) {
+    @if (items.length) {
+      <div class="view" role="group" aria-label="Ansicht">
+        @for (v of views; track v[0]) {
+          <button
+            type="button"
+            class="zw-chip"
+            [attr.aria-pressed]="view() === v[0]"
+            (click)="view.set(v[0])"
+          >
+            <span>{{ v[1] }}</span>
+          </button>
+        }
+      </div>
+      @if (view() === 'map') {
+        <app-listing-map [items]="items" label="Karte der Treffer" />
+      } @else {
+        <div class="zw-grid">
+          @for (item of items; track item.id) {
+            <app-summary-card [listing]="item" />
+          }
+        </div>
+      }
+    } @else {
+      <p class="zw-muted">Keine Inserate gefunden.</p>
+    }
+  } @else {
+    <p class="zw-muted">Inserate werden geladen…</p>
+  }
+</div>
