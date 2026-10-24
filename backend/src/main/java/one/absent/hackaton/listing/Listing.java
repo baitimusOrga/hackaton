@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Getter
@@ -43,6 +44,7 @@ public class Listing {
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20)
     private ListingStatus status = ListingStatus.AVAILABLE;
     @ElementCollection
+    @BatchSize(size = 60) // one select for all attributes of a result page instead of one per listing
     @CollectionTable(name = "listing_attribute", joinColumns = @JoinColumn(name = "listing_id"))
     @MapKeyColumn(name = "name", length = 80)
     @Column(name = "attribute_value", nullable = false, length = 500)

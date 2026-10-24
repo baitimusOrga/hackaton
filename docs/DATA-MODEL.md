@@ -36,6 +36,7 @@ Rules:
 | V13 | `photo.storage_key` (S3 object key for new photos); `photo.data` nullable, kept for older rows |
 | V14 | nullable `unit_price_chf` on `clearance_item` (the company's price per piece, used when publishing) |
 | V15 | 90 fictional demo listings for the buying assistant (ids 1201–1290, with attributes and postcode centroids) |
+| V16 | index on `listing (status, created_at desc)` for the search |
 
 ## Backups
 

@@ -132,13 +132,6 @@
           (ngModelChange)="category.set($event); changed(400)"
         />
       </div>
-      <!-- TODO: brand filter; the backend has no brand field in SearchRequirements. -->
-      <fieldset class="zw-fieldset find__f" disabled>
-        <label class="zw-label" for="find-brand">{{ 'Marke' | t }}</label>
-        <select id="find-brand" class="zw-input">
-          <option>{{ 'Alle Marken' | t }}</option>
-        </select>
-      </fieldset>
       <div class="find__f">
         <label class="zw-label" for="find-keywords">{{ 'Modell, Stichwort' | t }}</label>
         <input
@@ -153,14 +146,6 @@
       <fieldset class="zw-fieldset find__f">
         <legend class="zw-label">{{ 'Preis' | t }}</legend>
         <div class="find__pair">
-          <!-- TODO: minimum price; the backend only knows a maximum budget. -->
-          <input
-            class="zw-input zw-input--price"
-            type="number"
-            [placeholder]="'von' | t"
-            [attr.aria-label]="'Preis von' | t"
-            disabled
-          />
           <input
             class="zw-input zw-input--price"
             type="number"
@@ -172,10 +157,6 @@
             (ngModelChange)="budget.set($event); changed(400)"
           />
         </div>
-        <!-- TODO: total price incl. shipping; listings have no shipping cost yet. -->
-        <label class="zw-check"
-          ><input type="checkbox" disabled />{{ 'Gesamtpreis inkl. Versand' | t }}</label
-        >
       </fieldset>
       <fieldset class="zw-fieldset find__f">
         <legend class="zw-label">{{ 'Region' | t }}</legend>
@@ -193,6 +174,7 @@
             id="find-radius"
             class="zw-input"
             name="radius"
+            [disabled]="!postcode().trim() && !position()"
             [attr.aria-label]="'Umkreis' | t"
             [ngModel]="radius()"
             (ngModelChange)="radius.set($event); changed()"
@@ -207,28 +189,6 @@
           <app-icon name="pin" [size]="16" />
           <span>{{ (position() ? 'Standort aktualisieren' : 'Mein Standort') | t }}</span>
         </button>
-        <!-- TODO: pickup / shipping filter; listings have no delivery options yet. -->
-        <label class="zw-check"><input type="checkbox" disabled />{{ 'Abholung' | t }}</label>
-        <label class="zw-check"><input type="checkbox" disabled />{{ 'Versand' | t }}</label>
-      </fieldset>
-      <!-- TODO: condition, sale mode and "Nur" filters are not in SearchRequirements yet. -->
-      <fieldset class="zw-fieldset find__f" disabled>
-        <legend class="zw-label">{{ 'Zustand' | t }}</legend>
-        @for (c of conditionOptions; track c) {
-          <label class="zw-check"><input type="checkbox" />{{ c | t }}</label>
-        }
-      </fieldset>
-      <fieldset class="zw-fieldset find__f" disabled>
-        <legend class="zw-label">{{ 'Verkaufsart' | t }}</legend>
-        @for (m of modeOptions; track m) {
-          <label class="zw-check"><input type="checkbox" />{{ m | t }}</label>
-        }
-      </fieldset>
-      <fieldset class="zw-fieldset find__f">
-        <legend class="zw-label">{{ 'Nur' | t }}</legend>
-        @for (o of onlyOptions; track o) {
-          <label class="zw-check"><input type="checkbox" disabled />{{ o | t }}</label>
-        }
       </fieldset>
       <button appButton type="submit" [disabled]="matching()">
         {{ (matching() ? 'Suche läuft…' : 'Treffer aktualisieren') | t }}
