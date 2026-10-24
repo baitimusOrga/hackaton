@@ -99,8 +99,8 @@
     </form>
   </section>
 
-  <div class="find__bar">
-    <div class="find__bar-row">
+  <div class="zw-facetbar">
+    <div class="zw-facetbar__row">
       <span class="zw-caption">{{ 'Filter' | t }}</span>
       @if (hasActive()) {
         <button
@@ -108,14 +108,14 @@
           variant="ghost"
           size="sm"
           type="button"
-          class="find__clear"
+          class="zw-facetbar__clear"
           (click)="clearFilters()"
         >
           {{ 'Alle entfernen' | t }}
         </button>
       }
     </div>
-    <div class="find__facets">
+    <div class="zw-facets">
       <app-facet
         [label]="'Kategorie' | t"
         [summary]="summaries().category"
@@ -123,7 +123,7 @@
         (openChange)="setOpen('category', $event)"
         (cleared)="setCategory('')"
       >
-        <label class="find__opt">
+        <label class="zw-facet-option">
           <input
             type="radio"
             name="category"
@@ -134,7 +134,7 @@
           <span>{{ 'Alle' | t }}</span>
         </label>
         @for (c of categories; track c) {
-          <label class="find__opt">
+          <label class="zw-facet-option">
             <input
               type="radio"
               name="category"
@@ -174,7 +174,7 @@
         (cleared)="clearConditions()"
       >
         @for (c of conditionOptions; track c) {
-          <label class="find__opt">
+          <label class="zw-facet-option">
             <input
               #cond
               type="checkbox"
@@ -202,7 +202,7 @@
           [value]="off().has('region') ? '' : postcode()"
           (input)="setPostcode(pcInput.value)"
         />
-        <div class="find__radii" role="group" [attr.aria-label]="'Umkreis' | t">
+        <div class="zw-radii" role="group" [attr.aria-label]="'Umkreis' | t">
           @for (km of radii; track km) {
             <button
               type="button"
@@ -234,7 +234,7 @@
         (openChange)="setOpen('mode', $event)"
         (cleared)="auctionsOnly.set(false)"
       >
-        <label class="find__opt">
+        <label class="zw-facet-option">
           <input
             #auctionInput
             type="checkbox"
@@ -253,11 +253,11 @@
         (cleared)="clearRequirements()"
       >
         @for (row of rows; track row.key) {
-          <span class="zw-caption find__opt-head">{{ row.label | t }}</span>
+          <span class="zw-caption zw-facet-option__head">{{ row.label | t }}</span>
           <ul class="zw-list" [attr.data-testid]="row.key">
             @for (r of list(row.key); track r.attribute + r.value) {
-              <li class="find__opt">
-                <span class="find__opt-text">{{ label(r) }}</span>
+              <li class="zw-facet-option">
+                <span class="zw-facet-option__text">{{ label(r) }}</span>
                 <button
                   appButton
                   variant="ghost"
@@ -283,7 +283,7 @@
                 </button>
               </li>
             } @empty {
-              <li class="zw-help find__opt">{{ 'Keine.' | t }}</li>
+              <li class="zw-help zw-facet-option">{{ 'Keine.' | t }}</li>
             }
           </ul>
         }
@@ -306,7 +306,7 @@
         <span class="zw-help">{{ 'Mehrere mit Komma trennen' | t }}</span>
       </app-facet>
     </div>
-    <div class="find__count">
+    <div class="zw-count">
       <span role="status" aria-live="polite">{{ countText() }}</span>
       @if (!busy()) {
         @if (progress()) {

@@ -58,9 +58,9 @@ Move these rules out of the `styles:` of `frontend/src/app/pages/find.ts` into `
 | `.find__bar-row` | `.zw-facetbar__row` |
 | `.find__clear` | `.zw-facetbar__clear` |
 | `.find__facets` | `.zw-facets` (incl. the `≤639px` nowrap/scroll rule) |
-| `.find__opt`, `:last-child`, `> input` | `.zw-option`, … |
-| `.find__opt-text` | `.zw-option__text` |
-| `.find__opt-head` | `.zw-option__head` |
+| `.find__opt`, `:last-child`, `> input` | `.zw-facet-option`, … |
+| `.find__opt-text` | `.zw-facet-option__text` |
+| `.find__opt-head` | `.zw-facet-option__head` |
 | `.find__radii` | `.zw-radii` |
 | `.find__count`, `.find__count .zw-help` | `.zw-count`, … |
 | the `@media (max-width: 720px) { .find__bar { top: 0 } }` rule | same for `.zw-facetbar` |
@@ -78,10 +78,10 @@ Rewrite `frontend/src/app/pages/search.ts`, `search.html`, `search.spec.ts`. Rea
 2. `<div class="zw-facetbar">`
    - row `.zw-facetbar__row`: `zw-caption` "Filter"; `button appButton variant="ghost" size="sm" class="zw-facetbar__clear"` "Alle entfernen" when any of q / category / maxPrice / postcode / radiusKm / saleMode is set → navigates to `/search` with no query params (`router.navigate([], { relativeTo: route, queryParams: {} })`).
    - `.zw-facets` with `app-facet`s, `openFacet = signal<string | null>(null)` keeps one open (`[open]="openFacet() === 'x'" (openChange)="openFacet.set($event ? 'x' : null)"`):
-     - **Kategorie**: radio `zw-option` rows "Alle" + `CATEGORIES` (`{{ c | t }}`), `(change)="set('category', c)"` / `''` for Alle; `(cleared)="set('category', '')"`; summary = translated category or ''.
+     - **Kategorie**: radio `zw-facet-option` rows "Alle" + `CATEGORIES` (`{{ c | t }}`), `(change)="set('category', c)"` / `''` for Alle; `(cleared)="set('category', '')"`; summary = translated category or ''.
      - **Preis**: label `zw-label` "Preis bis" + `input.zw-input.zw-input--price[type=number][min=0]` with `(change)="set('maxPrice', el.value)"`; summary `bis 600`; cleared → `set('maxPrice', '')`.
      - **Region**: label "PLZ" + `input.zw-input[inputmode=numeric][maxlength=4]` `(change)="set('postcode', el.value)"`; `.zw-radii` chips 5/10/25/50/100 km + "Ganze Schweiz" (`zw-chip`, `aria-pressed`, `(click)="nearMe('25')"` / `nearMe('')`); ghost button "Mein Standort" → `nearMe(String(filters().radiusKm ?? 25))` (asks for the position with the current or default radius). Summary: `'{km} km um {pc}'` with a postcode, `'{km} km um deinen Standort'` with lat/lon, else the postcode or ''. `(cleared)` → navigate with `postcode: null, radiusKm: null, lat: null, lon: null`.
-     - **Verkaufsart**: checkbox `zw-option` "Auktion" → `set('saleMode', checked ? 'AUCTION' : '')`; summary "Auktion" when set.
+     - **Verkaufsart**: checkbox `zw-facet-option` "Auktion" → `set('saleMode', checked ? 'AUCTION' : '')`; summary "Auktion" when set.
      - **Stichwort**: label "Modell, Stichwort" + `input.zw-input[type=search]` `(change)="set('q', el.value)"`, help "Mehrere mit Komma trennen" is NOT shown here (the API does a plain contains match) — show no help text; summary = the term.
    - `.zw-count`: `<span role="status" aria-live="polite">` with `'{count} Inserate' | t` (or `'Inserate werden geladen…'` while `listings()` is undefined); right side (`margin-left: auto`): the view toggle — two `zw-chip` buttons "Liste" / "Karte" with `aria-pressed`, in a `role="group"` labelled "Ansicht" (only when there are items).
 3. `@if (locationError()) { <p class="zw-error" role="alert">…</p> }` (keep).
