@@ -604,10 +604,6 @@ textarea.zw-input {
   font-weight: 500;
   color: var(--ink-muted);
 }
-.zw-chip--location {
-  max-width: none;
-  height: 40px;
-}
 .zw-dock {
   flex: 1 1 320px;
   min-width: 0;
@@ -617,9 +613,6 @@ textarea.zw-input {
 .zw-dock .zw-input {
   flex: 1 1 auto;
   min-width: 0;
-}
-.zw-dock .zw-chip--location {
-  height: 44px;
 }
 .zw-dock .zw-btn {
   padding: 0 14px;

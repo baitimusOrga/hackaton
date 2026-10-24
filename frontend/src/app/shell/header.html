@@ -18,17 +18,6 @@
           (ngModelChange)="query.set($event)"
         />
         <button
-          type="button"
-          class="zw-chip zw-chip--location"
-          [attr.aria-label]="locationLabel()"
-          [attr.aria-pressed]="!!location.position()"
-          [disabled]="location.locating()"
-          (click)="toggleLocation()"
-        >
-          <app-icon name="pin" [size]="16" />
-          <span>{{ location.position() ? '25 km' : ('Standort' | t) }}</span>
-        </button>
-        <button
           appButton
           [variant]="hero.active() ? 'primary' : 'default'"
           type="submit"
@@ -37,20 +26,6 @@
           <app-icon name="search" />
         </button>
       </form>
-    } @else {
-      <button
-        type="button"
-        class="zw-chip zw-chip--location"
-        [attr.aria-label]="locationLabel()"
-        [attr.aria-pressed]="!!location.position()"
-        [disabled]="location.locating()"
-        (click)="toggleLocation()"
-      >
-        <app-icon name="pin" [size]="16" />
-        <span>{{
-          location.position() ? ('Mein Standort' | t) + ' · 25 km' : ('Standort' | t)
-        }}</span>
-      </button>
     }
     <nav class="zw-nav" [attr.aria-label]="'Hauptnavigation' | t">
       <a appButton [routerLink]="[{ outlets: { modal: ['sell'] } }]"
