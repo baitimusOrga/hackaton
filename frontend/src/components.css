@@ -857,27 +857,26 @@ textarea.zw-input {
 .leaflet-tooltip.zw-map-count::before {
   display: none;
 }
-.zw-map .leaflet-popup-content-wrapper,
-.zw-map .leaflet-popup-tip {
-  background: var(--bg-000);
-  color: var(--ink);
-  border-radius: var(--radius-1);
-  box-shadow: none;
-  border: var(--border-1) solid var(--line);
-}
-.zw-map .leaflet-popup-content {
-  margin: var(--space-3) var(--space-4);
-  font: 400 16px/24px var(--font-sans);
-}
-.zw-map .leaflet-popup-content ul {
-  margin: 0;
+.zw-map-list {
+  margin: var(--space-3) 0 0;
   padding: 0;
   list-style: none;
+  border: var(--border-1) solid var(--line);
+  border-radius: var(--radius-1);
 }
-.zw-map .leaflet-popup-content a {
+.zw-map-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+}
+.zw-map-list li + li {
+  border-top: var(--border-1) solid var(--line);
+}
+.zw-map-list a {
   color: var(--ink);
 }
-.zw-map .leaflet-popup-content a:hover {
+.zw-map-list a:hover {
   color: var(--blue-text);
 }
 .zw-map .leaflet-bar a,
