@@ -114,7 +114,7 @@ const STATUS = {
                 </div>
                 <div class="r">
                   <span class="price">{{ price(item) | chf }}</span>
-                  @if (item.status === 'AVAILABLE' && !item.listing.bidCount) {
+                  @if (item.status === 'AVAILABLE' && item.listing.saleMode === 'FIXED') {
                     <button
                       appButton
                       size="sm"

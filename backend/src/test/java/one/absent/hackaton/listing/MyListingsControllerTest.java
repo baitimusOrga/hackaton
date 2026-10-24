@@ -63,16 +63,16 @@ class MyListingsControllerTest {
         mvc.perform(get("/api/me/listings")).andExpect(status().isUnauthorized());
     }
 
-    @Test void withdrawsAnActiveListingButNotOthersOrAuctionsWithBids() throws Exception {
+    @Test void withdrawsAnActiveFixedPriceListingButNotOthersOrAuctions() throws Exception {
         long mine = listing("me", SaleMode.FIXED, ListingStatus.AVAILABLE, 0);
-        long bidOn = listing("me", SaleMode.AUCTION, ListingStatus.AVAILABLE, 2);
+        long auction = listing("me", SaleMode.AUCTION, ListingStatus.AVAILABLE, 0);
         long theirs = listing("someone else", SaleMode.FIXED, ListingStatus.AVAILABLE, 0);
 
         mvc.perform(delete("/api/me/listings/" + mine).with(user("me"))).andExpect(status().isNoContent());
         mvc.perform(get("/api/me/listings").with(user("me")))
                 .andExpect(jsonPath("$[?(@.listing.id == " + mine + ")].status").value("WITHDRAWN"));
         mvc.perform(delete("/api/me/listings/" + mine).with(user("me"))).andExpect(status().isConflict());
-        mvc.perform(delete("/api/me/listings/" + bidOn).with(user("me"))).andExpect(status().isConflict());
+        mvc.perform(delete("/api/me/listings/" + auction).with(user("me"))).andExpect(status().isConflict());
         mvc.perform(delete("/api/me/listings/" + theirs).with(user("me"))).andExpect(status().isNotFound());
         mvc.perform(get("/api/listings/" + mine)).andExpect(status().isOk()); // still readable by its link
     }

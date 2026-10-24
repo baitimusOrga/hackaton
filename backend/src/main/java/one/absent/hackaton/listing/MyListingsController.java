@@ -49,8 +49,8 @@ public class MyListingsController {
         if (listing.getStatus() != ListingStatus.AVAILABLE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This listing is already sold or ended.");
         }
-        if (listing.getBidCount() > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "An auction with bids cannot be withdrawn.");
+        if (listing.getSaleMode() != SaleMode.FIXED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Auctions cannot be withdrawn; they run to their end.");
         }
         listing.setStatus(ListingStatus.WITHDRAWN);
     }

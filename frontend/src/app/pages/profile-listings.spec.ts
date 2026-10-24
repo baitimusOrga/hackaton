@@ -6,7 +6,12 @@ import { MyListingsService } from '../api/services';
 import { ProfileListings } from './profile-listings';
 
 describe('ProfileListings', () => {
-  const row = (id: number, status: MyListing['status'], bidCount = 0): MyListing => ({
+  const row = (
+    id: number,
+    status: MyListing['status'],
+    saleMode: 'FIXED' | 'AUCTION' = 'FIXED',
+    bidCount = 0,
+  ): MyListing => ({
     status,
     listing: {
       id,
@@ -16,7 +21,7 @@ describe('ProfileListings', () => {
       category: 'Audio',
       postcode: '8004',
       locality: 'Zürich',
-      saleMode: bidCount ? 'AUCTION' : 'FIXED',
+      saleMode,
       bidCount,
     },
   });
@@ -43,7 +48,8 @@ describe('ProfileListings', () => {
     const { api, element, click } = await setup([
       row(1, 'AVAILABLE'),
       row(2, 'SOLD'),
-      row(3, 'AVAILABLE', 2),
+      row(3, 'AVAILABLE', 'AUCTION', 2),
+      row(4, 'AVAILABLE', 'AUCTION'),
     ]);
     const rows = [...element.querySelectorAll('li')].map((li) =>
       li.textContent!.replace(/\s+/g, ' '),
@@ -51,7 +57,7 @@ describe('ProfileListings', () => {
     expect(rows[0]).toContain('Aktiv');
     expect(rows[1]).toContain('Verkauft');
     expect(rows[2]).toContain('2 Gebote');
-    // only the active listing without bids can be withdrawn
+    // only the active fixed-price listing can be withdrawn, auctions never
     expect(element.querySelectorAll('button').length).toBe(1);
 
     await click('Zurückziehen');

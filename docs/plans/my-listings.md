@@ -4,7 +4,7 @@
 A seller opens **Mein Konto → Meine Inserate** and sees every listing they published, newest first, each with
 its status (Aktiv, Verkauft, Beendet, Zurückgezogen), price or current bid, and a link to the listing. An active
 listing has **Zurückziehen**: after an inline confirmation it disappears from search and shows "Zurückgezogen".
-An auction that already has bids cannot be withdrawn (the bidders have a claim on it).
+Auctions cannot be withdrawn at all: once started they run to their end (decision 2026-10-24).
 
 Decisions (2026-10-24): status is stored as a fourth `ListingStatus` value `WITHDRAWN` (no migration: the column
 is `varchar(20)` without a check), withdrawn listings keep their photos and stay readable at `/listings/:id`,
@@ -18,7 +18,6 @@ there is no undo.
 - `ListingRepository.search` and `SearchService` filter on `AVAILABLE`, so a new status hides a listing from
   search and the buying assistant with no further change. `PurchaseController` and `AuctionService` already
   refuse anything that is not `AVAILABLE`.
-- `bid_count` is denormalised on the listing, so "has bids" needs no join.
 
 ## Phase 1 (this change): list and withdraw
 Backend `listing/MyListingsController.java`, `@Tag("MyListings")`, `/api/me/listings`, signed in only
@@ -26,9 +25,9 @@ Backend `listing/MyListingsController.java`, `@Tag("MyListings")`, `/api/me/list
 - `record MyListing(ListingSummary listing, ListingStatus status)`.
 - `GET` `list` → `List<MyListing>` from `ListingRepository.findBySellerIdOrderByCreatedAtDesc` (new derived query).
 - `DELETE /{id}` `withdraw` → 204. 404 when the listing is not mine (same answer as unknown, nothing to probe),
-  409 when it is not `AVAILABLE` ("already sold or ended") or an auction with bids.
+  409 when it is not `AVAILABLE` ("already sold or ended") or an auction.
 - `ListingStatus.WITHDRAWN`; `docs/DATA-MODEL.md` names it.
-- Test `MyListingsControllerTest`: only my listings with their status; withdraw works; auction with bids → 409;
+- Test `MyListingsControllerTest`: only my listings with their status; withdraw works; auction → 409;
   someone else's → 404; anonymous → 401.
 
 Frontend:
