@@ -18,7 +18,19 @@ import { chf } from '../ui/chf';
 import { Icon } from '../ui/icon';
 import { SummaryCard } from '../ui/summary-card';
 
-const FILTER_KEYS = ['kw', 'cat', 'max', 'plz', 'km', 'must', 'nice'];
+const FILTER_KEYS = [
+  'kw',
+  'cat',
+  'max',
+  'plz',
+  'km',
+  'must',
+  'nice',
+  'min',
+  'cond',
+  'photo',
+  'sort',
+];
 
 /** True when the URL already holds exactly the filters the form shows (our own navigation). */
 function sameQuery(params: ParamMap, query: Record<string, string | null>): boolean {
@@ -37,6 +49,20 @@ const FITS: Record<string, string> = {
   ALTERNATIVE: 'Alternative',
 };
 const NEAR_ME_KM = 25;
+const CONDITIONS = [
+  { value: 'NEW', label: 'Neu' },
+  { value: 'LIKE_NEW', label: 'Wie neu' },
+  { value: 'GOOD', label: 'Gut' },
+  { value: 'USED', label: 'Gebraucht' },
+  { value: 'DEFECTIVE', label: 'Defekt' },
+] as const;
+const SORTS = [
+  { value: 'BEST', label: 'Beste Passung' },
+  { value: 'PRICE_ASC', label: 'Preis aufsteigend' },
+  { value: 'PRICE_DESC', label: 'Preis absteigend' },
+  { value: 'NEWEST', label: 'Neueste zuerst' },
+] as const;
+type Sort = (typeof SORTS)[number]['value'];
 const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube den Standortzugriff.';
 
 /** Search: free text → requirements (chips + filter form) → one list ranked by score, refinable by text and position. */
@@ -178,6 +204,8 @@ export class Find {
     { key: 'niceToHave', label: 'Wäre schön', other: 'Muss' },
   ] as const;
   protected readonly radii = [5, 10, 25, 50, 100];
+  protected readonly conditionOptions = CONDITIONS;
+  protected readonly sortOptions = SORTS;
 
   protected readonly text = signal('');
   protected readonly adjust = signal('');
@@ -188,6 +216,10 @@ export class Find {
   protected readonly niceToHave = signal<Requirement[]>([]);
   protected readonly category = signal<string | null>(null);
   protected readonly budget = signal<number | null>(null);
+  protected readonly minBudget = signal<number | null>(null);
+  protected readonly conditions = signal<string[]>([]);
+  protected readonly withPhoto = signal(false);
+  protected readonly sort = signal<Sort>('BEST');
   protected readonly postcode = signal('');
   protected readonly radius = signal<number | null>(null);
   protected readonly keywords = signal('');
@@ -208,6 +240,10 @@ export class Find {
       kw: this.keywords().trim() || null,
       cat: this.category()?.trim() || null,
       max: this.budget() === null ? null : String(this.budget()),
+      min: this.minBudget() === null ? null : String(this.minBudget()),
+      cond: this.conditions().join(',') || null,
+      photo: this.withPhoto() ? '1' : null,
+      sort: this.sort() === 'BEST' ? null : this.sort(),
       plz: pc || null,
       km: pc && this.radius() ? String(this.radius()) : null,
       must: json(this.mustHave()),
@@ -257,6 +293,10 @@ export class Find {
     };
     const max = params.get('max');
     const km = params.get('km');
+    this.minBudget.set(params.has('min') ? Number(params.get('min')) : null);
+    this.conditions.set((params.get('cond') ?? '').split(',').filter((c) => c));
+    this.withPhoto.set(params.get('photo') === '1');
+    this.sort.set(SORTS.find((o) => o.value === params.get('sort'))?.value ?? 'BEST');
     this.text.set(params.get('q') ?? '');
     this.asked.set(params.get('q') ?? '');
     this.original = params.get('q') ?? '';
@@ -326,6 +366,10 @@ export class Find {
   /** "Filter zurücksetzen": back to what the assistant read from the sentence. */
   protected reset(): void {
     if (!this.initial) return;
+    this.minBudget.set(null);
+    this.conditions.set([]);
+    this.withPhoto.set(false);
+    this.sort.set('BEST');
     this.apply(this.initial);
     this.afterParse(this.initial);
   }
@@ -385,6 +429,11 @@ export class Find {
     }, failed);
   }
 
+  protected toggleCondition(value: string, on: boolean): void {
+    this.conditions.update((list) => (on ? [...list, value] : list.filter((c) => c !== value)));
+    this.changed();
+  }
+
   /** Matches again after a filter change; typing waits for a 400 ms pause. */
   protected changed(delay = 0): void {
     clearTimeout(this.debounce);
@@ -427,6 +476,10 @@ export class Find {
         .map((k) => k.trim().toLowerCase())
         .filter((k) => k),
       maxBudgetChf: this.budget() ?? undefined,
+      minBudgetChf: this.minBudget() ?? undefined,
+      conditions: this.conditions() as NonNullable<SearchRequirements['conditions']>,
+      withPhoto: this.withPhoto(),
+      sort: this.sort(),
       postcode: this.postcode().trim() || undefined,
       maxDistanceKm: this.radius() ?? undefined,
       nearMe: this.nearMe,

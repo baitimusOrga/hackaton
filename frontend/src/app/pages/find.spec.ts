@@ -243,4 +243,37 @@ describe('Find', () => {
       maxDistanceKm: 25,
     });
   });
+
+  it('restores the quick filters from the URL and sends them', async () => {
+    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: SearchService, useValue: { create: vi.fn(), matches } },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParamMap: of(
+              convertToParamMap({
+                q: 'iMac',
+                min: '100',
+                cond: 'NEW,GOOD',
+                photo: '1',
+                sort: 'PRICE_ASC',
+              }),
+            ),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(Find);
+    await fixture.whenStable();
+
+    expect(matches.mock.calls[0][0].body).toMatchObject({
+      minBudgetChf: 100,
+      conditions: ['NEW', 'GOOD'],
+      withPhoto: true,
+      sort: 'PRICE_ASC',
+    });
+  });
 });

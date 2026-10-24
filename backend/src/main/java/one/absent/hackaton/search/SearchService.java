@@ -162,8 +162,7 @@ public class SearchService {
                 .getResultList().stream().map(Listing::detail).toList());
         SearchRequirements c = request.current();
         // the buyer's position never goes to the AI
-        SearchRequirements withoutPosition = new SearchRequirements(c.mustHave(), c.niceToHave(), c.category(),
-                c.keywords(), c.maxBudgetChf(), c.postcode(), c.maxDistanceKm(), c.nearMe(), null, null);
+        SearchRequirements withoutPosition = c.with(c.category(), null, null);
         StringBuilder text = new StringBuilder("Original wish: ").append(request.originalText()).append('\n');
         request.refinements().forEach(r -> text.append("Earlier change: ").append(r).append('\n'));
         text.append("Current requirements (JSON): ").append(JSON.writeValueAsString(withoutPosition)).append('\n');
@@ -204,9 +203,7 @@ public class SearchService {
         List<ListingDetail> candidates = candidates(req);
         if (candidates.size() < 5 && trim(req.category()) != null) {
             // the parse may pick a neighbouring category (an iMac under Monitors)
-            candidates = candidates(new SearchRequirements(req.mustHave(), req.niceToHave(), null, req.keywords(),
-                    req.maxBudgetChf(), req.postcode(), req.maxDistanceKm(), req.nearMe(), req.latitude(),
-                    req.longitude()));
+            candidates = candidates(req.with(null, req.latitude(), req.longitude()));
         }
         if (candidates.isEmpty()) {
             return new SearchResults(List.of(), 0);
@@ -246,8 +243,20 @@ public class SearchService {
                     cleanAll(matched(req, listing)), cleanAll(details), cleanAll(diffs)));
         }
         // stable sort: candidates come newest first, so ties stay newest first
-        return new SearchResults(matches.stream().sorted(Comparator.comparingInt(SearchMatch::score).reversed())
-                .limit(MAX_RESULTS).toList(), candidates.size());
+        List<SearchMatch> top = matches.stream().sorted(Comparator.comparingInt(SearchMatch::score).reversed())
+                .limit(MAX_RESULTS).toList();
+        return new SearchResults(sorted(top, req.sort()), candidates.size());
+    }
+
+    /** Re-orders the best matches; shortcut: NEWEST uses the id (ids grow with creation), add createdAt to the summary if that stops holding. */
+    private static List<SearchMatch> sorted(List<SearchMatch> matches, SearchRequirements.Sort sort) {
+        if (sort == null || sort == SearchRequirements.Sort.BEST) return matches;
+        Comparator<SearchMatch> by = switch (sort) {
+            case PRICE_ASC -> Comparator.comparing(m -> m.listing().priceChf());
+            case PRICE_DESC -> Comparator.<SearchMatch, BigDecimal>comparing(m -> m.listing().priceChf()).reversed();
+            default -> Comparator.<SearchMatch>comparingLong(m -> m.listing().id()).reversed();
+        };
+        return matches.stream().sorted(by).toList();
     }
 
     private static final Pattern NUMBER = Pattern.compile("\\d+(?:[.,]\\d+)?");
@@ -417,7 +426,7 @@ public class SearchService {
                 : chf.setScale(2, RoundingMode.HALF_UP).toPlainString();
     }
 
-    /** Hard filters only: available, category, stretched budget, distance. Keywords only rank. */
+    /** Hard filters only: available, category, stretched budget, price floor, condition, photo, distance. Keywords only rank. */
     List<ListingDetail> candidates(SearchRequirements req) {
         StringBuilder jpql = new StringBuilder("select l from Listing l where l.status = :available");
         Map<String, Object> params = new HashMap<>();
@@ -425,6 +434,17 @@ public class SearchService {
         if (req.maxBudgetChf() != null) {
             jpql.append(" and l.priceChf <= :ceiling");
             params.put("ceiling", req.maxBudgetChf().multiply(BUDGET_STRETCH));
+        }
+        if (req.minBudgetChf() != null) {
+            jpql.append(" and l.priceChf >= :floor");
+            params.put("floor", req.minBudgetChf());
+        }
+        if (req.conditions() != null && !req.conditions().isEmpty()) {
+            jpql.append(" and l.condition in :conditions");
+            params.put("conditions", req.conditions());
+        }
+        if (Boolean.TRUE.equals(req.withPhoto())) {
+            jpql.append(" and l.imageUrl is not null and l.imageUrl <> ''");
         }
         String category = trim(req.category());
         if (category != null) {

@@ -4,13 +4,17 @@
 import { Requirement } from '../models/requirement';
 export interface SearchRequirements {
   category?: (string | null);
+  conditions?: (Array<'NEW' | 'LIKE_NEW' | 'GOOD' | 'USED' | 'DEFECTIVE'> | null);
   keywords: Array<string>;
   latitude?: (number | null);
   longitude?: (number | null);
   maxBudgetChf?: number;
   maxDistanceKm?: number;
+  minBudgetChf?: (number | null);
   mustHave: Array<Requirement>;
   nearMe?: (boolean | null);
   niceToHave: Array<Requirement>;
   postcode?: string;
+  sort?: ('BEST' | 'PRICE_ASC' | 'PRICE_DESC' | 'NEWEST' | null);
+  withPhoto?: (boolean | null);
 }

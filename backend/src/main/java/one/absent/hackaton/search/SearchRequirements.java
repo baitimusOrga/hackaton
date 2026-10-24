@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import one.absent.hackaton.listing.Condition;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -16,7 +17,8 @@ import jakarta.validation.constraints.Size;
 /**
  * What the buyer wants; {@code keywords}: lowercase search terms incl. synonyms, they only rank;
  * {@code nearMe}: the buyer means their own position; {@code latitude}/{@code longitude}: that position, only as
- * input to matches, never sent to the AI.
+ * input to matches, never sent to the AI. Quick filters, set by hand and never by the AI: {@code minBudgetChf},
+ * {@code conditions} (empty: any), {@code withPhoto} (only listings with a photo), {@code sort} (null: best fit).
  */
 public record SearchRequirements(@NotNull @Size(max = 20) List<@Valid Requirement> mustHave,
                                  @NotNull @Size(max = 20) List<@Valid Requirement> niceToHave,
@@ -26,5 +28,23 @@ public record SearchRequirements(@NotNull @Size(max = 20) List<@Valid Requiremen
                                  @Pattern(regexp = "[0-9]{0,4}") String postcode, @Min(0) @Max(500) Integer maxDistanceKm,
                                  @Schema(nullable = true) Boolean nearMe,
                                  @Schema(nullable = true) @DecimalMin("-90") @DecimalMax("90") Double latitude,
-                                 @Schema(nullable = true) @DecimalMin("-180") @DecimalMax("180") Double longitude) {
+                                 @Schema(nullable = true) @DecimalMin("-180") @DecimalMax("180") Double longitude,
+                                 @Schema(nullable = true) @DecimalMin("0") @DecimalMax("1000000") BigDecimal minBudgetChf,
+                                 @Schema(nullable = true) @Size(max = 5) List<Condition> conditions,
+                                 @Schema(nullable = true) Boolean withPhoto, @Schema(nullable = true) Sort sort) {
+
+    public enum Sort { BEST, PRICE_ASC, PRICE_DESC, NEWEST }
+
+    /** Without quick filters: what the AI parse produces. */
+    public SearchRequirements(List<Requirement> mustHave, List<Requirement> niceToHave, String category,
+                              List<String> keywords, BigDecimal maxBudgetChf, String postcode, Integer maxDistanceKm,
+                              Boolean nearMe, Double latitude, Double longitude) {
+        this(mustHave, niceToHave, category, keywords, maxBudgetChf, postcode, maxDistanceKm, nearMe, latitude,
+                longitude, null, null, null, null);
+    }
+
+    SearchRequirements with(String category, Double latitude, Double longitude) {
+        return new SearchRequirements(mustHave, niceToHave, category, keywords, maxBudgetChf, postcode,
+                maxDistanceKm, nearMe, latitude, longitude, minBudgetChf, conditions, withPhoto, sort);
+    }
 }

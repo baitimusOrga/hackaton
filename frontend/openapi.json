@@ -1076,6 +1076,27 @@
             "format" : "double",
             "maximum" : 180,
             "minimum" : -180
+          },
+          "minBudgetChf" : {
+            "type" : [ "number", "null" ],
+            "maximum" : 1000000,
+            "minimum" : 0
+          },
+          "conditions" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string",
+              "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+            },
+            "maxItems" : 5,
+            "minItems" : 0
+          },
+          "withPhoto" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "sort" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "BEST", "PRICE_ASC", "PRICE_DESC", "NEWEST" ]
           }
         },
         "required" : [ "keywords", "mustHave", "niceToHave" ]

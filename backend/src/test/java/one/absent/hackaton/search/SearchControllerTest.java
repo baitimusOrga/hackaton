@@ -291,6 +291,45 @@ class SearchControllerTest {
         verify(geo, never()).locate(anyString());
     }
 
+    SearchRequirements quick(BigDecimal min, List<Condition> conditions, Boolean withPhoto,
+                             SearchRequirements.Sort sort) {
+        return new SearchRequirements(List.of(), List.of(), "test audio", List.of(), null, null, null, false, null,
+                null, min, conditions, withPhoto, sort);
+    }
+
+    @Test
+    void minimumPriceIsAHardFilter() {
+        assertThat(search.candidates(quick(new BigDecimal("120"), null, null, null))).extracting(ListingDetail::title)
+                .containsExactlyInAnyOrder("Technics turntable SL-1210", "Technics turntable SL-1200", "Rega turntable");
+    }
+
+    @Test
+    void conditionsKeepOnlyTheChosenOnes() {
+        match.setCondition(Condition.NEW);
+        em.flush();
+        assertThat(search.candidates(quick(null, List.of(Condition.NEW), null, null))).extracting(ListingDetail::id)
+                .containsExactly(match.getId());
+    }
+
+    @Test
+    void withPhotoDropsListingsWithoutOne() {
+        match.setImageUrl("/api/images/1");
+        em.flush();
+        assertThat(search.candidates(quick(null, null, true, null))).extracting(ListingDetail::id)
+                .containsExactly(match.getId());
+    }
+
+    @Test
+    void sortReordersTheMatches() {
+        var asc = quick(null, null, null, SearchRequirements.Sort.PRICE_ASC);
+        var prices = search.rank(asc, search.candidates(asc), null).matches().stream()
+                .map(m -> m.listing().priceChf()).toList();
+        assertThat(prices).isSortedAccordingTo(java.util.Comparator.naturalOrder());
+        var desc = quick(null, null, null, SearchRequirements.Sort.PRICE_DESC);
+        assertThat(search.rank(desc, search.candidates(desc), null).matches().get(0).listing().priceChf())
+                .isEqualByComparingTo("400");
+    }
+
     String refineBody(String refinements, String text, String topIds) {
         return """
                 {"originalText": "technics turntable near Zürich", "refinements": %s,

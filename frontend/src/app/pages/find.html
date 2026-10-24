@@ -150,6 +150,16 @@
             class="zw-input zw-input--price"
             type="number"
             min="0"
+            name="minBudget"
+            [placeholder]="'von' | t"
+            [attr.aria-label]="'Preis von' | t"
+            [ngModel]="minBudget()"
+            (ngModelChange)="minBudget.set($event); changed(400)"
+          />
+          <input
+            class="zw-input zw-input--price"
+            type="number"
+            min="0"
             name="budget"
             [placeholder]="'bis' | t"
             [attr.aria-label]="'Preis bis' | t"
@@ -157,6 +167,32 @@
             (ngModelChange)="budget.set($event); changed(400)"
           />
         </div>
+      </fieldset>
+      <fieldset class="zw-fieldset find__f">
+        <legend class="zw-label">{{ 'Zustand' | t }}</legend>
+        @for (c of conditionOptions; track c.value) {
+          <label class="zw-check">
+            <input
+              type="checkbox"
+              [name]="'cond-' + c.value"
+              [checked]="conditions().includes(c.value)"
+              (change)="toggleCondition(c.value, $any($event.target).checked)"
+            />
+            {{ c.label | t }}
+          </label>
+        }
+      </fieldset>
+      <fieldset class="zw-fieldset find__f">
+        <legend class="zw-label">{{ 'Nur' | t }}</legend>
+        <label class="zw-check">
+          <input
+            type="checkbox"
+            name="photo"
+            [ngModel]="withPhoto()"
+            (ngModelChange)="withPhoto.set($event); changed()"
+          />
+          {{ 'Mit Foto' | t }}
+        </label>
       </fieldset>
       <fieldset class="zw-fieldset find__f">
         <legend class="zw-label">{{ 'Region' | t }}</legend>
@@ -204,10 +240,16 @@
         <div class="find__bar">
           <span>{{ '{count} Inserate' | t: { count: found.length } }}</span>
           <span class="zw-help">{{ '{count} verglichen' | t: { count: res.compared ?? 0 } }}</span>
-          <!-- TODO: other sort orders; the backend returns the list by score. -->
           <label for="find-sort">{{ 'Sortieren' | t }}</label>
-          <select id="find-sort" class="zw-input" disabled>
-            <option>{{ 'Beste Passung' | t }}</option>
+          <select
+            id="find-sort"
+            class="zw-input"
+            [ngModel]="sort()"
+            (ngModelChange)="sort.set($event); changed()"
+          >
+            @for (o of sortOptions; track o.value) {
+              <option [value]="o.value">{{ o.label | t }}</option>
+            }
           </select>
         </div>
         <!-- TODO: "Letzter Scan" line; the backend does not expose when listings were last scanned. -->
