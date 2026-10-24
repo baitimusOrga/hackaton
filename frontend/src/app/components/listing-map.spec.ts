@@ -5,9 +5,11 @@ import { ListingMap, MapItem } from './listing-map';
 
 @Component({
   imports: [ListingMap],
-  template: `<app-listing-map [items]="items" label="Test map" />`,
+  template: `<app-listing-map [items]="items" [pin]="pin" label="Test map" />`,
 })
 class Host {
+  static pin = false;
+  pin = Host.pin;
   items: MapItem[] = [
     { id: 1, title: 'With coordinates', latitude: 47.378, longitude: 8.523 },
     { id: 3, title: 'Same area', latitude: 47.379, longitude: 8.524 },
@@ -31,5 +33,16 @@ describe('ListingMap', () => {
     );
     expect(element.querySelectorAll('.leaflet-interactive')).toHaveLength(1);
     expect(element.querySelector('.leaflet-tooltip')!.textContent).toBe('2');
+  });
+
+  it('shows a plain pin without a count in pin mode', async () => {
+    Host.pin = true;
+    try {
+      const element = await render();
+      expect(element.querySelectorAll('.leaflet-marker-icon')).toHaveLength(1);
+      expect(element.querySelector('.leaflet-tooltip')).toBeNull();
+    } finally {
+      Host.pin = false;
+    }
   });
 });

@@ -107,6 +107,7 @@
           <!-- the postcode area, not the address: the exact spot stays private -->
           <app-listing-map
             [items]="[item]"
+            [pin]="true"
             [label]="'Karte der Gegend um ' + item.postcode + ' ' + item.locality"
           />
         </div>
