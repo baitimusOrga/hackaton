@@ -1,4 +1,5 @@
-import { signal } from '@angular/core';
+import { ViewportScroller } from '@angular/common';
+import { APP_BOOTSTRAP_LISTENER, ApplicationRef, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -6,6 +7,7 @@ import { of, Subject, throwError } from 'rxjs';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { AuctionState } from '../api/models';
 import { AuctionsService, ListingsService, PurchasesService } from '../api/services';
+import { appConfig } from '../app.config';
 import { Auth } from '../auth/auth';
 import { ListingPage } from './listing';
 
@@ -84,9 +86,42 @@ describe('ListingPage', () => {
       expect(element.querySelector('[data-testid="seller"]')!.textContent!.trim()).toBe(label);
       expect(element.querySelector('h1')!.textContent).toBe('Desk');
       expect(element.textContent).toContain('CHF 1’250.–');
-      expect(element.textContent).toContain('Chair');
+      expect(element.querySelector('a[href="/listings/5"]')!.textContent).toContain('Chair');
     });
   }
+
+  it('scrolls to the top when a similar listing is opened', async () => {
+    const desk = { id: 4, title: 'Desk', priceChf: 80 };
+    const chair = { id: 5, title: 'Chair', priceChf: 40 };
+    const scroller = {
+      scrollToPosition: vi.fn(),
+      getScrollPosition: () => [0, 300],
+      setHistoryScrollRestoration: vi.fn(),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        ...appConfig.providers,
+        {
+          provide: ListingsService,
+          useValue: {
+            get: ({ id }: { id: number }) => of(id === 4 ? desk : chair),
+            list: () => of([desk, chair]),
+          },
+        },
+        { provide: Auth, useValue: { user: signal(null) } },
+        { provide: ViewportScroller, useValue: scroller },
+      ],
+    });
+    const harness = await RouterTestingHarness.create('/listings/4');
+    // The router scroller starts in the bootstrap listeners, which TestBed does not run.
+    const root = TestBed.inject(ApplicationRef).components[0];
+    for (const listener of TestBed.inject(APP_BOOTSTRAP_LISTENER)) listener(root);
+    harness.routeNativeElement!.querySelector<HTMLAnchorElement>('a[href="/listings/5"]')!.click();
+    await harness.fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(harness.routeNativeElement!.querySelector('h1')!.textContent).toBe('Chair');
+    expect(scroller.scrollToPosition).toHaveBeenCalledWith([0, 0]);
+  });
 
   it('polls the auction, shows the outbid line and places a bid', async () => {
     vi.useFakeTimers();
