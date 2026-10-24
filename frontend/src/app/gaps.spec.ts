@@ -78,13 +78,15 @@ describe('openGaps', () => {
 });
 
 describe('completeness', () => {
-  it('counts confirmed key facts', () => {
+  it('counts confirmed key facts among the first five fields', () => {
     expect(
       completeness(BIKE, [
         { name: 'Brand', value: 'Trek', source: 'LABEL' },
         { name: 'Model', value: 'x', source: 'SUGGESTION' },
         { name: 'Gears', value: '12', source: 'SELLER' },
+        // the sixth field does not count
+        { name: 'Brakes', value: 'Disc', source: 'SELLER' },
       ]),
-    ).toBe(2 / 6);
+    ).toBe(2 / 5);
   });
 });

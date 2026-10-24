@@ -271,7 +271,9 @@ public class SearchService {
             return ok ? Evidence.STATED : Evidence.DIFFERENT;
         }
         String stated = (listing.title() + " " + (attribute == null ? "" : attribute)).toLowerCase(Locale.ROOT);
-        if (stated.contains(value)) return Evidence.STATED;
+        // whole words only: a frame size "m" must not match every title with an m in it
+        String word = "(?<![\\p{L}\\p{N}])" + Pattern.quote(value) + "(?![\\p{L}\\p{N}])";
+        if (Pattern.compile(word).matcher(stated).find()) return Evidence.STATED;
         // numbers decide when units are written differently ("27 Zoll" vs "27\"", "16GB" vs "16 GB")
         List<String> numbers = NUMBER.matcher(value).results().map(MatchResult::group).toList();
         List<String> statedNumbers = NUMBER.matcher(stated).results().map(MatchResult::group).toList();

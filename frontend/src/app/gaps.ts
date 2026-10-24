@@ -81,11 +81,12 @@ export function openGaps(
   return cards.slice(0, Math.max(0, limit));
 }
 
-/** Share of the category's key facts that come from a label or the seller. */
+/** Share of the category's first key facts that come from a label or the seller. */
 export function completeness(keyFacts: string[], facts: KnownFact[]): number {
-  if (!keyFacts.length) return 1;
+  // Brand, Model and the next three fields: a category with more fields is not harder to complete
+  const counted = keyFacts.slice(0, MAX_CARDS);
+  if (!counted.length) return 1;
   return (
-    keyFacts.filter((name) => confirmed(facts.find((f) => f.name === name))).length /
-    keyFacts.length
+    counted.filter((name) => confirmed(facts.find((f) => f.name === name))).length / counted.length
   );
 }

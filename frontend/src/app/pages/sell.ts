@@ -776,17 +776,22 @@ export class Sell {
     () => this.categories().find((c) => c.name === this.fields().category)?.fields ?? [],
   );
   protected readonly keyFacts = computed(() => this.categoryFields().map((f) => f.name ?? ''));
+  // facts of another category's fields stay in the draft (switching back restores them), but are not shown or published
+  protected readonly categoryFacts = computed(() => {
+    const catalog = new Set(this.categories().flatMap((c) => (c.fields ?? []).map((f) => f.name)));
+    return this.facts().filter((f) => this.keyFacts().includes(f.name) || !catalog.has(f.name));
+  });
   // one row per field of the category (empty when unknown), then the facts outside the category
   protected readonly factRows = computed<(Fact & { options: string[] })[]>(() => [
     ...this.categoryFields().map((field) => ({
-      ...(this.facts().find((f) => f.name === field.name) ?? {
+      ...(this.categoryFacts().find((f) => f.name === field.name) ?? {
         name: field.name ?? '',
         value: '',
         source: 'SELLER' as const,
       }),
       options: field.options ?? [],
     })),
-    ...this.facts()
+    ...this.categoryFacts()
       .filter((f) => !this.keyFacts().includes(f.name))
       .map((f) => ({ ...f, options: [] })),
   ]);
@@ -839,7 +844,7 @@ export class Sell {
   // read from a label or confirmed by the seller; suggestions and web facts stay private
   private readonly publishedFacts = computed(() =>
     Object.fromEntries(
-      this.facts()
+      this.categoryFacts()
         .filter((f) => f.source !== 'SUGGESTION' && f.source !== 'WEB' && f.value.trim())
         .map((f) => [f.name, f.value.trim()]),
     ),
@@ -1472,7 +1477,7 @@ export class Sell {
     this.textStale = false;
     const run = ++this.rewriteRun;
     this.rewriting.set(true);
-    const facts = this.facts()
+    const facts = this.categoryFacts()
       .filter((f) => f.value.trim())
       .map((f) => ({ name: f.name, value: f.value.trim(), source: f.source }));
     this.api
@@ -1581,7 +1586,7 @@ export class Sell {
     if (!this.canLookUp() || this.lookingUp()) return;
     this.lookingUp.set(true);
     this.webNote.set('');
-    const facts = this.facts()
+    const facts = this.categoryFacts()
       .filter((f) => f.value.trim())
       .map((f) => ({ name: f.name, value: f.value.trim(), source: f.source }));
     const { title, category } = this.fields();
