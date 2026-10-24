@@ -312,6 +312,18 @@
   color: var(--green-text);
   margin: 0;
 }
+.zw-card__why {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+.zw-card__why--ok {
+  color: var(--green-text);
+}
 .zw-card:hover .zw-card__title {
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -829,9 +841,12 @@ textarea.zw-input {
   .zw-shell {
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
-  /* The find page's filter sheet, open on a phone, locks the page behind it. */
-  body:has(.find__filters--open) {
+  /* A facet sheet open on a phone locks the page behind it and takes the tab bar's place. */
+  body:has(.facet__panel) {
     overflow: hidden;
+  }
+  body:has(.facet__panel) .zw-tabs {
+    display: none;
   }
   /* In a narrow card column the bid count moves under the price. */
   .zw-card__price {

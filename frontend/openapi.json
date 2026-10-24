@@ -716,6 +716,11 @@
           "comparison" : {
             "type" : [ "string", "null" ],
             "enum" : [ "AT_LEAST", "EXACT", "AT_MOST" ]
+          },
+          "phrase" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 80,
+            "minLength" : 0
           }
         },
         "required" : [ "attribute", "value" ]
@@ -783,6 +788,25 @@
             "format" : "double",
             "maximum" : 180,
             "minimum" : -180
+          },
+          "budgetPhrase" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "regionPhrase" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "conditions" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string",
+              "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+            },
+            "maxItems" : 5,
+            "minItems" : 0
           }
         },
         "required" : [ "keywords", "mustHave", "niceToHave" ]

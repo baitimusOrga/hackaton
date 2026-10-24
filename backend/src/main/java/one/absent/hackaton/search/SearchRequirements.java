@@ -12,11 +12,13 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import one.absent.hackaton.listing.Condition;
 
 /**
  * What the buyer wants; {@code keywords}: lowercase search terms incl. synonyms, they only rank;
  * {@code nearMe}: the buyer means their own position; {@code latitude}/{@code longitude}: that position, only as
- * input to matches, never sent to the AI.
+ * input to matches, never sent to the AI; {@code budgetPhrase}/{@code regionPhrase}: the buyer's words behind the
+ * budget and the place; {@code conditions}: hard filter, null or empty = any.
  */
 public record SearchRequirements(@NotNull @Size(max = 20) List<@Valid Requirement> mustHave,
                                  @NotNull @Size(max = 20) List<@Valid Requirement> niceToHave,
@@ -26,5 +28,15 @@ public record SearchRequirements(@NotNull @Size(max = 20) List<@Valid Requiremen
                                  @Pattern(regexp = "[0-9]{0,4}") String postcode, @Min(0) @Max(500) Integer maxDistanceKm,
                                  @Schema(nullable = true) Boolean nearMe,
                                  @Schema(nullable = true) @DecimalMin("-90") @DecimalMax("90") Double latitude,
-                                 @Schema(nullable = true) @DecimalMin("-180") @DecimalMax("180") Double longitude) {
+                                 @Schema(nullable = true) @DecimalMin("-180") @DecimalMax("180") Double longitude,
+                                 @Schema(nullable = true) @Size(max = 80) String budgetPhrase,
+                                 @Schema(nullable = true) @Size(max = 80) String regionPhrase,
+                                 @Schema(nullable = true) @Size(max = 5) List<@NotNull Condition> conditions) {
+
+    public SearchRequirements(List<Requirement> mustHave, List<Requirement> niceToHave, String category,
+                              List<String> keywords, BigDecimal maxBudgetChf, String postcode, Integer maxDistanceKm,
+                              Boolean nearMe, Double latitude, Double longitude) {
+        this(mustHave, niceToHave, category, keywords, maxBudgetChf, postcode, maxDistanceKm, nearMe, latitude,
+                longitude, null, null, null);
+    }
 }

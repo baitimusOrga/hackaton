@@ -18,33 +18,7 @@ export const FIND_MESSAGES: Messages = {
     it: 'Scrivilo con parole tue. Suggerimento: ⌘ / Ctrl + Invio',
     en: 'Write it in your own words. Tip: ⌘ / Ctrl + Enter',
   },
-  'Aus deinem Satz übernommen:': {
-    fr: 'Repris de ta phrase :',
-    it: 'Ricavato dalla tua frase:',
-    en: 'Taken from your sentence:',
-  },
-  entfernen: { fr: 'supprimer', it: 'rimuovi', en: 'remove' },
-  'Antippen zum Entfernen, links alles im Detail.': {
-    fr: 'Touche pour supprimer, tous les détails à gauche.',
-    it: 'Tocca per rimuovere, tutti i dettagli a sinistra.',
-    en: 'Tap to remove, all details on the left.',
-  },
   Filter: { fr: 'Filtres', it: 'Filtri', en: 'Filters' },
-  '{count} Treffer anzeigen': {
-    fr: 'Afficher {count} résultats',
-    it: 'Mostra {count} risultati',
-    en: 'Show {count} results',
-  },
-  'Treffer anzeigen': {
-    fr: 'Afficher les résultats',
-    it: 'Mostra i risultati',
-    en: 'Show results',
-  },
-  'Aus deinem Satz übernommen. Antippen zum Entfernen.': {
-    fr: 'Repris de ta phrase. Touche pour retirer.',
-    it: 'Ripreso dalla tua frase. Tocca per rimuovere.',
-    en: 'Taken from your sentence. Tap to remove.',
-  },
   Anforderungen: { fr: 'Exigences', it: 'Requisiti', en: 'Requirements' },
   Muss: { fr: 'Obligatoire', it: 'Indispensabile', en: 'Must have' },
   'Wäre schön': { fr: 'Souhaitable', it: 'Sarebbe bello', en: 'Nice to have' },
@@ -115,28 +89,12 @@ export const FIND_MESSAGES: Messages = {
     it: 'Anche annunci con dati mancanti',
     en: 'Also listings with missing details',
   },
-  'Treffer aktualisieren': {
-    fr: 'Actualiser les résultats',
-    it: 'Aggiorna i risultati',
-    en: 'Update results',
-  },
   'Treffer zeigen': { fr: 'Afficher les résultats', it: 'Mostra i risultati', en: 'Show results' },
-  'Filter zurücksetzen': {
-    fr: 'Réinitialiser les filtres',
-    it: 'Reimposta i filtri',
-    en: 'Reset filters',
-  },
   '{count} Inserate': { fr: '{count} annonces', it: '{count} annunci', en: '{count} listings' },
   '{count} verglichen': {
     fr: '{count} comparées',
     it: '{count} confrontati',
     en: '{count} compared',
-  },
-  Sortieren: { fr: 'Trier', it: 'Ordina', en: 'Sort' },
-  'Beste Passung': {
-    fr: 'Meilleure correspondance',
-    it: 'Migliore corrispondenza',
-    en: 'Best match',
   },
   'Noch nichts Passendes.': {
     fr: "Rien de correspondant pour l'instant.",
@@ -244,11 +202,6 @@ export const FIND_MESSAGES: Messages = {
   // ranked list, refine and near me
   'Deine Anpassungen': { fr: 'Tes ajustements', it: 'Le tue modifiche', en: 'Your adjustments' },
   'Suche anpassen': { fr: 'Ajuster la recherche', it: 'Modifica la ricerca', en: 'Adjust search' },
-  'Suche anpassen, z.B. „doch etwas neuere Modelle“': {
-    fr: 'Ajuster la recherche, p. ex. « plutôt des modèles plus récents »',
-    it: 'Modifica la ricerca, p. es. «meglio modelli più recenti»',
-    en: 'Adjust the search, e.g. “rather newer models”',
-  },
   Anpassen: { fr: 'Ajuster', it: 'Modifica', en: 'Adjust' },
   'Mein Standort': { fr: 'Ma position', it: 'La mia posizione', en: 'My location' },
   'Standort aktualisieren': {
@@ -256,7 +209,6 @@ export const FIND_MESSAGES: Messages = {
     it: 'Aggiorna la posizione',
     en: 'Update location',
   },
-  Treffer: { fr: 'Résultats', it: 'Risultati', en: 'Results' },
   'Noch nichts Passendes. Entferne eine Anforderung oder vergrössere den Umkreis.': {
     fr: 'Rien de correspondant pour l’instant. Retire une exigence ou élargis le rayon.',
     it: 'Ancora niente di adatto. Rimuovi un requisito o allarga il raggio.',
@@ -279,5 +231,48 @@ export const FIND_MESSAGES: Messages = {
   },
   Passt: { fr: 'Correspond', it: 'Adatto', en: 'Match' },
   'Angaben fehlen': { fr: 'Informations manquantes', it: 'Dati mancanti', en: 'Details missing' },
-  Alternative: { fr: 'Alternative', it: 'Alternativa', en: 'Alternative' },
+  // results screen after the Claude Design
+  'Du suchst': { fr: 'Tu cherches', it: 'Cerchi', en: 'You are looking for' },
+  'Deine Suche': { fr: 'Ta recherche', it: 'La tua ricerca', en: 'Your search' },
+  'Unterstrichen ist, was wir verstanden haben. Antippen, um es nicht mehr zu verlangen.': {
+    fr: 'Ce qui est souligné, nous l’avons compris. Touche pour ne plus l’exiger.',
+    it: 'Sottolineato è ciò che abbiamo capito. Tocca per non richiederlo più.',
+    en: 'Underlined is what we understood. Tap to stop requiring it.',
+  },
+  '{count} entfernt. Nochmals antippen, um es wieder zu verlangen.': {
+    fr: '{count} retiré(s). Touche à nouveau pour l’exiger de nouveau.',
+    it: '{count} rimossi. Tocca di nuovo per richiederlo ancora.',
+    en: '{count} removed. Tap again to require it again.',
+  },
+  '{label} nicht mehr verlangen': {
+    fr: 'Ne plus exiger {label}',
+    it: 'Non richiedere più {label}',
+    en: 'Stop requiring {label}',
+  },
+  '{label} wieder verlangen': {
+    fr: 'Exiger à nouveau {label}',
+    it: 'Richiedere di nuovo {label}',
+    en: 'Require {label} again',
+  },
+  'Dazu:': { fr: 'En plus :', it: 'Inoltre:', en: 'Also:' },
+  'Anpassen, z.B. „doch etwas neuere Modelle“': {
+    fr: 'Ajuster, p. ex. « plutôt des modèles plus récents »',
+    it: 'Modifica, p. es. «meglio modelli più recenti»',
+    en: 'Adjust, e.g. “rather newer models”',
+  },
+  'Alle entfernen': { fr: 'Tout retirer', it: 'Rimuovi tutto', en: 'Clear all' },
+  Zurücksetzen: { fr: 'Réinitialiser', it: 'Reimposta', en: 'Reset' },
+  Übernehmen: { fr: 'Appliquer', it: 'Applica', en: 'Apply' },
+  Alle: { fr: 'Toutes', it: 'Tutte', en: 'All' },
+  Stichwort: { fr: 'Mot-clé', it: 'Parola chiave', en: 'Keyword' },
+  '{attribute} entfernen': {
+    fr: 'Retirer {attribute}',
+    it: 'Rimuovi {attribute}',
+    en: 'Remove {attribute}',
+  },
+  'ausserhalb deiner Suche': {
+    fr: 'hors de ta recherche',
+    it: 'fuori dalla tua ricerca',
+    en: 'outside your search',
+  },
 };
