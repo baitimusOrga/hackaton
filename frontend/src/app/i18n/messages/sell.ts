@@ -368,4 +368,9 @@ export const SELL_MESSAGES: Messages = {
   },
   'vor 1 Tag': { fr: 'il y a 1 jour', it: '1 giorno fa', en: '1 day ago' },
   'vor {days} Tagen': { fr: 'il y a {days} jours', it: '{days} giorni fa', en: '{days} days ago' },
+  'Entwurf speichern': {
+    fr: 'Enregistrer le brouillon',
+    it: 'Salva bozza',
+    en: 'Save draft',
+  },
 };

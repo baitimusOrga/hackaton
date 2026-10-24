@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -39,7 +40,7 @@ const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-price-panel',
-  imports: [ChfPipe, RouterLink, TranslatePipe],
+  imports: [ChfPipe, NgTemplateOutlet, RouterLink, TranslatePipe],
   styles: `
     :host {
       display: flex;
@@ -64,6 +65,17 @@ const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW
       min-height: 44px;
       font-weight: 600;
       cursor: pointer;
+    }
+    .compact {
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr);
+      gap: var(--space-4);
+      align-items: start;
+    }
+    @media (max-width: 480px) {
+      .compact {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
     .modes {
       display: flex;
@@ -118,70 +130,99 @@ const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW
       }
     }
 
-    <fieldset class="zw-fieldset">
-      <legend class="zw-sr-only">{{ 'Preis' | t }}</legend>
-      @for (s of strategies(); track s.label) {
-        <label class="zw-option">
-          <input
-            type="radio"
-            name="price-choice"
-            required
-            [checked]="!own() && price() === s.amount"
-            (change)="choose(s.amount)"
-          />
-          <span>
-            <span class="zw-option__title">{{ s.label | t }}</span>
-            <span class="zw-option__text">{{ s.hint | t }}</span>
+    @if (compact()) {
+      <div class="compact">
+        <div class="zw-field">
+          <label class="zw-label" for="price-compact">{{ 'Preis' | t }}</label>
+          <span class="zw-affix">
+            <span class="zw-affix__unit">CHF</span>
+            <input
+              id="price-compact"
+              class="zw-input zw-input--price"
+              name="price"
+              type="number"
+              inputmode="decimal"
+              min="0.01"
+              max="9999999999.99"
+              step="0.01"
+              required
+              [placeholder]="placeholder()"
+              [value]="price() ?? ''"
+              (input)="typeOwn($any($event.target).valueAsNumber)"
+            />
           </span>
-          <span class="zw-price opt__p">{{ s.amount | chf }}</span>
-        </label>
-      }
-      <label class="zw-option">
-        @if (strategies().length) {
-          <input
-            type="radio"
-            name="price-choice"
-            required
-            [checked]="own()"
-            (change)="own.set(true); price.set(ownValue())"
-          />
-        }
-        <span class="zw-option__title">{{ 'Eigener Preis' | t }}</span>
-        <span class="zw-affix own">
-          <span class="zw-affix__unit">CHF</span>
-          <input
-            class="zw-input zw-input--price"
-            name="price"
-            type="number"
-            inputmode="decimal"
-            min="0.01"
-            max="9999999999.99"
-            step="0.01"
-            placeholder="0.–"
-            [attr.aria-label]="'Eigener Preis in CHF' | t"
-            [required]="own() || !strategies().length"
-            [value]="ownValue() ?? ''"
-            (input)="typeOwn($any($event.target).valueAsNumber)"
-          />
-        </span>
-      </label>
-    </fieldset>
-
-    <div class="zw-field">
-      <span class="zw-label" id="sale-mode">{{ 'Wie verkaufen?' | t }}</span>
-      <!-- TODO: the backend only publishes fixed-price listings; Preisvorschlag, Auktion (with a secret seller-set reserve) and Verschenken need sale modes in CreateListingRequest. -->
-      <div class="modes" role="group" aria-labelledby="sale-mode">
-        <button type="button" class="zw-chip" aria-pressed="true">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
-          <span>{{ 'Festpreis' | t }}</span>
-        </button>
-        @for (mode of laterModes; track mode) {
-          <button type="button" class="zw-chip" aria-pressed="false" disabled>
-            <span>{{ mode | t }}</span>
-          </button>
-        }
+        </div>
+        <ng-container *ngTemplateOutlet="modes" />
       </div>
-    </div>
+    } @else {
+      <fieldset class="zw-fieldset">
+        <legend class="zw-sr-only">{{ 'Preis' | t }}</legend>
+        @for (s of strategies(); track s.label) {
+          <label class="zw-option">
+            <input
+              type="radio"
+              name="price-choice"
+              required
+              [checked]="!own() && price() === s.amount"
+              (change)="choose(s.amount)"
+            />
+            <span>
+              <span class="zw-option__title">{{ s.label | t }}</span>
+              <span class="zw-option__text">{{ s.hint | t }}</span>
+            </span>
+            <span class="zw-price opt__p">{{ s.amount | chf }}</span>
+          </label>
+        }
+        <label class="zw-option">
+          @if (strategies().length) {
+            <input
+              type="radio"
+              name="price-choice"
+              required
+              [checked]="own()"
+              (change)="own.set(true); price.set(ownValue())"
+            />
+          }
+          <span class="zw-option__title">{{ 'Eigener Preis' | t }}</span>
+          <span class="zw-affix own">
+            <span class="zw-affix__unit">CHF</span>
+            <input
+              class="zw-input zw-input--price"
+              name="price"
+              type="number"
+              inputmode="decimal"
+              min="0.01"
+              max="9999999999.99"
+              step="0.01"
+              placeholder="0.–"
+              [attr.aria-label]="'Eigener Preis in CHF' | t"
+              [required]="own() || !strategies().length"
+              [value]="ownValue() ?? ''"
+              (input)="typeOwn($any($event.target).valueAsNumber)"
+            />
+          </span>
+        </label>
+      </fieldset>
+      <ng-container *ngTemplateOutlet="modes" />
+    }
+
+    <ng-template #modes>
+      <div class="zw-field">
+        <span class="zw-label" id="sale-mode">{{ 'Wie verkaufen?' | t }}</span>
+        <!-- TODO: the backend only publishes fixed-price listings; Preisvorschlag, Auktion (with a secret seller-set reserve) and Verschenken need sale modes in CreateListingRequest. -->
+        <div class="modes" role="group" aria-labelledby="sale-mode">
+          <button type="button" class="zw-chip" aria-pressed="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
+            <span>{{ 'Festpreis' | t }}</span>
+          </button>
+          @for (mode of laterModes; track mode) {
+            <button type="button" class="zw-chip" aria-pressed="false" disabled>
+              <span>{{ mode | t }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    </ng-template>
   `,
 })
 export class PricePanel {
@@ -189,6 +230,8 @@ export class PricePanel {
   readonly estimate = input<PriceEstimate | null | undefined>();
   readonly condition = input<string | null | undefined>();
   readonly price = model<number | null>(null);
+  /** One price field beside the sale modes (one-page form) instead of the three suggestions (wizard step). */
+  readonly compact = input(false);
   protected readonly laterModes = ['Preisvorschlag', 'Auktion', 'Verschenken'];
   protected readonly own = signal(false);
   protected readonly ownValue = signal<number | null>(null);
@@ -205,6 +248,12 @@ export class PricePanel {
   protected readonly strategies = computed(() => {
     const v = this.view();
     return v && !v.noEstimate ? v.strategies : [];
+  });
+
+  // The middle suggestion as a hint in the compact field; the seller still types the price.
+  protected readonly placeholder = computed(() => {
+    const middle = this.strategies()[1];
+    return middle ? chf(middle.amount).replace('CHF ', '') : '0.–';
   });
 
   private estimateView(est: PriceEstimate, items: EvidenceItem[]) {

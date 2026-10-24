@@ -48,7 +48,7 @@
         <a routerLink="/find"><app-icon name="bookmark" />{{ 'Meine Suchen' | t }}</a>
         <a routerLink="/messages"><app-icon name="message" />{{ 'Nachrichten' | t }}</a>
       }
-      <a appButton routerLink="/sell"
+      <a appButton [routerLink]="[{ outlets: { modal: ['sell'] } }]"
         ><app-icon name="camera" /><span>{{ 'Verkaufen' | t }}</span></a
       >
       @if (auth.user()) {
