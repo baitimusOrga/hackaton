@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpContext } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -15,6 +22,7 @@ import {
 } from '../api/models';
 import { PricePanel } from '../components/price-panel';
 import { Condition, CONDITION_LABELS } from '../conditions';
+import { DraftStore } from '../draft-store';
 import { DraftStream } from '../draft-stream';
 import { ErrorBanner, HANDLES_ERRORS, translateError } from '../errors';
 import { CONDITION, GapCard, KnownFact, completeness, openGaps } from '../gaps';
@@ -37,6 +45,30 @@ const MAX_PHOTOS = 5;
 const STEPS = 5;
 // per-browser default for the next listing
 const LAST_LOCATION = 'sell.lastLocation';
+// draft photos are deleted on the server after 24 h (PhotoCleanup); an older draft could not be published
+const DRAFT_MAX_AGE_MS = 20 * 60 * 60 * 1000;
+
+/** Everything needed to continue a draft after a reload; photo files included for the previews. */
+interface SavedDraft {
+  savedAt: number;
+  photos: { file: File; id?: number }[];
+  draft: ListingDraft;
+  fields: Record<Field, string>;
+  sellerFields: Field[];
+  facts: Fact[];
+  aiGaps: Gap[];
+  skipped: string[];
+  answered: number;
+  gapsActive: boolean;
+  step: number;
+  view: 'steps' | 'full';
+  excluded: number[];
+  price: number | null;
+  postcode: string;
+  locality: string;
+  detections: Detection[];
+  privacyMarks: PrivacyMark[];
+}
 const MARKERS: Record<Source, string> = {
   LABEL: 'Vom Etikett gelesen',
   SUGGESTION: 'Vorschlag, bitte prüfen',
@@ -64,6 +96,8 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-sell',
+  // a pasted image is a photo wherever the focus is; pasted text is left alone
+  host: { '(window:paste)': 'onPaste($event)' },
   imports: [NgTemplateOutlet, RouterLink, PricePanel, Button, ChfPipe, Icon, TranslatePipe],
   templateUrl: './sell.html',
   styles: `
@@ -275,6 +309,10 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       padding: 0 var(--space-1, 4px);
       font-size: 0.8125rem;
     }
+    .dragging .dlg {
+      outline: 2px dashed var(--accent, #0f766e);
+      outline-offset: 4px;
+    }
     .chips {
       display: flex;
       flex-wrap: wrap;
@@ -289,6 +327,8 @@ export class Sell {
   private readonly banner = inject(ErrorBanner);
   private readonly router = inject(Router);
   private readonly i18n = inject(I18n);
+  private readonly store = inject(DraftStore);
+  protected readonly restored = signal(false);
   protected readonly maxPhotos = MAX_PHOTOS;
   protected readonly steps = STEPS;
   protected readonly markers = MARKERS;
@@ -302,6 +342,7 @@ export class Sell {
   protected readonly photos = signal<SellPhoto[]>([]);
   protected readonly shownPhoto = signal(0);
   protected readonly busy = signal(false);
+  protected readonly dragging = signal(false);
   protected readonly analyzing = signal(false);
   protected readonly streamFailed = signal(false);
   protected readonly detections = signal<Detection[]>([]);
@@ -376,8 +417,74 @@ export class Sell {
   });
   // fields the seller typed in keep their value when the draft is re-run
   private readonly sellerFields = new Set<Field>();
+  // the state worth keeping: only a finished analysis, never one in flight
+  private readonly snapshot = computed((): Omit<SavedDraft, 'savedAt'> | null => {
+    const draft = this.draft();
+    if (!draft || this.busy() || this.analyzing()) return null;
+    return {
+      photos: this.photos().map(({ file, id }) => ({ file, id })),
+      draft,
+      fields: this.fields(),
+      sellerFields: [...this.sellerFields],
+      facts: this.facts(),
+      aiGaps: this.aiGaps(),
+      skipped: [...this.skipped()],
+      answered: this.answered(),
+      gapsActive: this.gapsActive(),
+      step: this.step(),
+      view: this.view(),
+      excluded: [...this.excluded()],
+      price: this.price(),
+      postcode: this.postcode(),
+      locality: this.locality(),
+      detections: this.detections(),
+      privacyMarks: this.privacyMarks(),
+    };
+  });
+
+  constructor() {
+    void this.store.load<SavedDraft>().then((saved) => {
+      if (!saved || this.draft()) return;
+      if (Date.now() - saved.savedAt > DRAFT_MAX_AGE_MS) void this.store.clear();
+      else this.restore(saved);
+    });
+    effect(() => {
+      const snapshot = this.snapshot();
+      if (snapshot) void this.store.save({ ...snapshot, savedAt: Date.now() });
+    });
+  }
+
+  private restore(saved: SavedDraft): void {
+    this.photos.set(saved.photos.map((p) => ({ ...p, url: URL.createObjectURL(p.file) })));
+    this.draft.set(saved.draft);
+    this.fields.set(saved.fields);
+    saved.sellerFields.forEach((field) => this.sellerFields.add(field));
+    this.facts.set(saved.facts);
+    this.aiGaps.set(saved.aiGaps);
+    this.skipped.set(new Set(saved.skipped));
+    this.answered.set(saved.answered);
+    this.gapsActive.set(saved.gapsActive);
+    this.step.set(saved.step);
+    this.view.set(saved.view);
+    this.excluded.set(new Set(saved.excluded));
+    this.price.set(saved.price);
+    this.postcode.set(saved.postcode);
+    this.locality.set(saved.locality);
+    this.detections.set(saved.detections);
+    this.privacyMarks.set(saved.privacyMarks);
+    this.restored.set(true);
+  }
+
+  /** Forgets the saved draft and starts with an empty page. */
+  protected async startOver(): Promise<void> {
+    await this.store.clear();
+    // shortcut: a reload resets every signal at once; replace with a reset method if reloads hurt
+    location.reload();
+  }
   // only the latest rewrite may change the text
   private rewriteRun = 0;
+  // an answered question changed facts: rewrite title, description and price once the questions are done
+  private textStale = false;
 
   protected next(): void {
     if (!this.canContinue()) return;
@@ -404,8 +511,32 @@ export class Sell {
   }
 
   protected addPhotos(input: HTMLInputElement, upload = false): void {
-    const files = Array.from(input.files ?? []).slice(0, MAX_PHOTOS - this.photos().length);
+    const files = Array.from(input.files ?? []);
     input.value = '';
+    this.addFiles(files, upload);
+  }
+
+  protected onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.dragging.set(true);
+  }
+
+  protected onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.dragging.set(false);
+    this.addFiles(Array.from(event.dataTransfer?.files ?? []), !!this.draft());
+  }
+
+  protected onPaste(event: ClipboardEvent): void {
+    const files = Array.from(event.clipboardData?.files ?? []).filter(isImage);
+    if (!files.length) return;
+    event.preventDefault();
+    this.addFiles(files, !!this.draft());
+  }
+
+  /** Adds image files up to the limit; with a draft they are uploaded and analysed right away. */
+  private addFiles(all: File[], upload: boolean): void {
+    const files = all.filter(isImage).slice(0, MAX_PHOTOS - this.photos().length);
     if (!files.length) return;
     this.photos.update((photos) => [
       ...photos,
@@ -531,6 +662,7 @@ export class Sell {
 
   protected answer(card: GapCard, value: string): void {
     if (card.fact === CONDITION) {
+      this.textStale ||= this.fields().condition !== value;
       this.setField('condition', value);
     } else {
       const fact: Fact = { name: card.fact, value: value.trim(), source: 'SELLER' };
@@ -540,7 +672,7 @@ export class Sell {
           ? facts.map((f) => (f.name === card.fact ? fact : f))
           : [fact, ...facts],
       );
-      if (changed) this.rewriteText();
+      this.textStale ||= changed;
     }
     this.nextCard();
   }
@@ -560,6 +692,7 @@ export class Sell {
   protected finishGaps(): void {
     this.gapsActive.set(false);
     this.step.set(2);
+    if (this.textStale) this.rewriteText();
   }
 
   protected answerOpenPoints(): void {
@@ -570,11 +703,11 @@ export class Sell {
     this.gapsActive.set(true);
   }
 
-  /** Lets the AI fit title and description to changed facts; text the seller wrote stays. */
+  /** Lets the AI fit title, description and price to changed facts; text the seller wrote stays. */
   protected rewriteText(): void {
-    const { title, description, category } = this.fields();
-    if (!this.draft() || (this.sellerFields.has('title') && this.sellerFields.has('description')))
-      return;
+    const { title, description, category, condition } = this.fields();
+    if (!this.draft()) return;
+    this.textStale = false;
     const run = ++this.rewriteRun;
     this.rewriting.set(true);
     const facts = this.facts()
@@ -582,7 +715,15 @@ export class Sell {
       .map((f) => ({ name: f.name, value: f.value.trim(), source: f.source }));
     this.api
       .rewriteText(
-        { body: { category, title, description, facts } },
+        {
+          body: {
+            category,
+            title,
+            description,
+            facts,
+            condition: (condition || null) as Condition,
+          },
+        },
         // a failed rewrite keeps the current text
         new HttpContext().set(HANDLES_ERRORS, true),
       )
@@ -596,6 +737,7 @@ export class Sell {
               ? fields.description
               : (text.description ?? fields.description),
           }));
+          if (text.price) this.draft.update((draft) => draft && { ...draft, price: text.price });
           this.rewriting.set(false);
         },
         error: () => {
@@ -697,12 +839,17 @@ export class Sell {
     this.busy.set(true);
     this.api.publish({ body }).subscribe({
       next: (listing) => {
+        void this.store.clear();
         saveLastLocation(body.postcode, body.locality);
         void this.router.navigate(['/listings', listing.id]);
       },
       error: () => this.busy.set(false),
     });
   }
+}
+
+function isImage(file: File): boolean {
+  return file.type.startsWith('image/');
 }
 
 function lastLocation(): { postcode: string; locality: string } {

@@ -57,6 +57,17 @@ export const SELL_MESSAGES: Messages = {
     it: 'Scatta o carica una foto',
     en: 'Take or upload a photo',
   },
+  'Entwurf wiederhergestellt.': {
+    fr: 'Brouillon restauré.',
+    it: 'Bozza ripristinata.',
+    en: 'Draft restored.',
+  },
+  'Neu beginnen': { fr: 'Recommencer', it: 'Ricomincia', en: 'Start over' },
+  'Du kannst Fotos auch hierher ziehen oder einfügen.': {
+    fr: 'Tu peux aussi glisser ou coller tes photos ici.',
+    it: 'Puoi anche trascinare o incollare le foto qui.',
+    en: 'You can also drag or paste photos here.',
+  },
   'Artikel, Typenschild, Mängel. Bis zu {max} Fotos.': {
     fr: "Article, plaque signalétique, défauts. Jusqu'à {max} photos.",
     it: 'Articolo, targhetta, difetti. Fino a {max} foto.',

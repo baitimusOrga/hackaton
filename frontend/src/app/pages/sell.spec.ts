@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { ListingsService, PlacesService, SellingService } from '../api/services';
 import { DraftEvent, ListingDraft } from '../api/models';
+import { DraftStore } from '../draft-store';
 import { DraftStream } from '../draft-stream';
 import { ErrorBanner } from '../errors';
 import { Sell } from './sell';
@@ -28,6 +29,12 @@ const detection = (label: string): DraftEvent => ({
 });
 const done = (draft: ListingDraft): DraftEvent => ({ type: 'DRAFT', draft });
 
+let store: {
+  load: ReturnType<typeof vi.fn>;
+  save: ReturnType<typeof vi.fn>;
+  clear: ReturnType<typeof vi.fn>;
+};
+
 type Run = (body: unknown, onEvent: (e: DraftEvent) => void) => Promise<void>;
 const streams =
   (...events: DraftEvent[]): Run =>
@@ -50,6 +57,7 @@ async function analyse(runs: Run[], extra: object = {}, place = vi.fn()) {
       { provide: ListingsService, useValue: { categories: () => of(CATEGORIES) } },
       { provide: PlacesService, useValue: { place } },
       { provide: DraftStream, useValue: { run } },
+      { provide: DraftStore, useValue: store },
     ],
   });
   const fixture = TestBed.createComponent(Sell);
@@ -76,8 +84,118 @@ async function full(draft: ListingDraft, extra: object = {}, place = vi.fn()) {
   return page;
 }
 
+/** Opens the sell page with a draft saved before a reload. */
+async function reopen(saved: object) {
+  URL.createObjectURL = vi.fn().mockReturnValue('blob:photo');
+  store.load.mockResolvedValue(saved);
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter([{ path: '**', children: [] }]),
+      { provide: SellingService, useValue: {} },
+      { provide: ListingsService, useValue: { categories: () => of(CATEGORIES) } },
+      { provide: PlacesService, useValue: {} },
+      { provide: DraftStream, useValue: {} },
+      { provide: DraftStore, useValue: store },
+    ],
+  });
+  const fixture = TestBed.createComponent(Sell);
+  await fixture.whenStable();
+  return { fixture, element: fixture.nativeElement as HTMLElement };
+}
+
 describe('Sell', () => {
+  beforeEach(() => {
+    store = {
+      load: vi.fn().mockResolvedValue(undefined),
+      save: vi.fn().mockResolvedValue(undefined),
+      clear: vi.fn().mockResolvedValue(undefined),
+    };
+  });
   afterEach(() => localStorage.clear());
+
+  it('keeps the analysed draft with its photos for a reload', async () => {
+    await analyse([streams(done(DRAFT))]);
+
+    const saved = store.save.mock.lastCall![0];
+    expect(saved).toMatchObject({ draft: { title: 'Dell U2719D' }, gapsActive: true, step: 1 });
+    expect(saved.photos[0]).toMatchObject({ id: 7 });
+    expect(saved.photos[0].file).toBeInstanceOf(File);
+  });
+
+  it('restores a saved draft at its step', async () => {
+    const { element } = await reopen({
+      savedAt: Date.now(),
+      photos: [{ file: new File(['x'], 'item.png', { type: 'image/png' }), id: 7 }],
+      draft: DRAFT,
+      fields: {
+        title: 'Dell U2719D',
+        category: 'Monitors',
+        condition: 'GOOD',
+        description: 'A monitor.',
+      },
+      sellerFields: [],
+      facts: DRAFT.facts,
+      aiGaps: [],
+      skipped: ['Model', 'Resolution'],
+      answered: 2,
+      gapsActive: false,
+      step: 3,
+      view: 'steps',
+      excluded: [],
+      price: null,
+      postcode: '',
+      locality: '',
+      detections: [],
+      privacyMarks: [],
+    });
+
+    expect(element.textContent).toContain('3 von 5');
+    expect(element.textContent).toContain('Entwurf wiederhergestellt.');
+  });
+
+  it('drops a saved draft older than its photos on the server', async () => {
+    const { element } = await reopen({ savedAt: Date.now() - 21 * 60 * 60 * 1000, draft: DRAFT });
+
+    expect(store.clear).toHaveBeenCalled();
+    expect(element.textContent).toContain('1 von 5');
+    expect(element.textContent).not.toContain('Entwurf wiederhergestellt.');
+  });
+
+  it('takes photos dropped on the dialog or pasted, and ignores pasted text', async () => {
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:photo');
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: '**', children: [] }]),
+        { provide: SellingService, useValue: {} },
+        { provide: ListingsService, useValue: { categories: () => of(CATEGORIES) } },
+        { provide: PlacesService, useValue: {} },
+        { provide: DraftStream, useValue: {} },
+        { provide: DraftStore, useValue: store },
+      ],
+    });
+    const fixture = TestBed.createComponent(Sell);
+    const element = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+    const image = new File(['x'], 'item.png', { type: 'image/png' });
+
+    const drop = new Event('drop', { cancelable: true });
+    Object.defineProperty(drop, 'dataTransfer', {
+      value: { files: [image, new File(['t'], 'notes.txt', { type: 'text/plain' })] },
+    });
+    element.querySelector('form')!.dispatchEvent(drop);
+    const paste = new Event('paste', { cancelable: true });
+    Object.defineProperty(paste, 'clipboardData', { value: { files: [image] } });
+    window.dispatchEvent(paste);
+    const text = new Event('paste', { cancelable: true });
+    Object.defineProperty(text, 'clipboardData', { value: { files: [] } });
+    window.dispatchEvent(text);
+    await fixture.whenStable();
+
+    expect(drop.defaultPrevented).toBe(true);
+    expect(paste.defaultPrevented).toBe(true);
+    expect(text.defaultPrevented).toBe(false);
+    expect(fixture.componentInstance['photos']()).toHaveLength(2);
+  });
 
   it('uploads once, marks detections on the photo and asks for the model first', async () => {
     const { element, uploadPhotos, run } = await analyse([
@@ -168,10 +286,11 @@ describe('Sell', () => {
     expect(element.querySelector('[data-testid="gap"]')).not.toBeNull();
   });
 
-  it('rewrites title and description when the seller answers a fact', async () => {
+  it('rewrites title, description and price once when the questions are done', async () => {
+    const price = { lowChf: 300, midChf: 350, highChf: 400, provisional: false, evidence: [] };
     const rewriteText = vi
       .fn()
-      .mockReturnValue(of({ title: 'Dell U2719D', description: 'My Dell U2719D monitor.' }));
+      .mockReturnValue(of({ title: 'Dell U2719D', description: 'My Dell U2719D monitor.', price }));
     const { fixture, element } = await analyse([streams(done(DRAFT))], { rewriteText });
 
     const answer = element.querySelector<HTMLInputElement>('#gap-answer')!;
@@ -180,19 +299,36 @@ describe('Sell', () => {
     await fixture.whenStable();
     button(element, 'Speichern').click();
     await fixture.whenStable();
-    button(element, 'Stimmt').click(); // same value: no second rewrite
+    button(element, 'Stimmt').click();
+    await fixture.whenStable();
+    expect(rewriteText).not.toHaveBeenCalled(); // not while answering
+
+    button(element, 'Zur Übersicht').click();
     await fixture.whenStable();
 
     expect(rewriteText).toHaveBeenCalledOnce();
+    expect(rewriteText.mock.calls[0][0].body).toMatchObject({ condition: 'GOOD' });
     expect(rewriteText.mock.calls[0][0].body.facts).toContainEqual({
       name: 'Model',
       value: 'U2719D',
       source: 'SELLER',
     });
-    expect(fixture.componentInstance['fields']()).toMatchObject({
+    const sell = fixture.componentInstance;
+    expect(sell['fields']()).toMatchObject({
       title: 'Dell U2719D',
       description: 'My Dell U2719D monitor.',
     });
+    expect(sell['draft']()!.price).toEqual(price);
+  });
+
+  it('skipping every question needs no rewrite', async () => {
+    const rewriteText = vi.fn();
+    const { fixture, element } = await analyse([streams(done(DRAFT))], { rewriteText });
+
+    button(element, 'Zur Übersicht').click();
+    await fixture.whenStable();
+
+    expect(rewriteText).not.toHaveBeenCalled();
   });
 
   it('keeps a title the seller wrote when rewriting', async () => {
@@ -328,6 +464,7 @@ describe('Sell', () => {
 
     element.querySelector('form')!.dispatchEvent(new Event('submit'));
 
+    expect(store.clear).toHaveBeenCalled();
     expect(publish.mock.calls[0][0].body).toEqual({
       title: 'Dell U2719D',
       description: 'A monitor.',
