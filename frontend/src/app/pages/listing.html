@@ -140,32 +140,40 @@
     }}</span>
   </div>
 
-  @if (a.ended) {
-    <p class="group">
-      {{
-        (a.currentBidChf ?? null) !== null
-          ? ('Verkauft für {price}' | t: { price: chf(a.currentBidChf) })
-          : ('Ohne Gebot beendet' | t)
-      }}
-    </p>
-  } @else {
-    @if ((a.myMaxChf ?? null) !== null && !a.leading) {
-      <p class="danger">
-        {{ 'Du wurdest überboten. Dein Maximum war {max}.' | t: { max: chf(a.myMaxChf) } }}
-      </p>
-    } @else if (a.leading) {
-      <p class="zw-muted">
+  <div role="status">
+    @if (status(a); as s) {
+      <div class="status" [class.status--outbid]="s.tone === 'outbid'">
+        <h3>
+          <app-icon [name]="s.tone === 'lead' ? 'check' : 'x'" [size]="20" />
+          {{ s.title }}
+        </h3>
+        <p class="zw-help">{{ s.text }}</p>
+      </div>
+    } @else if (a.ended) {
+      <p>
         {{
-          'Du führst. Dein Maximum ist {max}; wir bieten automatisch für dich, bis es erreicht ist.'
-            | t: { max: chf(a.myMaxChf) }
+          (a.currentBidChf ?? null) !== null
+            ? ('Verkauft für {price}' | t: { price: chf(a.currentBidChf) })
+            : ('Ohne Gebot beendet' | t)
         }}
       </p>
     }
+  </div>
+
+  @if (!a.ended) {
     @if (a.ownListing) {
       <p class="zw-muted">{{ 'Das ist dein Inserat. Du kannst nicht mitbieten.' | t }}</p>
     } @else {
       <form class="group tight" novalidate (submit)="placeBid($event, item.id, a)">
         <label class="zw-label" for="bid-max">{{ 'Dein Maximum (CHF)' | t }}</label>
+        @if ((a.myMaxChf ?? null) === null) {
+          <p id="bid-how" class="zw-help">
+            {{
+              'Gib den Betrag an, den du höchstens zahlen willst. Wir bieten nur so viel wie nötig und erhöhen automatisch, bis er erreicht ist. Niemand sieht dein Maximum.'
+                | t
+            }}
+          </p>
+        }
         <input
           id="bid-max"
           class="zw-input zw-input--price"
@@ -176,8 +184,8 @@
           [min]="a.minimumNextBidChf"
           [value]="maxChf() ?? ''"
           (input)="setMax($any($event.target).valueAsNumber)"
-          [attr.aria-invalid]="note(a)?.kind === 'error' ? 'true' : null"
-          aria-describedby="bid-help bid-note"
+          [attr.aria-invalid]="bidError() ? 'true' : null"
+          aria-describedby="bid-how bid-help bid-note"
         />
         <div class="picks" role="group" [attr.aria-label]="'Maximum wählen' | t">
           @for (amount of suggestions(a); track amount) {
@@ -200,10 +208,10 @@
         <p
           id="bid-note"
           class="zw-help"
-          [class.zw-help--error]="note(a)?.kind !== 'ok'"
-          [attr.role]="note(a)?.kind === 'error' ? 'alert' : 'status'"
+          [class.zw-help--error]="bidError()"
+          [attr.role]="bidError() ? 'alert' : null"
         >
-          {{ note(a)?.text }}
+          {{ bidError() || preview(a) }}
         </p>
         <button appButton variant="bid" [block]="true" type="submit" [disabled]="bidding()">
           {{ bidding() ? ('Wird gesendet…' | t) : bidLabel(a) }}

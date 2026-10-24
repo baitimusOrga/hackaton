@@ -11,16 +11,6 @@ export const AUCTION_MESSAGES: Messages = {
     it: 'Conclusa senza offerte',
     en: 'Ended without a bid',
   },
-  'Du wurdest überboten. Dein Maximum war {max}.': {
-    fr: 'Ton offre a été dépassée. Ton maximum était de {max}.',
-    it: 'La tua offerta è stata superata. Il tuo massimo era {max}.',
-    en: 'You have been outbid. Your maximum was {max}.',
-  },
-  'Du führst. Dein Maximum ist {max}; wir bieten automatisch für dich, bis es erreicht ist.': {
-    fr: "Tu mènes. Ton maximum est de {max} ; nous enchérissons automatiquement pour toi jusqu'à ce montant.",
-    it: 'Sei in testa. Il tuo massimo è {max}; offriamo automaticamente per te fino a raggiungerlo.',
-    en: 'You are leading. Your maximum is {max}; we bid for you automatically up to it.',
-  },
   'Das ist dein Inserat. Du kannst nicht mitbieten.': {
     fr: 'C’est ton annonce. Tu ne peux pas enchérir.',
     it: 'Questo è il tuo annuncio. Non puoi fare offerte.',
@@ -53,17 +43,67 @@ export const AUCTION_MESSAGES: Messages = {
     it: 'Il tuo massimo deve essere almeno {min}.',
     en: 'Your maximum must be at least {min}.',
   },
-  'Gebot angenommen. Du führst mit {price}, dein Maximum {max} bleibt geheim.': {
-    fr: 'Offre acceptée. Tu mènes à {price}, ton maximum de {max} reste secret.',
-    it: 'Offerta accettata. Sei in testa a {price}, il tuo massimo di {max} resta segreto.',
-    en: 'Bid accepted. You lead at {price}; your maximum of {max} stays secret.',
+  'Du hast gewonnen': { fr: 'Tu as gagné', it: 'Hai vinto', en: 'You won' },
+  'Für {price}.': { fr: 'Pour {price}.', it: 'Per {price}.', en: 'For {price}.' },
+  'Jemand hat mehr geboten': {
+    fr: 'Quelqu’un a offert plus',
+    it: 'Qualcuno ha offerto di più',
+    en: 'Someone bid more',
   },
-  'Gebot angenommen, aber ein anderes Maximum ist höher. Der Preis steigt automatisch auf {price}.':
+  'Verkauft für {price}. Dein Maximum war {max}.': {
+    fr: 'Vendu pour {price}. Ton maximum était de {max}.',
+    it: 'Venduto per {price}. Il tuo massimo era {max}.',
+    en: 'Sold for {price}. Your maximum was {max}.',
+  },
+  'Du führst mit {price}': {
+    fr: 'Tu mènes à {price}',
+    it: 'Sei in testa a {price}',
+    en: 'You lead at {price}',
+  },
+  'Gebot angenommen. Dein Maximum {max} bleibt geheim; wir bieten automatisch für dich, bis es erreicht ist.':
     {
-      fr: 'Offre acceptée, mais un autre maximum est plus élevé. Le prix monte automatiquement à {price}.',
-      it: 'Offerta accettata, ma un altro massimo è più alto. Il prezzo sale automaticamente a {price}.',
-      en: 'Bid accepted, but another maximum is higher. The price rises automatically to {price}.',
+      fr: "Offre acceptée. Ton maximum de {max} reste secret ; nous enchérissons automatiquement pour toi jusqu'à ce montant.",
+      it: 'Offerta accettata. Il tuo massimo di {max} resta segreto; offriamo automaticamente per te fino a raggiungerlo.',
+      en: 'Bid accepted. Your maximum of {max} stays secret; we bid for you automatically up to it.',
     },
+  'Dein Maximum ist {max}; wir bieten automatisch für dich, bis es erreicht ist.': {
+    fr: "Ton maximum est de {max} ; nous enchérissons automatiquement pour toi jusqu'à ce montant.",
+    it: 'Il tuo massimo è {max}; offriamo automaticamente per te fino a raggiungerlo.',
+    en: 'Your maximum is {max}; we bid for you automatically up to it.',
+  },
+  'Du wurdest überboten': {
+    fr: 'Ton offre a été dépassée',
+    it: 'La tua offerta è stata superata',
+    en: 'You have been outbid',
+  },
+  'Gebot angenommen, aber ein anderes Maximum ist höher. Der Preis stieg automatisch auf {price}. Biete mindestens {min}, um zu führen.':
+    {
+      fr: 'Offre acceptée, mais un autre maximum est plus élevé. Le prix est monté automatiquement à {price}. Offre au moins {min} pour mener.',
+      it: 'Offerta accettata, ma un altro massimo è più alto. Il prezzo è salito automaticamente a {price}. Offri almeno {min} per essere in testa.',
+      en: 'Bid accepted, but another maximum is higher. The price rose automatically to {price}. Bid at least {min} to lead.',
+    },
+  'Dein Maximum war {max}. Biete mindestens {min}, um wieder zu führen.': {
+    fr: 'Ton maximum était de {max}. Offre au moins {min} pour reprendre la tête.',
+    it: 'Il tuo massimo era {max}. Offri almeno {min} per tornare in testa.',
+    en: 'Your maximum was {max}. Bid at least {min} to lead again.',
+  },
+  'Der Preis bleibt bei {price}. Du erhöhst nur dein Maximum auf {max}.': {
+    fr: 'Le prix reste à {price}. Tu augmentes seulement ton maximum à {max}.',
+    it: 'Il prezzo resta a {price}. Aumenti solo il tuo massimo a {max}.',
+    en: 'The price stays at {price}. You only raise your maximum to {max}.',
+  },
+  'Dein Gebot startet bei {min}. Bietet jemand mit, erhöhen wir automatisch bis {max}.': {
+    fr: "Ton offre commence à {min}. Si quelqu'un enchérit, nous augmentons automatiquement jusqu'à {max}.",
+    it: 'La tua offerta parte da {min}. Se qualcuno rilancia, aumentiamo automaticamente fino a {max}.',
+    en: 'Your bid starts at {min}. If someone else bids, we raise it automatically up to {max}.',
+  },
+  'Gib den Betrag an, den du höchstens zahlen willst. Wir bieten nur so viel wie nötig und erhöhen automatisch, bis er erreicht ist. Niemand sieht dein Maximum.':
+    {
+      fr: "Indique le montant maximum que tu es prêt à payer. Nous n'enchérissons que le nécessaire et augmentons automatiquement jusqu'à ce montant. Personne ne voit ton maximum.",
+      it: 'Indica l’importo massimo che vuoi pagare. Offriamo solo il necessario e aumentiamo automaticamente fino a raggiungerlo. Nessuno vede il tuo massimo.',
+      en: 'Enter the most you are willing to pay. We only bid as much as needed and raise it automatically up to that amount. Nobody sees your maximum.',
+    },
+  'Maximum erhöhen': { fr: 'Augmenter le maximum', it: 'Aumenta il massimo', en: 'Raise maximum' },
   'Dein Maximum (CHF)': {
     fr: 'Ton maximum (CHF)',
     it: 'Il tuo massimo (CHF)',
