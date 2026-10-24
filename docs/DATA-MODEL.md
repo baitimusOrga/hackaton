@@ -46,4 +46,4 @@ Rules:
 ## Backups
 
 On the app hosts the database container carries the label `backup.dump: postgres`: a `pg_dumpall` every night at 01:30 into `/srv/apps/hackaton/dumps/` (7 kept), then the whole VM goes to PBS.
-| V22 | drops `clearance_item` and `clearance_project` (business clearance feature removed) |
+| V23 | drops `clearance_item` and `clearance_project` (business clearance feature removed) |
