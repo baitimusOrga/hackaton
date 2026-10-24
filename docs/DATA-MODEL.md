@@ -17,8 +17,6 @@ Rules:
 - `bid`: one private maximum per row (`listing_id`, bidder subject + name snapshot, `max_chf`, `created_at`). Maxima are never returned by the API; the visible price history is replayed from them in insert order (proxy bidding, earlier wins on equal maxima).
 - Nullable `listing.seller_id` and `seller_name` store the verified Better Auth subject and a display-name snapshot at publication. Existing demos retain null sellers. Auth owns the separate `auth` schema, with no cross-schema user foreign key.
 - `photo`: uploaded listing photos (content type, and either the S3 `storage_key` or, for older rows and local dev without S3 credentials, the bytes in `data`) with the uploading seller's subject. `listing_id` stays null until the photo is published with a listing; `listing.image_url` then points at `/api/photos/{first photo id}`. Only published photos are served; unpublished draft photos are deleted by `PhotoCleanup` after 24 hours (and right away when the AI draft fails). JPEG and PNG uploads are re-encoded to drop EXIF metadata.
-- `clearance_project`: a company's office clearance (owner = Better Auth subject, no cross-schema FK; postcode, locality, deadline, chosen `route` null until chosen).
-- `clearance_item`: inventory line of a project (name, category, quantity + `quantity_confirmed`, condition, notes, estimated unit price in CHF, nullable `unit_price_chf` the company set; publishing requires it). `listing_id` is set when the item is published as a listing; the item status DRAFT/LISTED/SOLD is derived from it and the listing's status, not stored.
 
 ## Migrations so far
 
@@ -48,3 +46,4 @@ Rules:
 ## Backups
 
 On the app hosts the database container carries the label `backup.dump: postgres`: a `pg_dumpall` every night at 01:30 into `/srv/apps/hackaton/dumps/` (7 kept), then the whole VM goes to PBS.
+| V22 | drops `clearance_item` and `clearance_project` (business clearance feature removed) |

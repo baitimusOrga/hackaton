@@ -14,7 +14,6 @@ import { I18n, LANGS, TranslatePipe } from '../i18n/i18n';
       <a routerLink="/about">{{ 'Über uns' | t }}</a>
       <a href="#">{{ 'Sicher handeln' | t }}</a>
       <a href="#">{{ 'Auktionsregeln' | t }}</a>
-      <a routerLink="/business">{{ 'Für Firmen' | t }}</a>
       <a href="#">{{ 'Hilfe' | t }}</a>
       <span class="zw-footer__langs" role="group" [attr.aria-label]="'Sprache' | t">
         @for (code of langs; track code) {

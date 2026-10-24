@@ -36,7 +36,6 @@ export const SHELL_MESSAGES: Messages = {
     en: 'Trading safely',
   },
   Auktionsregeln: { fr: 'Règles des enchères', it: 'Regole delle aste', en: 'Auction rules' },
-  'Für Firmen': { fr: 'Pour les entreprises', it: 'Per le aziende', en: 'For businesses' },
   Hilfe: { fr: 'Aide', it: 'Aiuto', en: 'Help' },
   Sprache: { fr: 'Langue', it: 'Lingua', en: 'Language' },
   Standort: { fr: 'Position', it: 'Posizione', en: 'Location' },
@@ -175,7 +174,6 @@ export const SHELL_MESSAGES: Messages = {
       it: 'Mostraci cosa deve sparire, indicaci la data e scegli quanto lavoro ci assumiamo. Un progetto, un conteggio.',
       en: 'Show us what has to go, give us the date and choose how much work we take on. One project, one invoice.',
     },
-  'Projekt starten': { fr: 'Lancer le projet', it: 'Avvia il progetto', en: 'Start a project' },
   'Selbst verkaufen': { fr: 'Vendre soi-même', it: 'Vendere in proprio', en: 'Sell it yourself' },
   'Du behältst die Kontrolle. Keine Gebühren, keine Provision.': {
     fr: 'Tu gardes le contrôle. Pas de frais, pas de commission.',

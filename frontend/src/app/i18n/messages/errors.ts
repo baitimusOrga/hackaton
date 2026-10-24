@@ -146,12 +146,6 @@ export const ERROR_MESSAGES: Messages = {
     it: 'Scegli una delle categorie elencate.',
     en: 'Choose one of the listed categories.',
   },
-  'Clearance project not found.': {
-    de: 'Räumungsprojekt nicht gefunden.',
-    fr: 'Projet de débarras introuvable.',
-    it: 'Progetto di sgombero non trovato.',
-    en: 'Clearance project not found.',
-  },
   'Each photo must be at most 5 MB.': {
     de: 'Jedes Foto darf höchstens 5 MB gross sein.',
     fr: 'Chaque photo ne doit pas dépasser 5 Mo.',

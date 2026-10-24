@@ -37,7 +37,6 @@ class SecurityTest {
             .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.detail").value("Please log in."));
     }
     @Test void unlistedRoutesAreDeniedByDefault() throws Exception {
-        mvc.perform(get("/api/clearance/projects")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/does-not-exist")).andExpect(status().isUnauthorized());
         mvc.perform(delete("/api/listings/1")).andExpect(status().isUnauthorized());
     }
