@@ -11,17 +11,12 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import * as L from 'leaflet';
-import { ChfPipe } from '../ui/chf';
+import { ListingSummary } from '../api/models';
+import { TranslatePipe } from '../i18n/i18n';
+import { SummaryCard } from '../ui/summary-card';
 
-export interface MapItem {
-  id?: number;
-  title?: string;
-  priceChf?: number;
-  latitude?: number | null;
-  longitude?: number | null;
-}
+export type MapItem = ListingSummary;
 
 const SWITZERLAND = L.latLng(46.8, 8.2);
 
@@ -39,7 +34,7 @@ const PIN = L.icon({
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing-map',
-  imports: [ChfPipe, RouterLink],
+  imports: [SummaryCard, TranslatePipe],
   template: `<div
       #map
       role="region"
@@ -47,16 +42,14 @@ const PIN = L.icon({
       class="isolate h-80 w-full zw-map"
     ></div>
     @if (selected().length) {
-      <ul #list class="zw-map-list" aria-label="Inserate in diesem Gebiet">
+      <p #list class="zw-muted mt-4">
+        {{ 'Gefundene Inserate: {count}' | t: { count: selected().length } }}
+      </p>
+      <div class="zw-grid mt-2">
         @for (item of selected(); track item.id) {
-          <li>
-            <a [routerLink]="['/listings', item.id]">{{ item.title ?? 'Listing' }}</a>
-            @if (item.priceChf !== undefined) {
-              <span>{{ item.priceChf | chf }}</span>
-            }
-          </li>
+          <app-summary-card [listing]="item" />
         }
-      </ul>
+      </div>
     }`,
 })
 export class ListingMap {
@@ -72,10 +65,6 @@ export class ListingMap {
   constructor() {
     const injector = inject(Injector);
     const destroyRef = inject(DestroyRef);
-    // the list only exists after the render that follows the click
-    effect(() =>
-      this.list()?.nativeElement.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }),
-    );
     afterNextRender(() => {
       const map = L.map(this.host().nativeElement).setView(SWITZERLAND, 7);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -105,7 +94,18 @@ export class ListingMap {
               continue;
             }
             L.circle(at, { radius, className: 'zw-map-area' })
-              .on('click', () => this.selected.set(group))
+              .on('click', () => {
+                this.selected.set(group);
+                // after the render, so the list exists on the first click and is re-shown on every later one
+                afterNextRender(
+                  () =>
+                    this.list()?.nativeElement.scrollIntoView?.({
+                      block: 'nearest',
+                      behavior: 'smooth',
+                    }),
+                  { injector },
+                );
+              })
               .bindTooltip(String(group.length), {
                 permanent: true,
                 direction: 'center',

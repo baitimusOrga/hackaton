@@ -158,6 +158,11 @@ export const SHELL_MESSAGES: Messages = {
     it: 'Novità vicino a te',
     en: 'New near you',
   },
+  'Gefundene Inserate: {count}': {
+    fr: 'Annonces trouvées : {count}',
+    it: 'Annunci trovati: {count}',
+    en: 'Listings found: {count}',
+  },
   'Alles in 25 km': {
     fr: 'Tout dans un rayon de 25 km',
     it: 'Tutto entro 25 km',

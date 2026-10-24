@@ -1055,28 +1055,6 @@ textarea.zw-input {
 .leaflet-tooltip.zw-map-count::before {
   display: none;
 }
-.zw-map-list {
-  margin: var(--space-3) 0 0;
-  padding: 0;
-  list-style: none;
-  border: var(--border-1) solid var(--line);
-  border-radius: var(--radius-1);
-}
-.zw-map-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-4);
-}
-.zw-map-list li + li {
-  border-top: var(--border-1) solid var(--line);
-}
-.zw-map-list a {
-  color: var(--ink);
-}
-.zw-map-list a:hover {
-  color: var(--blue-text);
-}
 .zw-map .leaflet-bar a,
 .zw-map .leaflet-control-attribution {
   background: var(--bg-000);
