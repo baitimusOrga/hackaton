@@ -341,9 +341,9 @@
                     variant="primary"
                     type="submit"
                     class="push"
-                    [disabled]="busy() || !fields().condition"
+                    [disabled]="!fields().condition"
                   >
-                    {{ (busy() ? 'Wird veröffentlicht…' : 'Veröffentlichen') | t }}
+                    {{ 'Vorschau ansehen' | t }}
                   </button>
                 </div>
               }
@@ -409,6 +409,16 @@
         }
       </main>
     </div>
+  } @else if (view() === 'preview') {
+    <app-listing-preview
+      [listing]="previewListing()"
+      (back)="closePreview()"
+      (edit)="closePreview('full')"
+    >
+      <button appButton variant="primary" type="submit" [disabled]="busy()">
+        {{ (busy() ? 'Wird veröffentlicht…' : 'Veröffentlichen') | t }}
+      </button>
+    </app-listing-preview>
   } @else {
     <header class="page-head">
       <div>
@@ -538,7 +548,14 @@
       <div class="foot full-foot">
         <span class="zw-muted zw-small">{{ 'Inserieren ist gratis. Keine Provision.' | t }}</span>
         <!-- TODO: "Entwurf speichern": the backend cannot store a draft yet. -->
-        <button appButton type="button" disabled>{{ 'Entwurf speichern' | t }}</button>
+        <button
+          appButton
+          type="button"
+          [disabled]="!draft() || !fields().condition"
+          (click)="openPreview()"
+        >
+          {{ 'Vorschau' | t }}
+        </button>
         <!-- Publishing needs the photo ids from the draft ("Fotos auswerten"). -->
         <button appButton variant="primary" type="submit" [disabled]="!draft() || busy()">
           {{ (busy() && draft() ? 'Wird veröffentlicht…' : 'Veröffentlichen') | t }}

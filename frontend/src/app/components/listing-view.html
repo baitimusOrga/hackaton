@@ -1,0 +1,107 @@
+@if (listing(); as item) {
+  <div class="cols">
+    <section [attr.aria-label]="'Fotos' | t">
+      <div class="photo">
+        @if (item.imageUrl) {
+          <img [src]="item.imageUrl" [alt]="item.title" />
+        }
+      </div>
+      <!-- TODO: backend has one imageUrl per listing; add the thumbnail row (zw-thumb buttons, aria-current) once ListingDetail has several photos. -->
+    </section>
+
+    <section [attr.aria-label]="'Kaufen' | t" class="stack">
+      <div class="group">
+        <!-- TODO: backend has no sale mode or auction data; branch here to the auction variant (DetailAuction: timer, current bid, bid field, blue "Jetzt bieten") once ListingDetail has it. -->
+        <!-- TODO: backend has no "Grüne Wahl" flag; add <app-badge variant="green">Grüne Wahl</app-badge> once it does. -->
+        <div class="badges">
+          <app-badge>{{ 'Festpreis' | t }}</app-badge>
+        </div>
+        <h1>{{ item.title }}</h1>
+        <!-- TODO: backend has no included accessories or distance to the buyer; extend the meta line once it does. -->
+        <p class="meta">{{ meta(item) }}</p>
+      </div>
+
+      <div class="group tight">
+        <span class="zw-price-lg">{{ item.priceChf ?? 0 | chf }}</span>
+        <!-- TODO: backend has no pickup/shipping cost or new price; show "Abholung gratis · Versand CHF 35.– · neu CHF 1’890.–" once it does. -->
+      </div>
+
+      <div class="group tight">
+        <!-- TODO: backend has no purchase endpoint; wire Kaufen to it (then the Bought flow). -->
+        <button appButton variant="primary" [block]="true" type="button" disabled>
+          {{ 'Kaufen' | t }}
+        </button>
+        <div class="links">
+          <!-- TODO: backend has no public Q&A or watchlist; enable these once it does. -->
+          <button type="button" class="zw-link" disabled>{{ 'Frage stellen' | t }}</button>
+          <button type="button" class="zw-link" disabled>{{ 'Merken' | t }}</button>
+        </div>
+      </div>
+
+      <div class="seller">
+        <span class="avatar" aria-hidden="true">{{ (item.sellerName || 'Z').charAt(0) }}</span>
+        <div class="group tight">
+          <span class="seller-name" data-testid="seller">
+            {{
+              item.sellerName
+                ? ('{name} (eigene Angabe)' | t: { name: item.sellerName })
+                : ('Demo-Inserat' | t)
+            }}
+          </span>
+          <!-- TODO: backend has no seller stats; show "23 Verkäufe · 4.9 von 5 · Telefon und Adresse geprüft" and link to the seller profile once it does. -->
+        </div>
+      </div>
+    </section>
+
+    <section class="details" [attr.aria-label]="'Details' | t">
+      <div class="group">
+        <h2>{{ 'Angaben' | t }}</h2>
+        <!-- TODO: backend has no source per fact; add the grey suffix ("vom Typenschild", "vom Verkäufer bestätigt") once attributes carry one. -->
+        <dl class="facts">
+          @if (item.category) {
+            <div class="fact">
+              <dt>{{ 'Kategorie' | t }}</dt>
+              <dd>{{ item.category | t }}</dd>
+            </div>
+          }
+          @for (attribute of item.attributes | keyvalue; track attribute.key) {
+            <div class="fact">
+              <dt>{{ attribute.key | t }}</dt>
+              <dd>{{ attribute.value }}</dd>
+            </div>
+          }
+          @if (item.createdAt) {
+            <div class="fact">
+              <dt>{{ 'Inseriert' | t }}</dt>
+              <dd>{{ item.createdAt | date: 'dd.MM.yyyy' }}</dd>
+            </div>
+          }
+        </dl>
+      </div>
+
+      @if (item.description) {
+        <div class="group">
+          <h2>{{ 'Beschreibung' | t }}</h2>
+          <p class="text">{{ item.description }}</p>
+        </div>
+      }
+
+      @if (typeof item.latitude === 'number' && typeof item.longitude === 'number') {
+        <div class="group tight">
+          <h2>Gegend</h2>
+          <!-- the postcode area, not the address: the exact spot stays private -->
+          <app-listing-map
+            [items]="[item]"
+            [label]="'Karte der Gegend um ' + item.postcode + ' ' + item.locality"
+          />
+        </div>
+      }
+
+      <div class="group tight">
+        <h2>{{ 'Fragen' | t }}</h2>
+        <!-- TODO: backend has no public questions; list them here ("Name: Frage" / "Verkäufer: Antwort") once it does. -->
+        <p class="zw-muted">{{ 'Noch keine Fragen.' | t }}</p>
+      </div>
+    </section>
+  </div>
+}

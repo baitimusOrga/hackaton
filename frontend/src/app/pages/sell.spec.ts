@@ -728,6 +728,27 @@ describe('Sell', () => {
     expect(element.querySelector<HTMLInputElement>('input[name="locality"]')!.value).toBe('Zürich');
   });
 
+  it('shows the listing as buyers see it before publishing', async () => {
+    const publish = vi.fn().mockReturnValue(of({ id: 1 }));
+    const { fixture, element } = await full(DRAFT, { publish });
+    fixture.componentInstance['price'].set(120);
+    await fixture.whenStable();
+
+    button(element, 'Vorschau').click();
+    await fixture.whenStable();
+    const preview = element.querySelector('app-listing-preview')!;
+    expect(preview.textContent).toContain('So sehen andere Mitglieder dein Inserat.');
+    expect(preview.textContent).toContain('Dell U2719D');
+    expect(preview.textContent).toContain('CHF 120.–');
+    expect(preview.textContent).not.toContain('27"'); // a suggestion is not published
+    expect(publish).not.toHaveBeenCalled();
+
+    button(element, 'Bearbeiten').click();
+    await fixture.whenStable();
+    expect(element.querySelector('app-listing-preview')).toBeNull();
+    expect(element.querySelector('#sell-title')).not.toBeNull();
+  });
+
   it('publishes only label and confirmed facts after an explicit click', async () => {
     const publish = vi.fn().mockReturnValue(of({ id: 1 }));
     const { fixture, element } = await full(DRAFT, { publish });

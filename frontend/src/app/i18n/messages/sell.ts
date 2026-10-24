@@ -125,6 +125,14 @@ export const SELL_MESSAGES: Messages = {
       en: 'We wrote the title and description from your photos and answers. You can change them at any time. Listing is free.',
     },
   Zurück: { fr: 'Retour', it: 'Indietro', en: 'Back' },
+  Vorschau: { fr: 'Aperçu', it: 'Anteprima', en: 'Preview' },
+  'Vorschau ansehen': { fr: "Voir l'aperçu", it: "Vedi l'anteprima", en: 'See preview' },
+  Bearbeiten: { fr: 'Modifier', it: 'Modifica', en: 'Edit' },
+  'So sehen andere Mitglieder dein Inserat.': {
+    fr: 'Voici comment les autres membres verront ton annonce.',
+    it: 'Così gli altri membri vedranno il tuo annuncio.',
+    en: 'This is how other members will see your listing.',
+  },
   'Erst prüfen': { fr: "D'abord vérifier", it: 'Prima controlla', en: 'Review first' },
   'Wird veröffentlicht…': {
     fr: 'Publication en cours…',

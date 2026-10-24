@@ -21,6 +21,7 @@ import {
   Detection,
   DraftEvent,
   Gap,
+  ListingDetail,
   ListingDraft,
   PriceEstimate,
   PrivacyMark,
@@ -38,6 +39,8 @@ import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
 import { Chip } from '../ui/chip';
 import { Icon } from '../ui/icon';
+import { Auth } from '../auth/auth';
+import { ListingPreview } from '../components/listing-preview';
 
 type Source = KnownFact['source'];
 type Field = 'title' | 'category' | 'condition' | 'description';
@@ -70,7 +73,7 @@ interface SavedDraft {
   answered: number;
   gapsActive: boolean;
   step: number;
-  view: 'steps' | 'full';
+  view: View;
   excluded: number[];
   price: number | null;
   postcode: string;
@@ -116,6 +119,7 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
     ChfPipe,
     Chip,
     Icon,
+    ListingPreview,
     TranslatePipe,
   ],
   templateUrl: './sell.html',
@@ -731,7 +735,9 @@ export class Sell {
   protected readonly categories = toSignal(inject(ListingsService).categories(), {
     initialValue: [],
   });
-  protected readonly view = signal<'steps' | 'full'>('steps');
+  protected readonly view = signal<View>('steps');
+  // where "Zurück" in the preview leads
+  private previewFrom: View = 'steps';
   protected readonly step = signal(1);
   protected readonly photos = signal<SellPhoto[]>([]);
   protected readonly shownPhoto = signal(0);
@@ -796,6 +802,32 @@ export class Sell {
   );
   protected readonly previewPhoto = computed(
     () => this.photos().find((_, i) => !this.excluded().has(i))?.url,
+  );
+  private readonly auth = inject(Auth);
+  /** The listing as buyers will see it, from what would be published now. */
+  protected readonly previewListing = computed((): ListingDetail => {
+    const fields = this.fields();
+    return {
+      title: fields.title.trim(),
+      description: fields.description.trim(),
+      category: fields.category,
+      condition: (fields.condition || undefined) as Condition | undefined,
+      priceChf: this.price() ?? undefined,
+      postcode: this.postcode(),
+      locality: this.locality().trim(),
+      attributes: this.publishedFacts(),
+      imageUrl: this.previewPhoto(),
+      sellerName: this.auth.user()?.name ?? null,
+      createdAt: new Date().toISOString(),
+    };
+  });
+  // read from a label or confirmed by the seller; suggestions and web facts stay private
+  private readonly publishedFacts = computed(() =>
+    Object.fromEntries(
+      this.facts()
+        .filter((f) => f.source !== 'SUGGESTION' && f.source !== 'WEB' && f.value.trim())
+        .map((f) => [f.name, f.value.trim()]),
+    ),
   );
   protected readonly conditionLabel = computed(() =>
     this.i18n.t(CONDITIONS.find((c) => c.value === this.fields().condition)?.label ?? ''),
@@ -983,6 +1015,7 @@ export class Sell {
     });
     effect(() => {
       this.step();
+      this.view();
       this.published();
       this.readFact();
       this.answered();
@@ -1560,10 +1593,21 @@ export class Sell {
     this.facts.update((facts) => facts.filter((_, i) => i !== index));
   }
 
+  /** Shows the listing as buyers will see it, before it goes online. */
+  protected openPreview(): void {
+    if (!this.draft() || !this.fields().condition) return;
+    this.previewFrom = this.view() === 'preview' ? this.previewFrom : this.view();
+    this.view.set('preview');
+  }
+
+  protected closePreview(to: View = this.previewFrom): void {
+    this.view.set(to);
+  }
+
   protected publish(event: Event): void {
     event.preventDefault();
-    // Enter inside a wizard step means "Weiter", never publish
-    if (this.view() === 'steps' && this.step() < STEPS) return this.next();
+    // Enter inside a wizard step means "Weiter", after the last step the preview; never publish
+    if (this.view() === 'steps') return this.step() < STEPS ? this.next() : this.openPreview();
     if (!this.fields().condition) return;
     const draft = this.draft();
     const price = this.price();
@@ -1577,11 +1621,7 @@ export class Sell {
       priceChf: price,
       postcode: this.postcode(),
       locality: this.locality().trim(),
-      attributes: Object.fromEntries(
-        this.facts()
-          .filter((f) => f.source !== 'SUGGESTION' && f.source !== 'WEB' && f.value.trim())
-          .map((f) => [f.name, f.value.trim()]),
-      ),
+      attributes: this.publishedFacts(),
       photoIds: this.photoIdsToPublish(),
     };
     this.busy.set(true);
@@ -1604,6 +1644,8 @@ export class Sell {
     });
   }
 }
+
+type View = 'steps' | 'full' | 'preview';
 
 /** Swiss spelling for AI text: ss, never ß. */
 function swiss(text: string | null | undefined): string {
