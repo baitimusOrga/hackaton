@@ -65,7 +65,7 @@ public class SearchService {
 
     record Parsed(List<Requirement> mustHave, List<Requirement> niceToHave, String category,
                   List<String> keywords, BigDecimal maxBudgetChf, String postcode, Integer maxDistanceKm,
-                  Boolean nearMe) {
+                  Boolean nearMe, String budgetPhrase, String regionPhrase) {
     }
 
     record Ranked(List<Item> items) {
@@ -77,8 +77,9 @@ public class SearchService {
     private static final String REQUIREMENT_SCHEMA = """
             {"type": "object", "additionalProperties": false,
              "properties": {"attribute": {"type": "string", "enum": %s}, "value": {"type": "string"},
-               "comparison": {"type": "string", "enum": ["AT_LEAST", "EXACT", "AT_MOST"]}},
-             "required": ["attribute", "value", "comparison"]}""".formatted(json(ATTRIBUTES));
+               "comparison": {"type": "string", "enum": ["AT_LEAST", "EXACT", "AT_MOST"]},
+               "phrase": {"type": ["string", "null"]}},
+             "required": ["attribute", "value", "comparison", "phrase"]}""".formatted(json(ATTRIBUTES));
 
     private static final String PARSE_SCHEMA = """
             {"type": "object", "additionalProperties": false,
@@ -90,9 +91,11 @@ public class SearchService {
                "maxBudgetChf": {"type": ["number", "null"]},
                "postcode": {"type": ["string", "null"]},
                "maxDistanceKm": {"type": ["integer", "null"]},
-               "nearMe": {"type": "boolean"}},
+               "nearMe": {"type": "boolean"},
+               "budgetPhrase": {"type": ["string", "null"]},
+               "regionPhrase": {"type": ["string", "null"]}},
              "required": ["mustHave", "niceToHave", "category", "keywords", "maxBudgetChf", "postcode",
-               "maxDistanceKm", "nearMe"]}"""
+               "maxDistanceKm", "nearMe", "budgetPhrase", "regionPhrase"]}"""
             .formatted(REQUIREMENT_SCHEMA);
 
     private static final String PARSE_SYSTEM = """
@@ -100,6 +103,8 @@ public class SearchService {
             - Requirement attributes ONLY from: %s. Must-have = clearly required; nice-to-have = wished but optional.
             - Never invent requirements the text does not state. Keep values short and normalized like the listings: English, inches as 27\" (never "Zoll"/"inch"), memory and storage as "16 GB", years as 2017.
             - Alternatives the buyer accepts ("M1 or M2", "Full HD oder 4K", "AirPods oder Kopfhörer") are no requirement; put them into keywords.
+            - phrase (per requirement): the exact words of the buyer's text it comes from, copied verbatim
+              ("iMac", "ab 2017", "mindestens 128 GB"); null when there are none.
             - comparison: AT_LEAST for "at least / mindestens / min. / ab / or newer", AT_MOST for "at most / höchstens / max. / or older", else EXACT; only numeric values (RAM, Storage, Year, Display, Size).
             - Condition only when the buyer states it: "working" when they want it to work (funktionierend, works, intakt), else one of New, Like new, Good, Used, Defective (only when they want a broken item, e.g. for parts).
             - Model: the product line only ("iMac", "MacBook Pro"); sizes go into Display or Size.
@@ -113,7 +118,9 @@ public class SearchService {
               Never things only mentioned as context ("Soundbar zum Fernseher" -> soundbar terms, no TV terms).
             - maxDistanceKm: only when the buyer states a distance ("max 20 km", "im Umkreis von 10 km"), else null.
             - nearMe: true when the buyer means their own position ("in meiner Nähe", "near me", "bei mir",
-              "hier in der Umgebung"), else false."""
+              "hier in der Umgebung"), else false.
+            - budgetPhrase / regionPhrase: the words that state the budget ("bis CHF 600") and the place, distance
+              or "near me" ("Abholung nahe Zürich", "in meiner Nähe"); null when there are none."""
             .formatted(String.join(", ", ATTRIBUTES), String.join(", ", CATEGORIES));
 
     private static final String REFINE_SYSTEM = PARSE_SYSTEM + """
@@ -176,9 +183,10 @@ public class SearchService {
                 .setParameter("ids", request.topListingIds()).setParameter("available", ListingStatus.AVAILABLE)
                 .getResultList().stream().map(Listing::detail).toList());
         SearchRequirements c = request.current();
-        // the buyer's position never goes to the AI
+        // the buyer's position and the page-only conditions filter never go to the AI
         SearchRequirements withoutPosition = new SearchRequirements(c.mustHave(), c.niceToHave(), c.category(),
-                c.keywords(), c.maxBudgetChf(), c.postcode(), c.maxDistanceKm(), c.nearMe(), null, null);
+                c.keywords(), c.maxBudgetChf(), c.postcode(), c.maxDistanceKm(), c.nearMe(), null, null,
+                c.budgetPhrase(), c.regionPhrase(), null);
         StringBuilder text = new StringBuilder("Original wish: ").append(request.originalText()).append('\n');
         request.refinements().forEach(r -> text.append("Earlier change: ").append(r).append('\n'));
         text.append("Current requirements (JSON): ").append(JSON.writeValueAsString(withoutPosition)).append('\n');
@@ -212,7 +220,7 @@ public class SearchService {
                 && parsed.maxDistanceKm() <= 500 ? parsed.maxDistanceKm() : nearMe ? NEAR_ME_KM : null;
         return new SearchRequirements(canonical(parsed.mustHave()), canonical(parsed.niceToHave()), category,
                 keywords, parsed.maxBudgetChf(), postcode != null && postcode.matches("\\d{4}") ? postcode : null,
-                distance, nearMe, null, null);
+                distance, nearMe, null, null, phrase(parsed.budgetPhrase()), phrase(parsed.regionPhrase()), null);
     }
 
     public SearchResults matches(SearchRequirements req) {
@@ -221,7 +229,7 @@ public class SearchService {
             // the parse may pick a neighbouring category (an iMac under Monitors)
             candidates = candidates(new SearchRequirements(req.mustHave(), req.niceToHave(), null, req.keywords(),
                     req.maxBudgetChf(), req.postcode(), req.maxDistanceKm(), req.nearMe(), req.latitude(),
-                    req.longitude()));
+                    req.longitude(), req.budgetPhrase(), req.regionPhrase(), req.conditions()));
         }
         if (candidates.isEmpty()) {
             return new SearchResults(List.of(), 0);
@@ -362,14 +370,14 @@ public class SearchService {
         return text.toLowerCase(Locale.ROOT).contains("tb") ? n * 1000 : n;
     }
 
-    private static String phrase(Requirement r) {
+    private static String wanted(Requirement r) {
         String prefix = r.comparison() == Requirement.Comparison.AT_LEAST ? "at least "
                 : r.comparison() == Requirement.Comparison.AT_MOST ? "at most " : "";
         return prefix + r.value();
     }
 
     private static String label(Requirement r) {
-        return r.attribute() + ": " + phrase(r);
+        return r.attribute() + ": " + wanted(r);
     }
 
     /** Where the listing breaks budget, region or a stated must-have, in this order. */
@@ -382,9 +390,10 @@ public class SearchService {
             diffs.add("In " + l.locality() + " (" + l.postcode() + "), outside the "
                     + req.postcode().trim().substring(0, 2) + "xx area");
         }
-        // nobody looks for a broken item unless they say so
+        // nobody looks for a broken item unless they say so, as a requirement or in the condition filter
         boolean conditionAsked = Stream.concat(req.mustHave().stream(), req.niceToHave().stream())
-                .anyMatch(r -> r.attribute().equalsIgnoreCase("Condition"));
+                .anyMatch(r -> r.attribute().equalsIgnoreCase("Condition"))
+                || (req.conditions() != null && req.conditions().contains(Condition.DEFECTIVE));
         if (!conditionAsked && l.condition() == Condition.DEFECTIVE) {
             diffs.add("Condition: Defective");
         }
@@ -392,7 +401,7 @@ public class SearchService {
             if (check(l, r) == Evidence.DIFFERENT) {
                 String actual = r.attribute().equalsIgnoreCase("Condition") ? conditionLabel(l.condition())
                         : attribute(l, r.attribute());
-                diffs.add(r.attribute() + ": " + actual + " instead of " + phrase(r));
+                diffs.add(r.attribute() + ": " + actual + " instead of " + wanted(r));
             }
         }
         return diffs;
@@ -498,6 +507,10 @@ public class SearchService {
             }
             jpql.append(")");
         }
+        if (req.conditions() != null && !req.conditions().isEmpty()) {
+            jpql.append(" and l.condition in :conditions");
+            params.put("conditions", req.conditions());
+        }
         // a stated distance is a hard limit around the buyer's position, else around the postcode; without one the
         // postcode only ranks, see outsideRegion
         Coordinates origin = req.maxDistanceKm() == null ? null
@@ -577,7 +590,7 @@ public class SearchService {
             Requirement.Comparison comparison = r.comparison() == null || !value.matches(".*\\d.*")
                     ? Requirement.Comparison.EXACT : r.comparison();
             ATTRIBUTES.stream().filter(a -> a.equalsIgnoreCase(trim(r.attribute()))).findFirst()
-                    .ifPresent(a -> result.putIfAbsent(a, new Requirement(a, value, comparison)));
+                    .ifPresent(a -> result.putIfAbsent(a, new Requirement(a, value, comparison, phrase(r.phrase()))));
         }
         return List.copyOf(result.values());
     }
@@ -610,6 +623,12 @@ public class SearchService {
 
     private static String trim(String s) {
         return s == null || s.isBlank() ? null : s.trim();
+    }
+
+    /** A phrase the model returned, trimmed and capped so it passes the validation of a later request. */
+    private static String phrase(String s) {
+        String t = trim(s);
+        return t == null ? null : cut(t, 80);
     }
 
     private static String json(List<String> values) {

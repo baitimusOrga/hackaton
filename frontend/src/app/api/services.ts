@@ -3,9 +3,11 @@
 
 export { SearchService } from './services/search.service';
 export { SellingService } from './services/selling.service';
+export { OrdersService } from './services/orders.service';
 export { ListingsService } from './services/listings.service';
 export { PurchasesService } from './services/purchases.service';
 export { AuctionsService } from './services/auctions.service';
 export { PlacesService } from './services/places.service';
 export { TradesService } from './services/trades.service';
+export { MyListingsService } from './services/my-listings.service';
 export { InfoService } from './services/info.service';

@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { I18n, LANGS, TranslatePipe } from '../i18n/i18n';
+import { Account } from './account';
 
 // shortcut: only "So funktioniert's" and "Über uns" have pages; the other "#" links go nowhere yet.
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, Account, TranslatePipe],
   selector: 'app-footer',
   template: `<footer class="zw-footer">
     <div class="zw-container zw-footer__bar">
@@ -15,6 +16,7 @@ import { I18n, LANGS, TranslatePipe } from '../i18n/i18n';
       <a href="#">{{ 'Sicher handeln' | t }}</a>
       <a href="#">{{ 'Auktionsregeln' | t }}</a>
       <a href="#">{{ 'Hilfe' | t }}</a>
+      <app-account />
       <span class="zw-footer__langs" role="group" [attr.aria-label]="'Sprache' | t">
         @for (code of langs; track code) {
           <button

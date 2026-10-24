@@ -2,6 +2,7 @@ package one.absent.hackaton.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -100,10 +101,11 @@ class SearchControllerTest {
     void textBecomesCanonicalRequirements() throws Exception {
         when(ai.ask(anyString(), anyString(), anyString(), anyList(), anyString(), eq(SearchService.Parsed.class)))
                 .thenReturn(new SearchService.Parsed(
-                        List.of(new Requirement("model", "iMac", Requirement.Comparison.AT_LEAST),
+                        List.of(new Requirement("model", "iMac", Requirement.Comparison.AT_LEAST, "  iMac 27 5K  "),
                                 new Requirement("Accessories", "mouse", null)),
-                        List.of(new Requirement("Year", "2017", Requirement.Comparison.AT_LEAST)), "computers", List.of(" iMac ", "Apple"),
-                        new BigDecimal("600"), "8001", 20, false));
+                        List.of(new Requirement("Year", "2017", Requirement.Comparison.AT_LEAST, "x".repeat(90))),
+                        "computers", List.of(" iMac ", "Apple"), new BigDecimal("600"), "8001", 20, false,
+                        "max 600 CHF", " near Zürich "));
 
         mvc.perform(post("/api/searches").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"text\": \"working iMac 27 5K from 2017, max 600 CHF near Zürich\"}"))
@@ -119,14 +121,20 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.maxBudgetChf").value(600))
                 .andExpect(jsonPath("$.postcode").value("8001"))
                 .andExpect(jsonPath("$.maxDistanceKm").value(20))
-                .andExpect(jsonPath("$.nearMe").value(false));
+                .andExpect(jsonPath("$.nearMe").value(false))
+                // phrases come through trimmed and capped at 80, so a parse result always passes /matches
+                .andExpect(jsonPath("$.mustHave[0].phrase").value("iMac 27 5K"))
+                .andExpect(jsonPath("$.niceToHave[0].phrase").value("x".repeat(80)))
+                .andExpect(jsonPath("$.budgetPhrase").value("max 600 CHF"))
+                .andExpect(jsonPath("$.regionPhrase").value("near Zürich"))
+                .andExpect(jsonPath("$.conditions").value(nullValue()));
     }
 
     @Test
     void anImplausibleDistanceIsDropped() throws Exception {
         when(ai.ask(anyString(), anyString(), anyString(), anyList(), anyString(), eq(SearchService.Parsed.class)))
                 .thenReturn(new SearchService.Parsed(List.of(), List.of(), null, List.of("chair"), null, "8001", 9000,
-                        false));
+                        false, null, null));
 
         mvc.perform(post("/api/searches").contentType(MediaType.APPLICATION_JSON).content("{\"text\": \"chair\"}"))
                 .andExpect(status().isOk())
@@ -137,7 +145,7 @@ class SearchControllerTest {
     void nearMeWithoutADistanceMeans25Km() throws Exception {
         when(ai.ask(anyString(), anyString(), anyString(), anyList(), anyString(), eq(SearchService.Parsed.class)))
                 .thenReturn(new SearchService.Parsed(List.of(), List.of(), "Bikes", List.of("velo"), null, null, null,
-                        true));
+                        true, null, null));
 
         mvc.perform(post("/api/searches").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"text\": \"Velo in meiner Nähe\"}"))
@@ -250,6 +258,17 @@ class SearchControllerTest {
     }
 
     @Test
+    void conditionsAreAHardFilter() {
+        Listing used = listing("Used turntable", "100", AUDIO, "8004", Map.of());
+        used.setCondition(Condition.USED);
+        em.flush();
+        var req = new SearchRequirements(List.of(), List.of(), "test audio", List.of(), null, null, null, false,
+                null, null, null, null, List.of(Condition.USED, Condition.DEFECTIVE));
+
+        assertThat(search.candidates(req)).extracting(ListingDetail::id).containsExactly(used.getId());
+    }
+
+    @Test
     void requirementWithoutValueIs400() throws Exception {
         mvc.perform(post("/api/searches/matches").contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -322,7 +341,7 @@ class SearchControllerTest {
         when(ai.ask(anyString(), anyString(), anyString(), anyList(), anyString(), eq(SearchService.Parsed.class)))
                 .thenReturn(new SearchService.Parsed(List.of(new Requirement("Brand", "Technics", null),
                         new Requirement("Year", "1996", Requirement.Comparison.AT_LEAST)), List.of(), "Audio",
-                        List.of("turntable"), new BigDecimal("200"), "8001", null, false));
+                        List.of("turntable"), new BigDecimal("200"), "8001", null, false, null, null));
 
         mvc.perform(post("/api/searches/refine").contentType(MediaType.APPLICATION_JSON)
                         .content(refineBody("[\"cheaper\"]", "newer please", "[" + match.getId() + ", 999999]")))

@@ -1,12 +1,8 @@
 @if (listing(); as item) {
   <div class="cols">
     <section [attr.aria-label]="'Fotos' | t">
-      <div class="photo">
-        @if (item.imageUrl) {
-          <img [src]="item.imageUrl" [alt]="item.title" />
-        }
-      </div>
-      <!-- TODO: backend has one imageUrl per listing; add the thumbnail row (zw-thumb buttons, aria-current) once ListingDetail has several photos. -->
+      <app-photo-gallery [urls]="item.imageUrls ?? []" [alt]="item.title ?? ''" />
+      <!-- TODO: the design also has a thumbnail row (zw-thumb buttons, aria-current) under the photo. -->
     </section>
 
     <section [attr.aria-label]="'Kaufen' | t" class="stack">
@@ -38,24 +34,32 @@
         </div>
 
         <div class="group tight">
+          <button
+            appButton
+            variant="primary"
+            [block]="true"
+            type="button"
+            [disabled]="buying() || bought() || item.status !== 'AVAILABLE'"
+            (click)="buy(item.id!)"
+          >
+            @if (bought()) {
+              {{ 'Gekauft' | t }}
+            } @else if (item.status === 'SOLD') {
+              {{ 'Verkauft' | t }}
+            } @else if (item.status !== 'AVAILABLE') {
+              {{ 'Nicht verfügbar' | t }}
+            } @else {
+              {{ buying() ? ('Wird gesendet…' | t) : ('Kaufen' | t) }}
+            }
+          </button>
           @if (bought()) {
             <p role="status">
               {{ 'Gekauft! Du findest den Kauf unter «Käufe und Verkäufe».' | t }}
+              <a class="zw-link" [routerLink]="['/orders', item.id]">{{ 'Zur Bestellung' | t }}</a>
             </p>
-          } @else {
-            <button
-              appButton
-              variant="primary"
-              [block]="true"
-              type="button"
-              [disabled]="buying()"
-              (click)="buy(item.id!)"
-            >
-              {{ buying() ? ('Wird gesendet…' | t) : ('Kaufen' | t) }}
-            </button>
-            @if (buyError()) {
-              <p class="zw-help zw-help--error" role="alert">{{ buyError() }}</p>
-            }
+          }
+          @if (buyError()) {
+            <p class="zw-help zw-help--error" role="alert">{{ buyError() }}</p>
           }
         </div>
       }

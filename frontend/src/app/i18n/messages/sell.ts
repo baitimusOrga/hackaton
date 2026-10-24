@@ -334,6 +334,7 @@ export const SELL_MESSAGES: Messages = {
     en: 'View comparisons',
   },
   Verkauft: { fr: 'Vendu', it: 'Venduto', en: 'Sold' },
+  'Nicht verfügbar': { fr: 'Indisponible', it: 'Non disponibile', en: 'Unavailable' },
   Angebot: { fr: 'Offre', it: 'Offerta', en: 'Offer' },
   Schnell: { fr: 'Rapide', it: 'Veloce', en: 'Quick' },
   Ausgewogen: { fr: 'Équilibré', it: 'Equilibrato', en: 'Balanced' },

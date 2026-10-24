@@ -4,5 +4,6 @@
 export interface Requirement {
   attribute: string;
   comparison?: ('AT_LEAST' | 'EXACT' | 'AT_MOST' | null);
+  phrase?: (string | null);
   value: string;
 }

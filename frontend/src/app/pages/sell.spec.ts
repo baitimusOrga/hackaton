@@ -818,12 +818,15 @@ describe('Sell', () => {
     sell['locality'].set('Zürich');
     await fixture.whenStable();
     expect(publish).not.toHaveBeenCalled();
+    store.save.mockClear();
 
     element.querySelector('form')!.dispatchEvent(new Event('submit'));
 
     expect(store.clear).toHaveBeenCalled();
     await fixture.whenStable();
     expect(element.textContent).toContain('Dein Inserat ist online.');
+    // the published draft is not saved again, so the next visit starts empty
+    expect(store.save).not.toHaveBeenCalled();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     button(element, 'Inserat ansehen').click();
     expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ['listings', 1], modal: null } }]);

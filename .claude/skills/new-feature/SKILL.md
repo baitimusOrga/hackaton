@@ -53,7 +53,11 @@ and PR text in English, **no `Co-Authored-By` and no "Generated with" line**.
 ```bash
 git push -u origin <branch>
 gh pr create --title "<what changed>" --body "<body>"
+cd <repo root> && git worktree remove .claude/worktrees/<short-slug>
 ```
+
+Free the worktree right after the PR exists; the branch lives on in `origin`. Need to fix
+something later: `git worktree add .claude/worktrees/<short-slug> <branch>`.
 
 Body: `## What` (two to five bullets), `## Acceptance criteria` (`- [x] <criterion> — <how
 verified>` / `- [ ] … — not verified because …`), `## Not in this PR`.
@@ -61,5 +65,4 @@ verified>` / `- [ ] … — not verified because …`), `## Not in this PR`.
 ## 6. Hand over
 
 Wait for CI; red → `gh run view <id> --log-failed`, fix in the branch, push again. Green →
-tell the user the PR link and what a reviewer should look at. Stop. Remove the worktree only
-after the PR is merged (`git worktree remove .claude/worktrees/<short-slug>`).
+tell the user the PR link and what a reviewer should look at. Stop.

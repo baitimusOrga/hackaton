@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
-import one.absent.hackaton.listing.Listing;
 import one.absent.hackaton.listing.ListingRepository;
 import one.absent.hackaton.listing.ListingStatus;
 import one.absent.hackaton.listing.ListingSummary;
@@ -26,10 +25,12 @@ public class TradesController {
 
     private final ListingRepository listings;
     private final BidRepository bids;
+    private final AuctionService auctions;
 
-    public TradesController(ListingRepository listings, BidRepository bids) {
+    public TradesController(ListingRepository listings, BidRepository bids, AuctionService auctions) {
         this.listings = listings;
         this.bids = bids;
+        this.auctions = auctions;
     }
 
     @GetMapping
@@ -39,14 +40,9 @@ public class TradesController {
                 .stream().map(l -> l.detail().summary()).toList();
         List<ListingSummary> bought = Stream.concat(
                         listings.findByBuyerIdOrderByCreatedAtDesc(me).stream(),
-                        bids.findSoldAuctionsBidOnBy(me).stream().filter(l -> me.equals(winner(l))))
+                        bids.findSoldAuctionsBidOnBy(me).stream().filter(l -> me.equals(auctions.buyerOf(l))))
                 .distinct() // auctions closed since V22 are found by both queries
                 .map(l -> l.detail().summary()).toList();
         return new Trades(sold, bought);
-    }
-
-    private String winner(Listing listing) {
-        var steps = AuctionService.history(listing.getPriceChf(), bids.findByListingIdOrderByIdAsc(listing.getId()));
-        return steps.isEmpty() ? null : steps.getLast().bidderId();
     }
 }

@@ -64,6 +64,8 @@ export function openGaps(
         prompt: '',
         options: [],
         value: fact.value,
+        // an unclear reading: where a close-up would settle it, e.g. the logo
+        ...(hintOf(ai) ? { hint: hintOf(ai) } : {}),
       });
     } else {
       const kind = ai?.kind && ai.kind !== 'CONFIRM' ? ai.kind : 'ASK';

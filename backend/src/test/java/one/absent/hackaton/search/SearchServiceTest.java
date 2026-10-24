@@ -26,6 +26,7 @@ import java.util.stream.LongStream;
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.listing.ListingDetail;
+import one.absent.hackaton.listing.ListingStatus;
 import one.absent.hackaton.listing.SaleMode;
 import one.absent.hackaton.search.SearchMatch.Fit;
 import org.junit.jupiter.api.Test;
@@ -37,19 +38,19 @@ import org.springframework.web.server.ResponseStatusException;
 class SearchServiceTest {
 
     static final ListingDetail IMAC = new ListingDetail(1, "iMac 27\" Retina 5K (2017)", new BigDecimal("450"),
-            Condition.GOOD, "Computers", "8004", "Zürich", null, "Works well.",
+            Condition.GOOD, "Computers", "8004", "Zürich", null, List.of(), "Works well.",
             Map.of("Display", "27\" 5K", "RAM", "16 GB", "Year", "2017"), Instant.now(), null, null, null,
-            SaleMode.FIXED, null, null, 0);
+            SaleMode.FIXED, null, null, 0, ListingStatus.AVAILABLE);
     static final ListingDetail IMAC_2019 = new ListingDetail(2, "iMac 27\" Retina 5K (2019)", new BigDecimal("720"),
-            Condition.LIKE_NEW, "Computers", "3007", "Bern", null, "Very good condition.",
+            Condition.LIKE_NEW, "Computers", "3007", "Bern", null, List.of(), "Very good condition.",
             Map.of("Display", "27\" 5K", "Year", "2019"), Instant.now(), null, null, null,
-            SaleMode.FIXED, null, null, 0);
+            SaleMode.FIXED, null, null, 0, ListingStatus.AVAILABLE);
     static final ListingDetail OLD_IMAC = new ListingDetail(3, "Apple iMac 27 inch", new BigDecimal("300"),
-            Condition.USED, "Computers", "8001", "Zürich", null, "Older iMac.", Map.of(), Instant.now(), null, null, null,
-            SaleMode.FIXED, null, null, 0);
+            Condition.USED, "Computers", "8001", "Zürich", null, List.of(), "Older iMac.", Map.of(), Instant.now(), null, null, null,
+            SaleMode.FIXED, null, null, 0, ListingStatus.AVAILABLE);
     static final ListingDetail DEFECTIVE_PHONE = new ListingDetail(4, "Phone", new BigDecimal("50"),
-            Condition.DEFECTIVE, "Phones", "8001", "Zürich", null, "Broken screen.", Map.of(), Instant.now(), null, null, null,
-            SaleMode.FIXED, null, null, 0);
+            Condition.DEFECTIVE, "Phones", "8001", "Zürich", null, List.of(), "Broken screen.", Map.of(), Instant.now(), null, null, null,
+            SaleMode.FIXED, null, null, 0, ListingStatus.AVAILABLE);
 
     static Requirement req(String attribute, String value) {
         return new Requirement(attribute, value, EXACT);
@@ -72,8 +73,8 @@ class SearchServiceTest {
     @Test
     void shortValuesMatchWholeWordsOnly() {
         ListingDetail bike = new ListingDetail(5, "E-Bike Stromer ST1", new BigDecimal("900"), Condition.GOOD,
-                "Bikes", "8004", "Zürich", null, "Rides well.", Map.of(), Instant.now(), null, null, null,
-                SaleMode.FIXED, null, null, 0);
+                "Bikes", "8004", "Zürich", null, List.of(), "Rides well.", Map.of(), Instant.now(), null, null, null,
+                SaleMode.FIXED, null, null, 0, ListingStatus.AVAILABLE);
         assertThat(SearchService.check(bike, req("Frame size", "M"))).isEqualTo(MISSING);
         assertThat(SearchService.check(withAttributes(bike, Map.of("Frame size", "L")), req("Frame size", "M")))
                 .isEqualTo(DIFFERENT);
@@ -97,6 +98,9 @@ class SearchServiceTest {
         SearchRequirements forParts = requirements(List.of(req("Condition", "Defective")), List.of(), List.of(), null,
                 null, null);
         assertThat(SearchService.differences(forParts, DEFECTIVE_PHONE)).isEmpty();
+        SearchRequirements defectiveFilter = new SearchRequirements(List.of(), List.of(), null, List.of(), null, null,
+                null, false, null, null, null, null, List.of(Condition.DEFECTIVE));
+        assertThat(SearchService.differences(defectiveFilter, DEFECTIVE_PHONE)).isEmpty();
     }
 
     @Test
@@ -336,28 +340,29 @@ class SearchServiceTest {
 
     static ListingDetail withAttributes(ListingDetail l, Map<String, String> attributes) {
         return new ListingDetail(l.id(), l.title(), l.priceChf(), l.condition(), l.category(), l.postcode(),
-                l.locality(), l.imageUrl(), l.description(), attributes, l.createdAt(), null, null, null, SaleMode.FIXED, null, null, 0);
+                l.locality(), l.imageUrl(), l.imageUrls(), l.description(), attributes, l.createdAt(), null, null, null, SaleMode.FIXED, null, null, 0, ListingStatus.AVAILABLE);
     }
 
     static ListingDetail withDescription(ListingDetail l, String description) {
         return new ListingDetail(l.id(), l.title(), l.priceChf(), l.condition(), l.category(), l.postcode(),
-                l.locality(), l.imageUrl(), description, l.attributes(), l.createdAt(), null, null, null, SaleMode.FIXED, null, null, 0);
+                l.locality(), l.imageUrl(), l.imageUrls(), description, l.attributes(), l.createdAt(), null, null, null,
+                SaleMode.FIXED, null, null, 0, ListingStatus.AVAILABLE);
     }
 
     static ListingDetail withCondition(ListingDetail l, Condition condition) {
         return new ListingDetail(l.id(), l.title(), l.priceChf(), condition, l.category(), l.postcode(),
-                l.locality(), l.imageUrl(), l.description(), l.attributes(), l.createdAt(), null, null, null, SaleMode.FIXED, null, null, 0);
+                l.locality(), l.imageUrl(), l.imageUrls(), l.description(), l.attributes(), l.createdAt(), null, null, null, SaleMode.FIXED, null, null, 0, ListingStatus.AVAILABLE);
     }
 
     static ListingDetail withPrice(ListingDetail l, String price) {
         return new ListingDetail(l.id(), l.title(), new BigDecimal(price), l.condition(), l.category(), l.postcode(),
-                l.locality(), l.imageUrl(), l.description(), l.attributes(), l.createdAt(), null, null, null,
-                SaleMode.FIXED, null, null, 0);
+                l.locality(), l.imageUrl(), l.imageUrls(), l.description(), l.attributes(), l.createdAt(), null, null, null,
+                SaleMode.FIXED, null, null, 0, ListingStatus.AVAILABLE);
     }
 
     static ListingDetail withId(ListingDetail l, long id) {
         return new ListingDetail(id, l.title(), l.priceChf(), l.condition(), l.category(), l.postcode(),
-                l.locality(), l.imageUrl(), l.description(), l.attributes(), l.createdAt(), null, null, null,
-                SaleMode.FIXED, null, null, 0);
+                l.locality(), l.imageUrl(), l.imageUrls(), l.description(), l.attributes(), l.createdAt(), null, null, null,
+                SaleMode.FIXED, null, null, 0, ListingStatus.AVAILABLE);
     }
 }

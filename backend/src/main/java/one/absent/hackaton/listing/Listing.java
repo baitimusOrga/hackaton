@@ -3,7 +3,9 @@ package one.absent.hackaton.listing;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -43,6 +45,8 @@ public class Listing {
     private String sellerName;
     // set when a fixed-price listing is bought; auction winners come from the bids
     private String buyerId;
+    // set when the seller marks the sold item as sent
+    private Instant shippedAt;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20)
     private ListingStatus status = ListingStatus.AVAILABLE;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20)
@@ -61,8 +65,15 @@ public class Listing {
     private Map<String, String> attributes = new HashMap<>();
 
     public ListingDetail detail() {
+        return detail(List.of());
+    }
+
+    /** {@code photoIds} in upload order; demo listings have none and show just {@code imageUrl}. */
+    public ListingDetail detail(List<Long> photoIds) {
+        List<String> imageUrls = photoIds.isEmpty() ? Stream.ofNullable(imageUrl).toList()
+                : photoIds.stream().map(photoId -> "/api/photos/" + photoId).toList();
         return new ListingDetail(id, title, priceChf, condition, category, postcode, locality,
-                imageUrl, description, Map.copyOf(attributes), createdAt, sellerName, latitude, longitude,
-                saleMode, endsAt, currentBidChf, bidCount);
+                imageUrl, imageUrls, description, Map.copyOf(attributes), createdAt, sellerName, latitude, longitude,
+                saleMode, endsAt, currentBidChf, bidCount, status);
     }
 }

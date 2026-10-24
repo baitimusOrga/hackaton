@@ -18,14 +18,18 @@ import {
   SearchRequirements,
   SearchResults,
 } from '../api/models';
+import { CATEGORIES } from '../categories';
+import { Condition, CONDITION_LABELS } from '../conditions';
 import { Position, SessionLocation } from '../device-location';
 import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
 import { chf } from '../ui/chf';
+import { Facet } from '../ui/facet';
 import { Icon } from '../ui/icon';
 import { SummaryCard } from '../ui/summary-card';
+import { FindSentence, Token } from './find-sentence';
 
-const FILTER_KEYS = ['kw', 'cat', 'max', 'plz', 'km', 'must', 'nice'];
+const FILTER_KEYS = ['kw', 'cat', 'max', 'plz', 'km', 'must', 'nice', 'cond'];
 
 /** True when the URL already holds exactly the filters the form shows (our own navigation). */
 function sameQuery(params: ParamMap, query: Record<string, string | null>): boolean {
@@ -34,19 +38,20 @@ function sameQuery(params: ParamMap, query: Record<string, string | null>): bool
 
 type Row = 'mustHave' | 'niceToHave';
 
-const FITS: Record<string, string> = {
-  MATCH: 'Passt',
-  NEEDS_DETAILS: 'Angaben fehlen',
-  ALTERNATIVE: 'Alternative',
-};
+/** The three result groups, in page order; `mark` is the card's why-line style. */
+const GROUPS = [
+  { fit: 'MATCH', title: 'Passt', sub: 'alles belegt', mark: 'ok' },
+  { fit: 'NEEDS_DETAILS', title: 'Möglich', sub: 'Angaben fehlen', mark: 'maybe' },
+  { fit: 'ALTERNATIVE', title: 'Alternativen', sub: 'ausserhalb deiner Suche', mark: 'alt' },
+] as const;
 const NEAR_ME_KM = 25;
 const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube den Standortzugriff.';
 
-/** Search: free text → requirements (chips + filter form) → one list ranked by score, refinable by text and position. */
+/** Search: free text → the sentence with tokens + facets → results in three groups, refinable by text and position. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-find',
-  imports: [FormsModule, Button, Icon, SummaryCard, TranslatePipe],
+  imports: [FormsModule, Button, Facet, FindSentence, Icon, SummaryCard, TranslatePipe],
   templateUrl: './find.html',
   styles: `
     .find__query {
@@ -61,76 +66,166 @@ const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube de
       padding-bottom: var(--space-2);
       resize: vertical;
     }
-    .find__strip {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-      flex-wrap: wrap;
-      padding-top: var(--space-4);
+    .find__phone {
+      display: none;
     }
-    .find__strip .zw-chip {
-      max-width: none;
-    }
-    .find__strip > :last-child {
-      margin-left: auto;
-    }
-    .find__cols {
-      display: grid;
-      grid-template-columns: 260px minmax(0, 1fr);
-      gap: var(--space-16);
-      align-items: start;
-      padding-top: var(--space-8);
-    }
-    @media (max-width: 900px) {
-      .find__cols {
-        grid-template-columns: minmax(0, 1fr);
-        gap: var(--space-8);
+    @media (max-width: 720px) {
+      .find__phone {
+        display: flex;
+        margin-bottom: var(--space-4);
+      }
+      .find__query .zw-btn {
+        width: 44px;
+        padding: 0;
+      }
+      .find__query .zw-btn span {
+        display: none;
       }
     }
-    .find__filters {
+    .find__head {
       display: flex;
       flex-direction: column;
-      gap: 28px;
+      gap: var(--space-3);
+      padding-bottom: var(--space-6);
     }
-    .find__f {
+    .find__history {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-weight: 500;
+    }
+    .find__adjust {
       display: flex;
-      flex-direction: column;
       gap: var(--space-2);
+      max-width: 40rem;
     }
-    .find__pair {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: var(--space-2);
-    }
-    .find__reqs .zw-row {
-      justify-content: space-between;
-      min-height: 44px;
-      font-size: 14px;
-      line-height: 20px;
-    }
-    .find__results {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-12);
+    .find__adjust input {
+      flex: 1 1 auto;
+      min-width: 0;
     }
     .find__bar {
+      position: sticky;
+      top: 72px;
+      z-index: 6;
+      background: var(--bg-000);
+      border-top: var(--border-1) solid var(--line-soft);
+      border-bottom: var(--border-1) solid var(--line-soft);
+    }
+    @media (max-width: 720px) {
+      /* the header is static on phones */
+      .find__bar {
+        top: 0;
+      }
+    }
+    .find__bar-row {
       display: flex;
       align-items: center;
       gap: var(--space-4);
-      flex-wrap: wrap;
+      min-height: 32px;
+      padding-top: var(--space-3);
     }
-    .find__bar label {
+    .find__clear {
       margin-left: auto;
-      font-size: 14px;
-      color: var(--ink-muted);
     }
-    .find__bar select {
-      width: 180px;
+    .find__facets {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      padding: var(--space-2) 0 var(--space-3);
+    }
+    @media (max-width: 639px) {
+      /* one scrolling row; the panels are fixed on phones, so nothing is clipped */
+      .find__facets {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+    }
+    .find__opt {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      min-height: 44px;
+      font-size: 16px;
+      line-height: 24px;
+      cursor: pointer;
+      border-bottom: var(--border-1) solid var(--line-soft);
+    }
+    .find__opt:last-child {
+      border-bottom: 0;
+    }
+    .find__opt > input {
+      flex: none;
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      accent-color: var(--blue);
+    }
+    .find__opt-text {
+      flex: 1;
+      min-width: 0;
+      font-size: 14px;
+      line-height: 20px;
+    }
+    .find__opt-head {
+      padding-top: var(--space-2);
+    }
+    .find__radii {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      padding: var(--space-1) 0;
+    }
+    .find__count {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-2) var(--space-4);
+      min-height: 56px;
+      padding: var(--space-2) 0;
+      border-top: var(--border-1) solid var(--line-soft);
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .find__count .zw-help {
+      font-weight: 400;
+    }
+    .find__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: var(--space-8) var(--space-4);
+    }
+    .find__skeleton {
+      padding-top: var(--space-6);
+    }
+    .find__bone {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    .find__bone-media {
+      aspect-ratio: 1 / 1;
+      background: var(--bg-100);
+    }
+    .find__bone-line {
+      height: 20px;
+      background: var(--bg-100);
+    }
+    .find__bone-line--70 {
+      width: 70%;
+    }
+    .find__bone-line--40 {
+      width: 40%;
     }
     .find__grp {
       display: flex;
       flex-direction: column;
       gap: var(--space-4);
+      padding-top: var(--space-6);
+      animation: findFade 0.2s ease-out both;
     }
     .find__grp h2 {
       display: flex;
@@ -148,27 +243,16 @@ const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube de
       flex-direction: column;
       gap: var(--space-1);
     }
-    .find__why--ok {
-      color: var(--green-text);
-      font-weight: 500;
+    .find__foot {
+      padding-top: var(--space-8);
     }
-    .find__adjust {
-      display: flex;
-      gap: var(--space-2);
-      padding-top: var(--space-4);
-      max-width: 40rem;
-    }
-    .find__adjust input {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-    .find__history {
-      list-style: none;
-      padding: 0;
-      margin: var(--space-2) 0 0;
-    }
-    .find__busy {
-      opacity: 0.5;
+    @keyframes findFade {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
     }
   `,
 })
@@ -182,6 +266,10 @@ export class Find {
     { key: 'niceToHave', label: 'Wäre schön', other: 'Muss' },
   ] as const;
   protected readonly radii = [5, 10, 25, 50, 100];
+  protected readonly categories = CATEGORIES;
+  protected readonly conditionOptions = Object.keys(CONDITION_LABELS) as Condition[];
+  protected readonly conditionLabels = CONDITION_LABELS;
+  protected readonly skeleton = [1, 2, 3, 4];
 
   protected readonly text = signal('');
   protected readonly adjust = signal('');
@@ -192,11 +280,17 @@ export class Find {
   protected readonly niceToHave = signal<Requirement[]>([]);
   protected readonly category = signal<string | null>(null);
   protected readonly budget = signal<number | null>(null);
+  protected readonly budgetPhrase = signal<string | null>(null);
   protected readonly postcode = signal('');
+  protected readonly regionPhrase = signal<string | null>(null);
   protected readonly radius = signal<number | null>(null);
   protected readonly keywords = signal('');
+  protected readonly conditions = signal<Condition[]>([]);
   /** The buyer's position, rounded to ~100 m; kept in memory only, never in the URL or storage. */
   protected readonly position = signal<Position | null>(null);
+  /** Keys of the tokens the buyer tapped off; their values stay, so a second tap restores them. */
+  protected readonly off = signal<ReadonlySet<string>>(new Set());
+  protected readonly openFacet = signal<string | null>(null);
   protected readonly matching = signal(false);
   protected readonly results = signal<SearchResults | null>(null);
   // shortcut: matches are filtered to auctions in the browser; move into SearchRequirements if lists get long
@@ -209,33 +303,110 @@ export class Find {
     const auction = (m: SearchMatch) => m.listing?.saleMode === 'AUCTION';
     return { ...res, matches: (res.matches ?? []).filter(auction) };
   });
+  protected readonly groups = computed(() => {
+    const found = this.shown()?.matches ?? [];
+    return GROUPS.map((g) => ({ ...g, items: found.filter((m) => m.fit === g.fit) })).filter(
+      (g) => g.items.length,
+    );
+  });
+  protected readonly busy = computed(() => this.loading() || this.matching());
   protected readonly progress = signal('');
+  /** The status line: what runs right now, else the count. */
+  protected readonly countText = computed(() =>
+    this.busy()
+      ? this.progress()
+      : this.i18n.t('{count} Inserate', { count: this.shown()?.matches?.length ?? 0 }),
+  );
+  /** The sentence's tokens: requirements, budget and region, with where they sit in the sentence. */
+  protected readonly tokens = computed<Token[]>(() => {
+    const tokens: Token[] = [
+      ...this.mustHave().map((r) => ({
+        key: this.key('must', r),
+        kind: 'must' as const,
+        label: this.label(r),
+        phrase: r.phrase ?? null,
+      })),
+      ...this.niceToHave().map((r) => ({
+        key: this.key('nice', r),
+        kind: 'nice' as const,
+        label: this.label(r),
+        phrase: r.phrase ?? null,
+      })),
+    ];
+    if (this.budget() !== null) {
+      tokens.push({
+        key: 'budget',
+        kind: 'budget',
+        label: this.budgetLabel(),
+        phrase: this.budgetPhrase(),
+      });
+    }
+    if (this.postcode().trim() || this.position()) {
+      tokens.push({
+        key: 'region',
+        kind: 'region',
+        label: this.regionLabel(),
+        phrase: this.regionPhrase(),
+      });
+    }
+    return tokens;
+  });
+  /** What each facet trigger shows next to its label; '' = inactive. */
+  protected readonly summaries = computed(() => {
+    const on = (key: string) => !this.off().has(key);
+    const count = (n: number) => (n ? String(n) : '');
+    const conditions = this.conditions();
+    const requirements =
+      this.mustHave().filter((r) => on(this.key('must', r))).length +
+      this.niceToHave().filter((r) => on(this.key('nice', r))).length;
+    return {
+      category: this.category() ? this.i18n.t(this.category()!) : '',
+      price: on('budget') && this.budget() !== null ? `${this.i18n.t('bis')} ${this.budget()}` : '',
+      conditions:
+        conditions.length === 1
+          ? this.i18n.t(CONDITION_LABELS[conditions[0]])
+          : count(conditions.length),
+      region: on('region') && (this.postcode().trim() || this.position()) ? this.regionLabel() : '',
+      auction: this.auctionsOnly() ? this.i18n.t('Auktion') : '',
+      requirements: count(requirements),
+      keywords: count(this.keywordList().length),
+    };
+  });
+  protected readonly hasActive = computed(() => {
+    const s = this.summaries();
+    return !!(s.category || s.price || s.conditions || s.region || s.auction || s.keywords);
+  });
   private readonly router = inject(Router);
   private readonly location = inject(SessionLocation);
   /** The text the filters were read from; it stays in the URL next to the filters. */
-  private readonly asked = signal('');
-  /** The filters as URL query params (null = not in the URL); the position never goes in. */
+  protected readonly asked = signal('');
+  /** The filters as URL query params (null = not in the URL); the position and off tokens never go in. */
   private readonly query = computed(() => {
-    const pc = this.postcode().trim();
+    const on = (key: string) => !this.off().has(key);
+    const pc = on('region') ? this.postcode().trim() : '';
+    const budget = on('budget') ? this.budget() : null;
     const json = (list: Requirement[]) => (list.length ? JSON.stringify(list) : null);
     return {
       q: this.asked() || null,
       kw: this.keywords().trim() || null,
       cat: this.category()?.trim() || null,
-      max: this.budget() === null ? null : String(this.budget()),
+      max: budget === null ? null : String(budget),
+      maxp: budget === null ? null : this.budgetPhrase(),
       plz: pc || null,
+      plzp: pc ? this.regionPhrase() : null,
       km: pc && this.radius() ? String(this.radius()) : null,
-      must: json(this.mustHave()),
-      nice: json(this.niceToHave()),
+      must: json(this.mustHave().filter((r) => on(this.key('must', r)))),
+      nice: json(this.niceToHave().filter((r) => on(this.key('nice', r)))),
+      cond: this.conditions().length ? this.conditions().join(',') : null,
       mode: this.auctionsOnly() ? 'auction' : null,
     };
   });
-  private initial: SearchRequirements | null = null;
   private original = '';
   private nearMe = false;
+  /** A facet changed something since it opened: search when it closes. */
+  private dirty = false;
   private seq = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
-  private debounce: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
     // The header's location chip applies to a shown search that has no postcode of its own.
@@ -280,24 +451,40 @@ export class Find {
   private restore(params: ParamMap): void {
     const list = (key: string): Requirement[] => {
       try {
-        return JSON.parse(params.get(key) ?? '[]');
+        const parsed = JSON.parse(params.get(key) ?? '[]');
+        return Array.isArray(parsed)
+          ? parsed
+              .filter((r) => r && typeof r.attribute === 'string' && typeof r.value === 'string')
+              .map((r) => ({
+                ...r,
+                phrase: typeof r.phrase === 'string' ? r.phrase.slice(0, 80) : null,
+              }))
+          : [];
       } catch {
         return [];
       }
     };
     const max = params.get('max');
     const km = params.get('km');
-    this.text.set(params.get('q') ?? '');
-    this.asked.set(params.get('q') ?? '');
-    this.original = params.get('q') ?? '';
+    const q = (params.get('q') ?? '').slice(0, 500);
+    this.text.set(q);
+    this.asked.set(q);
+    this.original = q;
     this.searched.set(true);
+    this.conditions.set(
+      [...new Set((params.get('cond') ?? '').split(','))]
+        .filter((c): c is Condition => Object.hasOwn(CONDITION_LABELS, c))
+        .slice(0, 5),
+    );
     this.apply({
       mustHave: list('must'),
       niceToHave: list('nice'),
       category: params.get('cat'),
       keywords: (params.get('kw') ?? '').split(',').filter((k) => k.trim()),
       maxBudgetChf: max === null ? undefined : Number(max),
+      budgetPhrase: params.get('maxp')?.slice(0, 80) ?? null,
       postcode: params.get('plz') ?? undefined,
+      regionPhrase: params.get('plzp')?.slice(0, 80) ?? null,
       maxDistanceKm: km === null ? undefined : Number(km),
     });
     this.afterParse({ postcode: params.get('plz') ?? undefined });
@@ -310,10 +497,10 @@ export class Find {
     this.status(this.i18n.t('Lese deinen Wunsch…'), this.i18n.t('Mache Anforderungen daraus…'));
     this.search.create({ body: { text } }).subscribe({
       next: (req) => {
-        this.initial = req;
         this.original = text;
         this.asked.set(text.trim());
         this.refinements.set([]);
+        this.conditions.set([]);
         this.apply(req);
         this.results.set(null);
         this.searched.set(true);
@@ -353,22 +540,19 @@ export class Find {
     });
   }
 
-  /** "Filter zurücksetzen": back to what the assistant read from the sentence. */
-  protected reset(): void {
-    if (!this.initial) return;
-    this.apply(this.initial);
-    this.afterParse(this.initial);
-  }
-
+  /** Sets what the assistant (or the URL) says; conditions are the buyer's own filter and stay as they are. */
   private apply(req: SearchRequirements): void {
     this.mustHave.set(req.mustHave);
     this.niceToHave.set(req.niceToHave);
     this.category.set(req.category ?? null);
     this.budget.set(req.maxBudgetChf ?? null);
+    this.budgetPhrase.set(req.budgetPhrase ?? null);
     this.postcode.set(req.postcode ?? '');
+    this.regionPhrase.set(req.regionPhrase ?? null);
     this.radius.set(req.maxDistanceKm ?? null);
     this.keywords.set(req.keywords.join(', '));
     this.nearMe = !!req.nearMe;
+    this.off.set(new Set());
   }
 
   /** Searches around the position if asked for, or if the user shared it this session and gave no postcode. */
@@ -377,16 +561,107 @@ export class Find {
     else this.showMatches();
   }
 
+  /** A token tap: off ↔ on, then search at once. */
+  protected toggleToken(key: string): void {
+    this.off.update((set) => {
+      const next = new Set(set);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+    this.showMatches();
+  }
+
+  private turnOn(key: string): void {
+    if (!this.off().has(key)) return;
+    this.off.update((set) => {
+      const next = new Set(set);
+      next.delete(key);
+      return next;
+    });
+  }
+
+  /** One facet open at a time; a facet that changed something searches when it closes. */
+  protected setOpen(key: string, open: boolean): void {
+    if (!open && this.openFacet() !== key) return;
+    this.openFacet.set(open ? key : null);
+    if (!this.dirty) return;
+    this.dirty = false;
+    this.showMatches();
+  }
+
+  protected setCategory(value: string): void {
+    this.category.set(value || null);
+    this.dirty = true;
+  }
+
+  protected setBudget(value: string): void {
+    const n = Number(value);
+    this.budget.set(value.trim() && Number.isFinite(n) ? n : null);
+    this.budgetPhrase.set(null);
+    this.turnOn('budget');
+    this.dirty = true;
+  }
+
+  protected toggleCondition(condition: Condition, checked: boolean): void {
+    this.conditions.update((list) =>
+      checked ? [...list, condition] : list.filter((c) => c !== condition),
+    );
+    this.dirty = true;
+  }
+
+  protected clearConditions(): void {
+    this.conditions.set([]);
+    this.dirty = true;
+  }
+
+  protected setPostcode(value: string): void {
+    this.postcode.set(value);
+    this.regionPhrase.set(null);
+    this.position.set(null);
+    this.nearMe = false;
+    this.turnOn('region');
+    this.dirty = true;
+  }
+
+  protected setRadius(km: number | null): void {
+    this.radius.set(km);
+    this.regionPhrase.set(null);
+    this.turnOn('region');
+    this.dirty = true;
+  }
+
+  protected setKeywords(value: string): void {
+    this.keywords.set(value);
+    this.dirty = true;
+  }
+
+  protected clearRequirements(): void {
+    this.mustHave.set([]);
+    this.niceToHave.set([]);
+    this.dirty = true;
+  }
+
+  /** "Alle entfernen": the six filter facets go; the requirements from the sentence stay. */
+  protected clearFilters(): void {
+    this.category.set(null);
+    this.conditions.set([]);
+    this.auctionsOnly.set(false);
+    this.keywords.set('');
+    this.off.update((set) => new Set([...set, 'budget', 'region']));
+    this.dirty = false;
+    this.showMatches();
+  }
+
   move(r: Requirement, from: Row): void {
     const to: Row = from === 'mustHave' ? 'niceToHave' : 'mustHave';
     this[from].update((list) => list.filter((x) => x !== r));
     this[to].update((list) => [...list, r]);
-    this.changed();
+    this.dirty = true;
   }
 
   remove(r: Requirement, from: Row): void {
     this[from].update((list) => list.filter((x) => x !== r));
-    this.changed();
+    this.dirty = true;
   }
 
   protected clearRegion(): void {
@@ -394,34 +669,32 @@ export class Find {
     this.radius.set(null);
     this.position.set(null);
     this.nearMe = false;
-    this.changed();
+    this.dirty = false;
+    this.showMatches();
   }
 
   /** "Mein Standort": asks the browser once per session, then searches around the position instead of a postcode. */
-  protected async useMyPosition(): Promise<void> {
+  protected async useMyPosition(byHand = false): Promise<void> {
     const position = await this.location.locate();
     if (!position) {
       this.position.set(null);
       this.radius.set(null);
       this.nearMe = false;
+      this.dirty = false;
       return this.showMatches(this.i18n.t(NO_POSITION));
     }
     this.position.set(position);
+    // set in the facet → a chip; the sentence's own "in meiner Nähe" stays underlined
+    if (byHand) this.regionPhrase.set(null);
     this.postcode.set('');
     if (this.radius() === null) this.radius.set(NEAR_ME_KM);
     this.nearMe = true;
+    this.turnOn('region');
+    this.dirty = false;
     this.showMatches();
   }
 
-  /** Matches again after a filter change; typing waits for a 400 ms pause. */
-  protected changed(delay = 0): void {
-    clearTimeout(this.debounce);
-    if (delay) this.debounce = setTimeout(() => this.showMatches(), delay);
-    else this.showMatches();
-  }
-
   showMatches(message = ''): void {
-    clearTimeout(this.debounce);
     const id = ++this.seq;
     this.matching.set(true);
     this.status(
@@ -444,22 +717,32 @@ export class Find {
     });
   }
 
+  private keywordList(): string[] {
+    return this.keywords()
+      .split(',')
+      .map((k) => k.trim().toLowerCase())
+      .filter((k) => k);
+  }
+
+  /** The effective requirements: off tokens are left out, their values stay for a second tap. */
   private requirements(): SearchRequirements {
-    const position = this.position();
+    const on = (key: string) => !this.off().has(key);
+    const position = on('region') ? this.position() : null;
+    const budget = on('budget') ? this.budget() : null;
     return {
-      mustHave: this.mustHave(),
-      niceToHave: this.niceToHave(),
+      mustHave: this.mustHave().filter((r) => on(this.key('must', r))),
+      niceToHave: this.niceToHave().filter((r) => on(this.key('nice', r))),
       category: this.category()?.trim() || null,
-      keywords: this.keywords()
-        .split(',')
-        .map((k) => k.trim().toLowerCase())
-        .filter((k) => k),
-      maxBudgetChf: this.budget() ?? undefined,
-      postcode: this.postcode().trim() || undefined,
-      maxDistanceKm: this.radius() ?? undefined,
-      nearMe: this.nearMe,
+      keywords: this.keywordList(),
+      maxBudgetChf: budget ?? undefined,
+      postcode: (on('region') && this.postcode().trim()) || undefined,
+      maxDistanceKm: on('region') ? (this.radius() ?? undefined) : undefined,
+      nearMe: on('region') && this.nearMe,
       latitude: position?.latitude ?? null,
       longitude: position?.longitude ?? null,
+      conditions: this.conditions(),
+      budgetPhrase: budget === null ? null : this.budgetPhrase(),
+      regionPhrase: on('region') ? this.regionPhrase() : null,
     };
   }
 
@@ -479,26 +762,25 @@ export class Find {
     return this[row]();
   }
 
+  /** Token key: unique per list, attribute and comparison. */
+  private key(kind: 'must' | 'nice', r: Requirement): string {
+    return `${kind}:${r.attribute}:${r.comparison ?? 'EXACT'}`;
+  }
+
   protected label(r: Requirement): string {
     const prefix = r.comparison === 'AT_LEAST' ? '≥ ' : r.comparison === 'AT_MOST' ? '≤ ' : '';
     return `${r.attribute}: ${prefix}${r.value}`;
   }
 
-  protected budgetLabel(): string {
+  private budgetLabel(): string {
     return this.i18n.t('Bis {price}', { price: chf(this.budget() ?? 0) });
   }
 
-  protected regionLabel(): string {
+  private regionLabel(): string {
     if (this.position())
       return this.i18n.t('{km} km um deinen Standort', { km: this.radius() ?? NEAR_ME_KM });
     const pc = this.postcode().trim();
     return this.radius() ? this.i18n.t('{km} km um {pc}', { km: this.radius()!, pc }) : pc;
-  }
-
-  /** The card's line: score and fit, then why. */
-  protected scoreLine(m: SearchMatch): string {
-    const fit = this.i18n.t(FITS[m.fit ?? ''] ?? '');
-    return [`${m.score ?? 0} % · ${fit}`, m.reason].filter((x) => x).join(' — ');
   }
 
   protected details(m: SearchMatch): string[] {

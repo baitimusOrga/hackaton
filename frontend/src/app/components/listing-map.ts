@@ -8,18 +8,15 @@ import {
   inject,
   Injector,
   input,
+  signal,
   viewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
 import * as L from 'leaflet';
+import { ListingSummary } from '../api/models';
+import { TranslatePipe } from '../i18n/i18n';
+import { SummaryCard } from '../ui/summary-card';
 
-export interface MapItem {
-  id?: number;
-  title?: string;
-  priceChf?: number;
-  latitude?: number | null;
-  longitude?: number | null;
-}
+export type MapItem = ListingSummary;
 
 const SWITZERLAND = L.latLng(46.8, 8.2);
 
@@ -33,16 +30,27 @@ const PIN = L.icon({
   shadowSize: [41, 41],
 });
 
-/** OpenStreetMap with one area circle per cluster of listings within `areaKm` of each other, labelled with its listing count; a click lists them. With `pin`, a plain marker per listing instead. The exact spot stays private. */
+/** OpenStreetMap with one area circle per cluster of listings within `areaKm` of each other, labelled with its listing count; a click lists them under the map and scrolls there. With `pin`, a plain marker per listing instead. The exact spot stays private. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing-map',
+  imports: [SummaryCard, TranslatePipe],
   template: `<div
-    #map
-    role="region"
-    [attr.aria-label]="label()"
-    class="isolate h-80 w-full zw-map"
-  ></div>`,
+      #map
+      role="region"
+      [attr.aria-label]="label()"
+      class="isolate h-80 w-full zw-map"
+    ></div>
+    @if (selected().length) {
+      <p #list class="zw-muted mt-4">
+        {{ 'Gefundene Inserate: {count}' | t: { count: selected().length } }}
+      </p>
+      <div class="zw-grid mt-2">
+        @for (item of selected(); track item.id) {
+          <app-summary-card [listing]="item" />
+        }
+      </div>
+    }`,
 })
 export class ListingMap {
   readonly items = input.required<MapItem[]>();
@@ -51,7 +59,8 @@ export class ListingMap {
   readonly pin = input(false);
 
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('map');
-  private readonly router = inject(Router);
+  private readonly list = viewChild<ElementRef<HTMLElement>>('list');
+  protected readonly selected = signal<MapItem[]>([]);
 
   constructor() {
     const injector = inject(Injector);
@@ -68,6 +77,7 @@ export class ListingMap {
       effect(
         () => {
           shapes.clearLayers();
+          this.selected.set([]);
           // shortcut: greedy, joins the first cluster within range of its start; fine while listings are few
           const radius = this.areaKm() * 1000;
           const areas: { at: L.LatLng; group: MapItem[] }[] = [];
@@ -84,7 +94,18 @@ export class ListingMap {
               continue;
             }
             L.circle(at, { radius, className: 'zw-map-area' })
-              .bindPopup(this.popup(group), { maxHeight: 240 })
+              .on('click', () => {
+                this.selected.set(group);
+                // after the render, so the list exists on the first click and is re-shown on every later one
+                afterNextRender(
+                  () =>
+                    this.list()?.nativeElement.scrollIntoView?.({
+                      block: 'nearest',
+                      behavior: 'smooth',
+                    }),
+                  { injector },
+                );
+              })
               .bindTooltip(String(group.length), {
                 permanent: true,
                 direction: 'center',
@@ -98,22 +119,5 @@ export class ListingMap {
         { injector },
       );
     });
-  }
-
-  // real elements, not an HTML string: titles are user input
-  private popup(group: MapItem[]) {
-    const list = document.createElement('ul');
-    for (const item of group) {
-      const link = document.createElement('a');
-      link.href = `/listings/${item.id}`;
-      link.textContent = item.title ?? 'Listing';
-      link.addEventListener('click', (event) => {
-        event.preventDefault();
-        void this.router.navigate(['/listings', item.id]);
-      });
-      const row = list.appendChild(document.createElement('li'));
-      row.append(link);
-    }
-    return list;
   }
 }

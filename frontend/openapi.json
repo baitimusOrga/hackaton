@@ -132,6 +132,33 @@
         }
       }
     },
+    "/api/orders/{id}/ship" : {
+      "post" : {
+        "tags" : [ "Orders" ],
+        "operationId" : "ship",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Order"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/listings" : {
       "get" : {
         "tags" : [ "Listings" ],
@@ -480,6 +507,33 @@
         }
       }
     },
+    "/api/orders/{id}" : {
+      "get" : {
+        "tags" : [ "Orders" ],
+        "operationId" : "getOrder",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Order"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/trades" : {
       "get" : {
         "tags" : [ "Trades" ],
@@ -491,6 +545,27 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/Trades"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/listings" : {
+      "get" : {
+        "tags" : [ "MyListings" ],
+        "operationId" : "listMine",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MyListing"
+                  }
                 }
               }
             }
@@ -590,6 +665,26 @@
           }
         }
       }
+    },
+    "/api/me/listings/{id}" : {
+      "delete" : {
+        "tags" : [ "MyListings" ],
+        "operationId" : "withdraw",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
     }
   },
   "components" : {
@@ -621,6 +716,11 @@
           "comparison" : {
             "type" : [ "string", "null" ],
             "enum" : [ "AT_LEAST", "EXACT", "AT_MOST" ]
+          },
+          "phrase" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 80,
+            "minLength" : 0
           }
         },
         "required" : [ "attribute", "value" ]
@@ -688,6 +788,25 @@
             "format" : "double",
             "maximum" : 180,
             "minimum" : -180
+          },
+          "budgetPhrase" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "regionPhrase" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "conditions" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string",
+              "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
+            },
+            "maxItems" : 5,
+            "minItems" : 0
           }
         },
         "required" : [ "keywords", "mustHave", "niceToHave" ]
@@ -836,6 +955,21 @@
           }
         }
       },
+      "Order" : {
+        "type" : "object",
+        "properties" : {
+          "listing" : {
+            "$ref" : "#/components/schemas/ListingSummary"
+          },
+          "seller" : {
+            "type" : "boolean"
+          },
+          "shippedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        }
+      },
       "CreateListingRequest" : {
         "type" : "object",
         "properties" : {
@@ -924,6 +1058,12 @@
           "imageUrl" : {
             "type" : "string"
           },
+          "imageUrls" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
           "description" : {
             "type" : "string"
           },
@@ -962,6 +1102,10 @@
           "bidCount" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "AVAILABLE", "SOLD", "ENDED", "WITHDRAWN" ]
           }
         }
       },
@@ -1457,6 +1601,19 @@
             }
           }
         }
+      },
+      "MyListing" : {
+        "type" : "object",
+        "properties" : {
+          "listing" : {
+            "$ref" : "#/components/schemas/ListingSummary"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "AVAILABLE", "SOLD", "ENDED", "WITHDRAWN" ]
+          }
+        },
+        "required" : [ "listing", "status" ]
       },
       "Info" : {
         "type" : "object",

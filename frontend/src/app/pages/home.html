@@ -15,7 +15,7 @@
       [ngModel]="query()"
       (ngModelChange)="query.set($event)"
     />
-    <button appButton variant="primary" type="submit">
+    <button appButton variant="primary" type="submit" [attr.aria-label]="'Suchen' | t">
       <app-icon name="search" />
       <span>{{ 'Suchen' | t }}</span>
     </button>

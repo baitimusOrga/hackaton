@@ -2,7 +2,6 @@ package one.absent.hackaton.selling;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -19,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.exception.SdkException;
@@ -66,14 +66,18 @@ public class PhotoController {
     }
 
     @GetMapping("/api/photos/{id}")
-    public ResponseEntity<byte[]> getPhoto(@PathVariable long id) {
+    public ResponseEntity<byte[]> getPhoto(@PathVariable long id, WebRequest request) {
         // only published photos are public; drafts are previewed from local blob URLs in the sell page
         Photo photo = photos.findById(id).filter(p -> p.getListingId() != null)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Photo not found."));
+        // ids start over after a database reset, so the browser revalidates; the upload time tells the photos apart
+        if (request.checkNotModified(photo.getId() + "-" + photo.getCreatedAt().toEpochMilli())) {
+            return null; // 304 without loading the bytes
+        }
         byte[] data = photo.getStorageKey() == null ? photo.getData() : storage.get(photo.getStorageKey()).bytes();
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(photo.getContentType()))
-                .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePublic())
+                .cacheControl(CacheControl.noCache().cachePublic())
                 .body(data);
     }
 

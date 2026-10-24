@@ -7,6 +7,10 @@ import { chf } from './chf';
 
 const MODE_LABELS = { auction: 'Auktion', fixed: 'Festpreis', offer: 'Preisvorschlag' } as const;
 
+/** How a search match fits: decides the mark and colour of the card's why line. */
+export type CardFit = 'ok' | 'maybe' | 'alt';
+const MARKS: Record<CardFit, string> = { ok: '✓', maybe: '?', alt: '↗' };
+
 /** Browse unit: square photo, badge row, title, price, meta. No border or shadow; the grid gap separates. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,6 +45,12 @@ const MODE_LABELS = { auction: 'Auktion', fixed: 'Festpreis', offer: 'Preisvorsc
     @if (co2Saved() !== null) {
       <p class="zw-card__green">{{ 'spart ca. {kg} kg CO₂' | t: { kg: co2Saved()! } }}</p>
     }
+    @if (why()) {
+      <p class="zw-card__why" [class.zw-card__why--ok]="fit() === 'ok'">
+        <span aria-hidden="true">{{ mark() }}</span
+        ><span>{{ why() }}</span>
+      </p>
+    }
   </a>`,
 })
 export class ListingCard {
@@ -56,6 +66,10 @@ export class ListingCard {
   readonly co2Saved = input<number | null>(null);
   readonly endsAt = input<Date | number | null>(null);
   readonly bids = input(0);
+  /** Search results: one line why the listing is shown, in the colour of `fit`. */
+  readonly why = input('');
+  readonly fit = input<CardFit | null>(null);
+  protected readonly mark = computed(() => MARKS[this.fit() ?? 'maybe']);
   protected readonly modeLabel = computed(() => MODE_LABELS[this.mode()]);
   protected readonly priceText = computed(() => chf(this.price()));
   protected readonly originalText = computed(() => chf(this.originalPrice() ?? 0));
