@@ -52,6 +52,21 @@ async function draftFrom(draft: ListingDraft, extra: object = {}) {
 }
 
 describe('Sell', () => {
+  it('shows every section of the one-page form before the photos are analysed', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: SellingService, useValue: {} }],
+    });
+    const fixture = TestBed.createComponent(Sell);
+    const element = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+    button(element, 'Alles auf einer Seite').click();
+    await fixture.whenStable();
+
+    const headings = Array.from(element.querySelectorAll('h2')).map((h) => h.textContent!.trim());
+    expect(headings).toEqual(['Fotos', 'Artikel', 'Zustand', 'Preis', 'Übergabe']);
+    expect(button(element, 'Veröffentlichen').disabled).toBe(true);
+  });
+
   it('closes the dialog on Escape and unlocks the page behind it', async () => {
     TestBed.configureTestingModule({
       providers: [provideRouter([]), { provide: SellingService, useValue: {} }],

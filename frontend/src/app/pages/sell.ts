@@ -66,15 +66,22 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       position: fixed;
       inset: 0;
       z-index: 30;
-      display: flex;
+      display: block;
       overflow-y: auto;
-      padding: var(--space-12) var(--space-4);
       background: var(--overlay);
     }
+    /* The form fills the scrim and centres the dialog both ways; a tall dialog scrolls. */
+    form {
+      display: flex;
+      min-height: 100%;
+      padding: var(--space-12) var(--space-4);
+    }
     :host(.sell--full) {
+      background: var(--bg-000);
+    }
+    :host(.sell--full) form {
       display: block;
       padding: 0;
-      background: var(--bg-000);
     }
     .dlg {
       width: 100%;
@@ -115,6 +122,12 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
     .page {
       padding-top: var(--space-4);
       padding-bottom: var(--space-12);
+    }
+    .sec:last-of-type {
+      border-bottom: 0;
+    }
+    .full-foot {
+      padding-top: var(--space-6);
     }
     .chips {
       display: flex;

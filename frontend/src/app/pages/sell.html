@@ -226,88 +226,93 @@
         }
       </section>
 
-      @if (draft()) {
-        <section class="sec" aria-labelledby="sec-item">
-          <h2 id="sec-item">Artikel</h2>
-          <div class="zw-field">
-            <label class="zw-label" for="sell-title">Titel</label>
-            <input
-              id="sell-title"
-              class="zw-input"
-              name="title"
-              required
-              maxlength="120"
-              [value]="fields().title"
-              (input)="setField('title', $any($event.target).value)"
-            />
-          </div>
-          <div class="zw-field">
-            <label class="zw-label" for="sell-category">Kategorie</label>
-            <select
-              id="sell-category"
-              class="zw-input"
-              name="category"
-              required
-              (change)="setField('category', $any($event.target).value)"
-            >
-              @for (category of categories; track category) {
-                <option [value]="category" [selected]="category === fields().category">
-                  {{ category }}
-                </option>
-              }
-            </select>
-          </div>
-          <div class="zw-field">
-            <label class="zw-label" for="sell-description">Beschreibung</label>
-            <textarea
-              id="sell-description"
-              class="zw-input"
-              name="description"
-              required
-              maxlength="4000"
-              aria-describedby="sell-description-help"
-              [value]="fields().description"
-              (input)="setField('description', $any($event.target).value)"
-            ></textarea>
-            <p id="sell-description-help" class="zw-help">
-              Aus deinen Fotos und Angaben geschrieben. Ändere, was nicht stimmt.
-            </p>
-          </div>
-          <ng-container *ngTemplateOutlet="factsTpl" />
-        </section>
-
-        <section class="sec" aria-labelledby="sec-condition">
-          <h2 id="sec-condition">Zustand</h2>
-          <div class="chips" role="group" aria-labelledby="sec-condition">
-            @for (condition of conditions; track condition.value) {
-              <app-chip
-                [selected]="condition.value === fields().condition"
-                (selectedChange)="setField('condition', $event ? condition.value : '')"
-                >{{ condition.label }}</app-chip
-              >
-            }
-          </div>
-          <ng-container *ngTemplateOutlet="conditionHintTpl" />
-        </section>
-
-        <section class="sec" aria-labelledby="sec-price">
-          <h2 id="sec-price">Preis</h2>
-          <ng-container *ngTemplateOutlet="priceTpl" />
-        </section>
-
-        <section class="sec" aria-labelledby="sec-place">
-          <h2 id="sec-place">Übergabe</h2>
-          <ng-container *ngTemplateOutlet="placeTpl" />
-        </section>
-
-        <div class="foot" style="padding-top: var(--space-6)">
-          <span class="zw-muted zw-small">Inserieren ist gratis. Keine Provision.</span>
-          <!-- TODO: "Entwurf speichern": the backend cannot store a draft yet. -->
-          <button appButton variant="primary" type="submit" [disabled]="busy()">
-            {{ busy() ? 'Wird veröffentlicht…' : 'Veröffentlichen' }}
-          </button>
+      <section class="sec" aria-labelledby="sec-item">
+        <h2 id="sec-item">Artikel</h2>
+        <div class="zw-field">
+          <label class="zw-label" for="sell-title">Titel</label>
+          <input
+            id="sell-title"
+            class="zw-input"
+            name="title"
+            required
+            maxlength="120"
+            [value]="fields().title"
+            (input)="setField('title', $any($event.target).value)"
+          />
         </div>
-      }
+        <div class="zw-field">
+          <label class="zw-label" for="sell-category">Kategorie</label>
+          <select
+            id="sell-category"
+            class="zw-input"
+            name="category"
+            required
+            (change)="setField('category', $any($event.target).value)"
+          >
+            @for (category of categories; track category) {
+              <option [value]="category" [selected]="category === fields().category">
+                {{ category }}
+              </option>
+            }
+          </select>
+        </div>
+        <div class="zw-field">
+          <label class="zw-label" for="sell-description">Beschreibung</label>
+          <textarea
+            id="sell-description"
+            class="zw-input"
+            name="description"
+            required
+            maxlength="4000"
+            aria-describedby="sell-description-help"
+            [value]="fields().description"
+            (input)="setField('description', $any($event.target).value)"
+          ></textarea>
+          <p id="sell-description-help" class="zw-help">
+            Aus deinen Fotos und Angaben geschrieben. Ändere, was nicht stimmt.
+          </p>
+        </div>
+        <ng-container *ngTemplateOutlet="factsTpl" />
+      </section>
+
+      <section class="sec" aria-labelledby="sec-condition">
+        <h2 id="sec-condition">Zustand</h2>
+        <div class="chips" role="group" aria-labelledby="sec-condition">
+          @for (condition of conditions; track condition.value) {
+            <app-chip
+              [selected]="condition.value === fields().condition"
+              (selectedChange)="setField('condition', $event ? condition.value : '')"
+              >{{ condition.label }}</app-chip
+            >
+          }
+        </div>
+        <ng-container *ngTemplateOutlet="conditionHintTpl" />
+      </section>
+
+      <section class="sec" aria-labelledby="sec-price">
+        <h2 id="sec-price">Preis</h2>
+        <app-price-panel
+          [compact]="true"
+          [estimate]="draft()?.price"
+          [condition]="fields().condition"
+          [(price)]="price"
+        />
+      </section>
+
+      <section class="sec" aria-labelledby="sec-place">
+        <h2 id="sec-place">Übergabe</h2>
+        <ng-container *ngTemplateOutlet="placeTpl" />
+      </section>
+
+      <div class="foot full-foot">
+        <span class="zw-muted zw-small">Inserieren ist gratis. Keine Provision.</span>
+        <!-- TODO: "Entwurf speichern": the backend cannot store a draft yet. -->
+        <button appButton type="button" disabled>Entwurf speichern</button>
+        <!-- Publishing needs the photo ids from the draft ("Fotos auswerten"). -->
+        <button appButton variant="primary" type="submit" [disabled]="!draft() || busy()">
+          {{ busy() && draft() ? 'Wird veröffentlicht…' : 'Veröffentlichen' }}
+        </button>
+      </div>
     </div>
   }
 </form>
@@ -350,7 +355,7 @@
     @if (photos().length < maxPhotos) {
       <li>
         <label class="add">
-          <app-icon name="camera" [size]="24" />
+          <app-icon name="plus" [size]="24" />
           <span>{{ busy() ? '…' : 'Foto' }}</span>
           <input
             type="file"
