@@ -58,6 +58,7 @@ describe('ListingMap', () => {
     const rows = [...element.querySelectorAll('.zw-grid app-summary-card')].map(
       (li) => li.textContent,
     );
+    expect(element.querySelector('p.zw-muted')!.textContent).toContain('Gefundene Inserate: 2');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toContain('With coordinates');
     expect(rows[0]).toContain('CHF 20');

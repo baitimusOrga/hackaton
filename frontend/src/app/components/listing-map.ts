@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import * as L from 'leaflet';
 import { ListingSummary } from '../api/models';
+import { TranslatePipe } from '../i18n/i18n';
 import { SummaryCard } from '../ui/summary-card';
 
 export type MapItem = ListingSummary;
@@ -33,7 +34,7 @@ const PIN = L.icon({
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing-map',
-  imports: [SummaryCard],
+  imports: [SummaryCard, TranslatePipe],
   template: `<div
       #map
       role="region"
@@ -41,7 +42,10 @@ const PIN = L.icon({
       class="isolate h-80 w-full zw-map"
     ></div>
     @if (selected().length) {
-      <div #list class="zw-grid mt-4" aria-label="Inserate in diesem Gebiet">
+      <p #list class="zw-muted mt-4">
+        {{ 'Gefundene Inserate: {count}' | t: { count: selected().length } }}
+      </p>
+      <div class="zw-grid mt-2">
         @for (item of selected(); track item.id) {
           <app-summary-card [listing]="item" />
         }
