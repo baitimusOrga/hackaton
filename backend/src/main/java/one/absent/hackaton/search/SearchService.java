@@ -99,7 +99,7 @@ public class SearchService {
             - Requirement attributes ONLY from: %s. Must-have = clearly required; nice-to-have = wished but optional.
             - Never invent requirements the text does not state. Keep values short and normalized like the listings: English, inches as 27\" (never "Zoll"/"inch"), memory and storage as "16 GB", years as 2017.
             - phrase (per requirement): the exact words of the buyer's text it comes from, copied verbatim
-              ("iMac 2017", "mindestens 128 GB"); null when there are none.
+              ("iMac", "ab 2017", "mindestens 128 GB"); null when there are none.
             - comparison: AT_LEAST for "at least / mindestens / min. / ab / or newer", AT_MOST for "at most / höchstens / max. / or older", else EXACT; only numeric values (RAM, Storage, Year, Display, Size).
             - Condition only when the buyer states it: "working" when they want it to work (funktionierend, works, intakt), else one of New, Like new, Good, Used.
             - Model: the product line only ("iMac", "MacBook Pro"); sizes go into Display or Size.
@@ -169,10 +169,10 @@ public class SearchService {
                 .setParameter("ids", request.topListingIds()).setParameter("available", ListingStatus.AVAILABLE)
                 .getResultList().stream().map(Listing::detail).toList());
         SearchRequirements c = request.current();
-        // the buyer's position never goes to the AI
+        // the buyer's position and the page-only conditions filter never go to the AI
         SearchRequirements withoutPosition = new SearchRequirements(c.mustHave(), c.niceToHave(), c.category(),
                 c.keywords(), c.maxBudgetChf(), c.postcode(), c.maxDistanceKm(), c.nearMe(), null, null,
-                c.budgetPhrase(), c.regionPhrase(), c.conditions());
+                c.budgetPhrase(), c.regionPhrase(), null);
         StringBuilder text = new StringBuilder("Original wish: ").append(request.originalText()).append('\n');
         request.refinements().forEach(r -> text.append("Earlier change: ").append(r).append('\n'));
         text.append("Current requirements (JSON): ").append(JSON.writeValueAsString(withoutPosition)).append('\n');
@@ -321,14 +321,14 @@ public class SearchService {
         return text.toLowerCase(Locale.ROOT).contains("tb") ? n * 1000 : n;
     }
 
-    private static String phrase(Requirement r) {
+    private static String wanted(Requirement r) {
         String prefix = r.comparison() == Requirement.Comparison.AT_LEAST ? "at least "
                 : r.comparison() == Requirement.Comparison.AT_MOST ? "at most " : "";
         return prefix + r.value();
     }
 
     private static String label(Requirement r) {
-        return r.attribute() + ": " + phrase(r);
+        return r.attribute() + ": " + wanted(r);
     }
 
     /** Where the listing breaks budget, region or a stated must-have, in this order. */
@@ -345,7 +345,7 @@ public class SearchService {
             if (check(l, r) == Evidence.DIFFERENT) {
                 String actual = r.attribute().equalsIgnoreCase("Condition") ? conditionLabel(l.condition())
                         : attribute(l, r.attribute());
-                diffs.add(r.attribute() + ": " + actual + " instead of " + phrase(r));
+                diffs.add(r.attribute() + ": " + actual + " instead of " + wanted(r));
             }
         }
         return diffs;

@@ -31,7 +31,7 @@ public record SearchRequirements(@NotNull @Size(max = 20) List<@Valid Requiremen
                                  @Schema(nullable = true) @DecimalMin("-180") @DecimalMax("180") Double longitude,
                                  @Schema(nullable = true) @Size(max = 80) String budgetPhrase,
                                  @Schema(nullable = true) @Size(max = 80) String regionPhrase,
-                                 @Schema(nullable = true) @Size(max = 5) List<Condition> conditions) {
+                                 @Schema(nullable = true) @Size(max = 5) List<@NotNull Condition> conditions) {
 
     public SearchRequirements(List<Requirement> mustHave, List<Requirement> niceToHave, String category,
                               List<String> keywords, BigDecimal maxBudgetChf, String postcode, Integer maxDistanceKm,

@@ -2,6 +2,7 @@ package one.absent.hackaton.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -126,7 +127,7 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.niceToHave[0].phrase").value("x".repeat(80)))
                 .andExpect(jsonPath("$.budgetPhrase").value("max 600 CHF"))
                 .andExpect(jsonPath("$.regionPhrase").value("near Zürich"))
-                .andExpect(jsonPath("$.conditions").isEmpty());
+                .andExpect(jsonPath("$.conditions").value(nullValue()));
     }
 
     @Test
