@@ -1,7 +1,7 @@
 # Buying assistant eval prompts
 
 Hand-written cases to run against the real AI over the full demo data (V6, V15 clean listings 1201–1290,
-V16 messy listings 1301–1600). "Top 5" means the first five matches; order inside the top 5 does not
+V16 messy listings 1301–1600, V18 another 1601–1800; SOLD listings never show). "Top 5" means the first five matches; order inside the top 5 does not
 matter. A refine step (`↳`) sends the follow-up as a refinement of the case above it. "Near me" cases
 assume the stated postcode as the buyer's position.
 
@@ -45,6 +45,18 @@ assume the stated postcode as the buyer's position.
 | 29 | Laserdrucker mit WLAN fürs Homeoffice | 1459, 1393 | 1467, 1395 | toner alone and a jamming printer must lose |
 | 30 | Bluetooth Lautsprecher für draussen | 1478, 1487 | 1479, 1485 | Italian listing (1487); passive shelf speakers need an amplifier |
 | 31 | Dyson Staubsauger mit gutem Akku | 1509, 1284 | 1521, 1408, 1518 | battery only and two "Akku schwach" listings must lose |
+| 32 | Steelcase Leap V2, max 400 | 1703, 1704, 1707 | 1706, 1717 | near-duplicates in three cities, French listing (1707); broken gas spring and headrest alone must lose |
+| 32a | ↳ in meiner Nähe (assume 3011) | 1704 | 1703, 1707, 1717 | near me in Bern keeps only the Bern Leap |
+| 33 | Herman Miller Bürostuhl bis 500 | 1711, 1712, 1254 | 1715 | all-caps title (1712); Embody with a loose armrest is defective and over budget |
+| 34 | Stromer ST3 in der Nähe (assume 3007) | 1747 | 1769, 1748, 1749 | near me in Bern; the spare battery is not a bike, Zürich and Luzern ST3s drop |
+| 34a | ↳ egal wo, max 3000 | 1747, 1749, 1265 | 1769 | distance dropped; 1749 has a weak battery (USED) but fits the budget |
+| 35 | Rennvelo 56 bis 1500 (assume 8004, in meiner Nähe) | 1758, 1763, 1410 | 1764, 1765, 1412 | broken fork, frame set without parts and a helmet must lose |
+| 36 | iPhone 15 Pro, 128 oder 256 GB | 1675, 1691 | 1683, 1692 | case and MagSafe charger are not the phone |
+| 36a | ↳ günstiger, iPhone 14 geht auch | 1673, 1679, 1693 | 1682, 1683 | refine widens the model; French listing (1679); cracked 14 (1682) is defective |
+| 37 | LG OLED C1 55 Zoll | 1787, 1572 | 1797, 1795 | model written as OLED55C1 vs "C1"; the stand alone and a broken LG panel must lose |
+| 38 | ThinkPad T14 Gen 2 mit 16GB, max 500 | 1634, 1650 | 1640, 1641 | spare battery and a flickering Gen 3 must lose |
+| 39 | MacBook Air M1 in meiner Nähe (assume 1003) | 1628 | 1632, 1649 | near me in Lausanne, French listing; charger and case must lose |
+| 40 | Switch mit Mario Kart für die Kinder, max 250 | 1785, 1548 | 1784, 1783, 1782 | console bundles vs games only, a controller alone and a broken display |
 
-Not covered: photos (all `image_url` null), sold listings, descriptions longer than the 160 characters the
+Not covered: photos, sold listings (only price evidence), descriptions longer than the 160 characters the
 ranking prompt sends.

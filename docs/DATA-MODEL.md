@@ -12,7 +12,7 @@ Rules:
 
 - `listing`: listing content, CHF price, condition, postcode/locality, the postcode centroid (`latitude`/`longitude`, nullable) and creation time. V4 persists the three public contract demos; new identities start at 4.
 - `listing_attribute`: attribute names/values owned by a listing. Demo data uses only the canonical keys `Brand, Model, Year, Color, Size, Display, Resolution, CPU, RAM, Storage, Material, Dimensions`.
-- `listing.status`: `AVAILABLE` (default) or `SOLD`; `GET /api/listings` only returns `AVAILABLE`, newest first. V6 adds 20 fictional demo listings with ids 1001–1020, V15 another 90 for the buying assistant (ids 1201–1290). V16 adds 300 deliberately messy ones (ids 1301–1600: dialect, typos, wrong categories, accessories, defects) for the cases in `docs/testing/search-eval.md`.
+- `listing.status`: `AVAILABLE` (default) or `SOLD`; `GET /api/listings` only returns `AVAILABLE`, newest first. V6 adds 20 fictional demo listings with ids 1001–1020, V15 another 90 for the buying assistant (ids 1201–1290). V16 adds 300 deliberately messy ones (ids 1301–1600: dialect, typos, wrong categories, accessories, defects) for the cases in `docs/testing/search-eval.md`; V18 adds 200 more (ids 1601–1800) and 60 SOLD ones (1801–1860) as price evidence for common demo models.
 - Nullable `listing.seller_id` and `seller_name` store the verified Better Auth subject and a display-name snapshot at publication. Existing demos retain null sellers. Auth owns the separate `auth` schema, with no cross-schema user foreign key.
 - `photo`: uploaded listing photos (content type, and either the S3 `storage_key` or, for older rows and local dev without S3 credentials, the bytes in `data`) with the uploading seller's subject. `listing_id` stays null until the photo is published with a listing; `listing.image_url` then points at `/api/photos/{first photo id}`. Only published photos are served; unpublished draft photos are deleted by `PhotoCleanup` after 24 hours (and right away when the AI draft fails). JPEG and PNG uploads are re-encoded to drop EXIF metadata.
 - `clearance_project`: a company's office clearance (owner = Better Auth subject, no cross-schema FK; postcode, locality, deadline, chosen `route` null until chosen).
@@ -38,6 +38,7 @@ Rules:
 | V15 | 90 fictional demo listings for the buying assistant (ids 1201–1290, with attributes and postcode centroids) |
 | V16 | 300 messy fictional demo listings for search evaluation (ids 1301–1600, with attributes and postcode centroids) |
 | V17 | `image_url` for the V16 demo listings that have an AI-generated photo in `frontend/public/demo/<id>.jpg` |
+| V18 | 200 more messy demo listings (ids 1601–1800) and 60 SOLD price-evidence listings (ids 1801–1860), with attributes and postcode centroids |
 
 ## Backups
 
