@@ -7,8 +7,7 @@ import { TradesService } from '../api/services';
 import { TranslatePipe } from '../i18n/i18n';
 import { ChfPipe } from '../ui/chf';
 
-// Only auctions record a buyer so far, so "Gekauft" lists won auctions; there is no pickup or
-// payment flow stored yet, so each row links to the listing.
+// There is no pickup or payment flow stored yet, so each row links to the listing.
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-profile-trades',

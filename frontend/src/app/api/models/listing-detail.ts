@@ -6,6 +6,11 @@ export interface ListingDetail {
 [key: string]: string;
 };
   bidCount?: number;
+
+  /**
+   * The viewer bought this listing
+   */
+  bought?: boolean;
   category?: string;
   condition?: 'NEW' | 'LIKE_NEW' | 'GOOD' | 'USED' | 'DEFECTIVE';
   createdAt?: string;
@@ -17,9 +22,15 @@ export interface ListingDetail {
   latitude?: (number | null);
   locality?: string;
   longitude?: (number | null);
+
+  /**
+   * The viewer is the seller
+   */
+  ownListing?: boolean;
   postcode?: string;
   priceChf?: number;
   saleMode?: 'FIXED' | 'AUCTION';
   sellerName?: (string | null);
+  status?: 'AVAILABLE' | 'SOLD' | 'ENDED' | 'WITHDRAWN';
   title?: string;
 }

@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import one.absent.hackaton.geo.Coordinates;
 import one.absent.hackaton.geo.GeoClient;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -82,8 +84,8 @@ public class ListingController {
     }
 
     @GetMapping("/{id}")
-    public ListingDetail get(@PathVariable long id) {
-        return listings.findById(id).map(Listing::detail)
+    public ListingDetail get(@PathVariable long id, @AuthenticationPrincipal Jwt viewer) {
+        return listings.findById(id).map(listing -> listing.detail(viewer == null ? null : viewer.getSubject()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found."));
     }
 }

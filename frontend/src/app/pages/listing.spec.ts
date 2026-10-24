@@ -90,6 +90,30 @@ describe('ListingPage', () => {
     });
   }
 
+  for (const [item, text] of [
+    [{ status: 'SOLD', bought: true }, 'Gekauft!'],
+    [{ status: 'SOLD' }, 'Verkauft'],
+    [{ status: 'WITHDRAWN' }, 'Zurückgezogen'],
+    [{ status: 'AVAILABLE', ownListing: true }, 'Das ist dein Inserat.'],
+  ] as const) {
+    it(`shows "${text}" instead of the buy button`, async () => {
+      const get = () => of({ id: 4, title: 'Desk', priceChf: 80, ...item });
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: '4' })) } },
+          { provide: ListingsService, useValue: { get, list: () => of([]) } },
+        ],
+      });
+      const fixture = TestBed.createComponent(ListingPage);
+      await fixture.whenStable();
+      const element = fixture.nativeElement as HTMLElement;
+      expect(element.querySelector('button[variant="primary"]')).toBeNull();
+      expect(element.textContent).toContain(text);
+      expect(element.textContent).toContain('CHF 80.–');
+    });
+  }
+
   it('scrolls to the top when a similar listing is opened', async () => {
     const desk = { id: 4, title: 'Desk', priceChf: 80 };
     const chair = { id: 5, title: 'Chair', priceChf: 40 };

@@ -39,6 +39,6 @@ public class PurchaseController {
         }
         listing.setStatus(ListingStatus.SOLD);
         listing.setBuyerId(buyer.getSubject());
-        return listing.detail();
+        return listing.detail(buyer.getSubject());
     }
 }

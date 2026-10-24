@@ -51,13 +51,29 @@ class PurchaseControllerTest {
 
     @Test void buyingSellsTheListingOnceAndShowsItAsBought() throws Exception {
         long id = listing(SaleMode.FIXED);
+        mvc.perform(get("/api/listings/" + id))
+                .andExpect(jsonPath("$.status").value("AVAILABLE"))
+                .andExpect(jsonPath("$.ownListing").value(false))
+                .andExpect(jsonPath("$.bought").value(false));
+        mvc.perform(get("/api/listings/" + id).with(AuctionControllerTest.user("seller")))
+                .andExpect(jsonPath("$.ownListing").value(true));
         mvc.perform(post("/api/listings/" + id + "/purchase")).andExpect(status().isUnauthorized());
         mvc.perform(post("/api/listings/" + id + "/purchase").with(AuctionControllerTest.user("seller")))
                 .andExpect(status().isForbidden());
         mvc.perform(post("/api/listings/" + id + "/purchase").with(AuctionControllerTest.user("a")))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SOLD"))
+                .andExpect(jsonPath("$.bought").value(true));
         mvc.perform(post("/api/listings/" + id + "/purchase").with(AuctionControllerTest.user("b")))
                 .andExpect(status().isConflict());
+        mvc.perform(get("/api/listings/" + id).with(AuctionControllerTest.user("a")))
+                .andExpect(jsonPath("$.status").value("SOLD"))
+                .andExpect(jsonPath("$.bought").value(true));
+        mvc.perform(get("/api/listings/" + id).with(AuctionControllerTest.user("b")))
+                .andExpect(jsonPath("$.bought").value(false));
+        mvc.perform(get("/api/listings/" + id))
+                .andExpect(jsonPath("$.status").value("SOLD"))
+                .andExpect(jsonPath("$.bought").value(false));
         mvc.perform(get("/api/me/trades").with(AuctionControllerTest.user("a")))
                 .andExpect(jsonPath("$.bought[0].id").value(id));
     }

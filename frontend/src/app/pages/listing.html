@@ -42,6 +42,12 @@
             <p role="status">
               {{ 'Gekauft! Du findest den Kauf unter «Käufe und Verkäufe».' | t }}
             </p>
+          } @else if (item.ownListing) {
+            <p class="zw-muted">{{ 'Das ist dein Inserat.' | t }}</p>
+          } @else if (item.status && item.status !== 'AVAILABLE') {
+            <p role="status">
+              {{ (item.status === 'WITHDRAWN' ? 'Zurückgezogen' : 'Verkauft') | t }}
+            </p>
           } @else {
             <button
               appButton

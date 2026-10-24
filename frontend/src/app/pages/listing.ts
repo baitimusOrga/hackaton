@@ -330,7 +330,11 @@ export class ListingPage {
   private readonly ownBidCount = signal<number | null>(null);
   protected readonly bidding = signal(false);
   protected readonly buying = linkedSignal({ source: this.listing, computation: () => false });
-  protected readonly bought = linkedSignal({ source: this.listing, computation: () => false });
+  // the server's answer after a reload; set locally right after buying
+  protected readonly bought = linkedSignal({
+    source: this.listing,
+    computation: (item) => !!item?.bought,
+  });
   protected readonly buyError = linkedSignal({ source: this.listing, computation: () => '' });
 
   protected buy(id: number): void {

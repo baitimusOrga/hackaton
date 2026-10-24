@@ -16,6 +16,11 @@ export const AUCTION_MESSAGES: Messages = {
     it: 'Conclusa senza offerte',
     en: 'Ended without a bid',
   },
+  'Das ist dein Inserat.': {
+    fr: 'C’est ton annonce.',
+    it: 'È il tuo annuncio.',
+    en: 'This is your listing.',
+  },
   'Das ist dein Inserat. Du kannst nicht mitbieten.': {
     fr: 'C’est ton annonce. Tu ne peux pas enchérir.',
     it: 'Questo è il tuo annuncio. Non puoi fare offerte.',

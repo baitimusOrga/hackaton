@@ -61,8 +61,14 @@ public class Listing {
     private Map<String, String> attributes = new HashMap<>();
 
     public ListingDetail detail() {
+        return detail(null);
+    }
+
+    /** With the viewer's relation to the listing; viewerId null when anonymous. */
+    public ListingDetail detail(String viewerId) {
         return new ListingDetail(id, title, priceChf, condition, category, postcode, locality,
                 imageUrl, description, Map.copyOf(attributes), createdAt, sellerName, latitude, longitude,
-                saleMode, endsAt, currentBidChf, bidCount);
+                saleMode, endsAt, currentBidChf, bidCount, status,
+                viewerId != null && viewerId.equals(sellerId), viewerId != null && viewerId.equals(buyerId));
     }
 }
