@@ -31,7 +31,7 @@ const SWITZERLAND = L.latLng(46.8, 8.2);
     #map
     role="region"
     [attr.aria-label]="label()"
-    class="isolate h-80 w-full rounded-xl border border-(--line-soft)"
+    class="isolate h-80 w-full zw-map"
   ></div>`,
 })
 export class ListingMap {
@@ -68,9 +68,14 @@ export class ListingMap {
             else areas.push({ at, group: [item] });
           }
           for (const { at, group } of areas) {
-            L.circle(at, { radius, weight: 2 })
+            L.circle(at, { radius, className: 'zw-map-area' })
               .bindPopup(this.popup(group))
-              .bindTooltip(String(group.length), { permanent: true, direction: 'center' })
+              .bindTooltip(String(group.length), {
+                permanent: true,
+                direction: 'center',
+                opacity: 1,
+                className: 'zw-map-count',
+              })
               .addTo(shapes);
           }
           if (shapes.getLayers().length) map.fitBounds(shapes.getBounds(), { maxZoom: 13 });
@@ -86,7 +91,7 @@ export class ListingMap {
     for (const item of group) {
       const link = document.createElement('a');
       link.href = `/listings/${item.id}`;
-      link.textContent = `${item.title ?? 'Listing'} · CHF ${item.priceChf}`;
+      link.textContent = item.title ?? 'Listing';
       link.addEventListener('click', (event) => {
         event.preventDefault();
         void this.router.navigate(['/listings', item.id]);
