@@ -42,6 +42,14 @@ public class Listing {
     private String sellerName;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20)
     private ListingStatus status = ListingStatus.AVAILABLE;
+    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20)
+    private SaleMode saleMode = SaleMode.FIXED;
+    // auctions only: priceChf is the start price, the bid columns are denormalised from the bid table
+    private Instant endsAt;
+    @Column(precision = 12, scale = 2)
+    private BigDecimal currentBidChf;
+    @Column(nullable = false)
+    private int bidCount;
     @ElementCollection
     @CollectionTable(name = "listing_attribute", joinColumns = @JoinColumn(name = "listing_id"))
     @MapKeyColumn(name = "name", length = 80)
@@ -50,6 +58,7 @@ public class Listing {
 
     public ListingDetail detail() {
         return new ListingDetail(id, title, priceChf, condition, category, postcode, locality,
-                imageUrl, description, Map.copyOf(attributes), createdAt, sellerName, latitude, longitude);
+                imageUrl, description, Map.copyOf(attributes), createdAt, sellerName, latitude, longitude,
+                saleMode, endsAt, currentBidChf, bidCount);
     }
 }

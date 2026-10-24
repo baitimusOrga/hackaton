@@ -1,6 +1,7 @@
 package one.absent.hackaton.selling;
 
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,6 +14,7 @@ import jakarta.validation.Valid;
 import one.absent.hackaton.listing.Listing;
 import one.absent.hackaton.listing.ListingDetail;
 import one.absent.hackaton.listing.ListingRepository;
+import one.absent.hackaton.listing.SaleMode;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -69,6 +71,10 @@ public class SellingController {
         });
         listing.setAttributes(new HashMap<>(request.attributes()));
         listing.setCreatedAt(Instant.now());
+        if (request.auctionDays() != null) {
+            listing.setSaleMode(SaleMode.AUCTION);
+            listing.setEndsAt(listing.getCreatedAt().plus(Duration.ofDays(request.auctionDays())));
+        }
         listing.setSellerId(seller.getSubject());
         listing.setSellerName(seller.getClaimAsString("name"));
         listings.saveAndFlush(listing);

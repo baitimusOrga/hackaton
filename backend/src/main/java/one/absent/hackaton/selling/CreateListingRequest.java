@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import one.absent.hackaton.listing.Condition;
 
@@ -16,4 +17,6 @@ public record CreateListingRequest(
         @NotNull @Pattern(regexp = "[0-9]{4}") String postcode,
         @NotBlank @Size(max = 120) String locality,
         @NotNull @Size(max = 30) Map<@NotBlank @Size(max = 80) String, @NotBlank @Size(max = 500) String> attributes,
-        @NotNull @Size(max = 5) List<@NotNull Long> photoIds) {}
+        @NotNull @Size(max = 5) List<@NotNull Long> photoIds,
+        // null = fixed price; otherwise priceChf is the start price
+        @Schema(nullable = true) @Min(1) @Max(14) Integer auctionDays) {}

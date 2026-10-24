@@ -10,7 +10,7 @@ import { TranslatePipe } from '../i18n/i18n';
   host: { class: 'zw-section-heading' },
   template: `<h2 [id]="headingId()">{{ heading() | t }}</h2>
     @if (linkText()) {
-      <a [routerLink]="link()">{{ linkText() | t }}</a>
+      <a [routerLink]="link()" [queryParams]="queryParams()">{{ linkText() | t }}</a>
     }`,
 })
 export class SectionHeading {
@@ -19,4 +19,5 @@ export class SectionHeading {
   readonly headingId = input.required<string>();
   readonly linkText = input('');
   readonly link = input<string | unknown[]>('/');
+  readonly queryParams = input<Record<string, string> | null>(null);
 }
