@@ -5,6 +5,7 @@ export interface CreateListingRequest {
   attributes: {
 [key: string]: string;
 };
+  auctionDays?: (number | null);
   category: string;
   condition: 'NEW' | 'LIKE_NEW' | 'GOOD' | 'USED' | 'DEFECTIVE';
   description: string;

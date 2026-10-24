@@ -68,6 +68,36 @@ export const ERROR_MESSAGES: Messages = {
     it: 'CAP {code} non trovato.',
     en: 'Postcode {code} not found.',
   },
+  'This listing is not an auction.': {
+    de: 'Dieses Inserat ist keine Auktion.',
+    fr: "Cette annonce n'est pas une enchère.",
+    it: 'Questo annuncio non è un’asta.',
+    en: 'This listing is not an auction.',
+  },
+  'This auction has ended.': {
+    de: 'Diese Auktion ist beendet.',
+    fr: 'Cette enchère est terminée.',
+    it: 'Quest’asta è conclusa.',
+    en: 'This auction has ended.',
+  },
+  'You cannot bid on your own listing.': {
+    de: 'Auf dein eigenes Inserat kannst du nicht bieten.',
+    fr: 'Tu ne peux pas enchérir sur ta propre annonce.',
+    it: 'Non puoi fare offerte sul tuo annuncio.',
+    en: 'You cannot bid on your own listing.',
+  },
+  'Your maximum must be at least CHF {amount}.': {
+    de: 'Dein Maximum muss mindestens CHF {amount}.– sein.',
+    fr: 'Ton maximum doit être d’au moins CHF {amount}.–.',
+    it: 'Il tuo massimo deve essere almeno CHF {amount}.–.',
+    en: 'Your maximum must be at least CHF {amount}.',
+  },
+  'You already lead with a maximum of CHF {amount}.': {
+    de: 'Du führst bereits mit einem Maximum von CHF {amount}.–.',
+    fr: 'Tu mènes déjà avec un maximum de CHF {amount}.–.',
+    it: 'Sei già in testa con un massimo di CHF {amount}.–.',
+    en: 'You already lead with a maximum of CHF {amount}.',
+  },
   'Listing not found.': {
     de: 'Inserat nicht gefunden.',
     fr: 'Annonce introuvable.',
@@ -217,6 +247,24 @@ export const ERROR_MESSAGES: Messages = {
     fr: 'Impossible de créer ton compte.',
     it: 'Impossibile creare il tuo account.',
     en: 'Unable to create your account.',
+  },
+  'Invalid password': {
+    de: 'Das aktuelle Passwort ist falsch.',
+    fr: 'Le mot de passe actuel est incorrect.',
+    it: 'La password attuale non è corretta.',
+    en: 'Your current password is incorrect.',
+  },
+  'Unable to update your account.': {
+    de: 'Das Konto konnte nicht gespeichert werden.',
+    fr: 'Impossible d’enregistrer ton compte.',
+    it: 'Impossibile salvare il tuo account.',
+    en: 'Unable to update your account.',
+  },
+  'Unable to change your password.': {
+    de: 'Das Passwort konnte nicht geändert werden.',
+    fr: 'Impossible de changer ton mot de passe.',
+    it: 'Impossibile cambiare la password.',
+    en: 'Unable to change your password.',
   },
   'Unable to sign out.': {
     de: 'Abmelden hat nicht geklappt.',

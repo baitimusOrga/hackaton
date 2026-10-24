@@ -66,6 +66,14 @@ class ListingControllerTest {
     }
 
     @Test
+    void saleModeFiltersAndAuctionsEndSoonestFirst() throws Exception {
+        mvc.perform(get("/api/listings").param("saleMode", "AUCTION"))
+                .andExpect(jsonPath("$[*].id").value(contains(1301, 1302, 1303, 1304)));
+        mvc.perform(get("/api/listings").param("saleMode", "FIXED"))
+                .andExpect(jsonPath("$[*].id").value(not(hasItem(1301))));
+    }
+
+    @Test
     void maxPriceIsInclusive() throws Exception {
         mvc.perform(get("/api/listings").param("maxPrice", "70"))
                 .andExpect(jsonPath("$[*].priceChf").value(everyItem(lessThanOrEqualTo(70.0))))

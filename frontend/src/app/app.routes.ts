@@ -15,6 +15,18 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./pages/messages').then((m) => m.Messages),
   },
+  {
+    path: 'profile',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/profile-layout').then((m) => m.ProfileLayout),
+    children: [
+      { path: '', loadComponent: () => import('./pages/profile').then((m) => m.Profile) },
+      {
+        path: 'trades',
+        loadComponent: () => import('./pages/profile-trades').then((m) => m.ProfileTrades),
+      },
+    ],
+  },
   { path: 'login', loadComponent: () => import('./pages/login').then((m) => m.Login) },
   {
     path: 'register',

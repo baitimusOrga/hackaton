@@ -20,6 +20,7 @@ describe('Better Auth identity and API tokens', () => {
     signIn: { email: ReturnType<typeof vi.fn> };
     signUp: { email: ReturnType<typeof vi.fn> };
     signOut: ReturnType<typeof vi.fn>;
+    updateUser: ReturnType<typeof vi.fn>;
   };
   let auth: Auth;
   beforeEach(() => {
@@ -29,6 +30,7 @@ describe('Better Auth identity and API tokens', () => {
       signIn: { email: vi.fn().mockResolvedValue({ error: null }) },
       signUp: { email: vi.fn().mockResolvedValue({ error: null }) },
       signOut: vi.fn().mockResolvedValue({ error: null }),
+      updateUser: vi.fn().mockResolvedValue({ error: null }),
     };
     TestBed.configureTestingModule({ providers: [{ provide: AUTH_CLIENT, useValue: client }] });
     auth = TestBed.inject(Auth);
@@ -80,6 +82,15 @@ describe('Better Auth identity and API tokens', () => {
     await auth.logout();
     resolve({ data: { token: jwt() }, error: null });
     expect(await pending).toBeNull();
+  });
+  it('shows a new name at once and fetches a token with the new name claim', async () => {
+    await auth.restore();
+    await auth.token();
+    await auth.updateName('Nora K.');
+    expect(client.updateUser).toHaveBeenCalledWith({ name: 'Nora K.' });
+    expect(auth.user()?.name).toBe('Nora K.');
+    await auth.token();
+    expect(client.token).toHaveBeenCalledTimes(2);
   });
   it('keeps Better Auth form errors available to the caller', async () => {
     client.signIn.email.mockResolvedValue({
