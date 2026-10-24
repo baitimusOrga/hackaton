@@ -1,5 +1,3 @@
-import { Injectable, signal } from '@angular/core';
-
 export interface Position {
   latitude: number;
   longitude: number;
@@ -22,24 +20,3 @@ export function devicePosition(): Promise<Position | null> {
 }
 
 const round = (value: number) => Math.round(value * 1000) / 1000;
-
-/** The device position for this session: asked only when the user wants it, then kept in memory. */
-@Injectable({ providedIn: 'root' })
-export class SessionLocation {
-  readonly position = signal<Position | null>(null);
-  readonly locating = signal(false);
-
-  /** The known position, or asks the browser once; null when denied. */
-  async locate(): Promise<Position | null> {
-    if (this.position()) return this.position();
-    this.locating.set(true);
-    const position = await devicePosition();
-    this.position.set(position);
-    this.locating.set(false);
-    return position;
-  }
-
-  forget(): void {
-    this.position.set(null);
-  }
-}

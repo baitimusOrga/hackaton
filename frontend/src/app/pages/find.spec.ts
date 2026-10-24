@@ -77,17 +77,6 @@ async function escape(fixture: Fixture) {
   await fixture.whenStable();
 }
 
-function geolocation(position: GeolocationPosition | null) {
-  const getCurrentPosition = vi.fn((ok: PositionCallback, fail: PositionErrorCallback) =>
-    position ? ok(position) : fail({ code: 1 } as GeolocationPositionError),
-  );
-  Object.defineProperty(navigator, 'geolocation', {
-    value: { getCurrentPosition },
-    configurable: true,
-  });
-  return getCurrentPosition;
-}
-
 describe('Find', () => {
   it('matches without a click: the sentence with tokens, then grouped results with a why line', async () => {
     const create = vi.fn().mockReturnValue(of(REQ));
@@ -103,7 +92,6 @@ describe('Find', () => {
     expect(body.mustHave).toEqual(REQ.mustHave);
     expect(body.keywords).toEqual(['imac']);
     expect(body.conditions).toEqual([]);
-    expect(body.latitude).toBeNull();
 
     expect(el.querySelector('textarea')).toBeNull();
     const tokens = [...el.querySelectorAll<HTMLButtonElement>('.token')].map((b) => b.textContent);
@@ -293,56 +281,6 @@ describe('Find', () => {
     expect(el.querySelector('.find__grp')).not.toBeNull();
   });
 
-  it('near me asks for the position and searches around it', async () => {
-    const asked = geolocation({
-      coords: { latitude: 47.37812, longitude: 8.52345 },
-    } as GeolocationPosition);
-    const create = vi.fn().mockReturnValue(
-      of({
-        ...REQ,
-        postcode: undefined,
-        regionPhrase: 'in meiner Nähe',
-        maxDistanceKm: 25,
-        nearMe: true,
-      }),
-    );
-    const matches = vi.fn().mockReturnValue(of({ matches: [IMAC], compared: 4 }));
-    const { fixture, el } = setup({ create, matches });
-    await fixture.whenStable();
-
-    await search(fixture, el, 'iMac in meiner Nähe');
-
-    expect(asked).toHaveBeenCalledTimes(1);
-    const body = matches.mock.calls[0][0].body;
-    expect(body).toMatchObject({
-      latitude: 47.378,
-      longitude: 8.523,
-      maxDistanceKm: 25,
-      nearMe: true,
-    });
-    expect(body.postcode).toBeUndefined();
-    expect(trigger(el, 'Region').textContent).toContain('25 km um deinen Standort');
-    expect(
-      el.querySelector('.token[title="25 km um deinen Standort nicht mehr verlangen"]')!
-        .textContent,
-    ).toBe('in meiner Nähe');
-  });
-
-  it('without a position it says so and searches Swiss-wide', async () => {
-    geolocation(null);
-    const create = vi.fn().mockReturnValue(of({ ...REQ, maxDistanceKm: 25, nearMe: true }));
-    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
-    const { fixture, el } = setup({ create, matches });
-    await fixture.whenStable();
-
-    await search(fixture, el, 'iMac in meiner Nähe');
-
-    const body = matches.mock.calls[0][0].body;
-    expect(body.latitude).toBeNull();
-    expect(body.maxDistanceKm).toBeUndefined();
-    expect(el.textContent).toContain('Standort nicht verfügbar.');
-  });
-
   it('restores the filters, phrases and conditions from the URL without asking the assistant again', async () => {
     const create = vi.fn();
     const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
@@ -420,38 +358,6 @@ describe('Find', () => {
     expect(el.textContent).toContain('Alle Auktionen');
     expect(el.querySelector('a[href="/listings/3"]')).not.toBeNull();
     expect(el.querySelector('textarea')).not.toBeNull();
-  });
-
-  it('"Mein Standort" in the Region facet switches to the position and searches once', async () => {
-    const asked = geolocation({
-      coords: { latitude: 47.37812, longitude: 8.52345 },
-    } as GeolocationPosition);
-    const create = vi.fn().mockReturnValue(of(REQ));
-    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
-    const { fixture, el } = setup({ create, matches });
-    await fixture.whenStable();
-    await search(fixture, el, TEXT);
-
-    trigger(el, 'Region').click();
-    await fixture.whenStable();
-    await type(fixture, el.querySelector<HTMLInputElement>('#find-postcode')!, '3000');
-    [...el.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')]
-      .find((b) => b.textContent!.includes('Mein Standort'))!
-      .click();
-    await fixture.whenStable();
-    await escape(fixture);
-
-    expect(asked).toHaveBeenCalledTimes(1);
-    expect(matches).toHaveBeenCalledTimes(2);
-    expect(matches.mock.calls[1][0].body).toMatchObject({
-      latitude: 47.378,
-      longitude: 8.523,
-      maxDistanceKm: 25,
-      nearMe: true,
-    });
-    expect(matches.mock.calls[1][0].body.postcode).toBeUndefined();
-    expect(trigger(el, 'Region').textContent).toContain('25 km um deinen Standort');
-    expect(el.querySelector('.extra .zw-chip')!.textContent).toContain('25 km um deinen Standort');
   });
 
   it('ignores malformed URL filters instead of breaking', async () => {

@@ -1,4 +1,4 @@
-import { SessionLocation, devicePosition } from './device-location';
+import { devicePosition } from './device-location';
 
 describe('devicePosition', () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -22,24 +22,5 @@ describe('devicePosition', () => {
 
     vi.stubGlobal('navigator', {});
     expect(await devicePosition()).toBeNull();
-  });
-});
-
-describe('SessionLocation', () => {
-  afterEach(() => vi.unstubAllGlobals());
-
-  it('asks the browser once per session until forgotten', async () => {
-    const ask = vi.fn((ok: PositionCallback) =>
-      ok({ coords: { latitude: 46.8, longitude: 7.15 } } as GeolocationPosition),
-    );
-    vi.stubGlobal('navigator', { geolocation: { getCurrentPosition: ask } });
-    const location = new SessionLocation();
-
-    await location.locate();
-    expect(await location.locate()).toEqual({ latitude: 46.8, longitude: 7.15 });
-    expect(ask).toHaveBeenCalledTimes(1);
-
-    location.forget();
-    expect(location.position()).toBeNull();
   });
 });

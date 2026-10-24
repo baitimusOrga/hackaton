@@ -61,18 +61,16 @@
         id="s-radius"
         class="zw-input"
         name="radiusKm"
-        (change)="nearMe(radius.value)"
+        [disabled]="!filters().postcode?.match('^\\d{4}$')"
+        (change)="set('radiusKm', radius.value)"
       >
         <option value="" [selected]="!filters().radiusKm">Beliebig</option>
         @for (km of radii; track km) {
-          <option [value]="km" [selected]="filters().radiusKm === km">{{ km }} km um mich</option>
+          <option [value]="km" [selected]="filters().radiusKm === km">{{ km }} km</option>
         }
       </select>
     </div>
   </form>
-  @if (locationError()) {
-    <p class="zw-error" role="alert">{{ locationError() }}</p>
-  }
 
   @if (listings(); as items) {
     @if (items.length) {
