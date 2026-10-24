@@ -498,6 +498,27 @@
         }
       }
     },
+    "/api/me/listings" : {
+      "get" : {
+        "tags" : [ "MyListings" ],
+        "operationId" : "listMine",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MyListing"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/listings/{id}" : {
       "get" : {
         "tags" : [ "Listings" ],
@@ -587,6 +608,26 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/me/listings/{id}" : {
+      "delete" : {
+        "tags" : [ "MyListings" ],
+        "operationId" : "withdraw",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -1457,6 +1498,19 @@
             }
           }
         }
+      },
+      "MyListing" : {
+        "type" : "object",
+        "properties" : {
+          "listing" : {
+            "$ref" : "#/components/schemas/ListingSummary"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "AVAILABLE", "SOLD", "ENDED", "WITHDRAWN" ]
+          }
+        },
+        "required" : [ "listing", "status" ]
       },
       "Info" : {
         "type" : "object",
