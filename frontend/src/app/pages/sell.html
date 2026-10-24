@@ -286,7 +286,8 @@
                   <!-- the slot keeps its height, so nothing jumps when the hint goes -->
                   <div class="busy-slot"><ng-container *ngTemplateOutlet="rewritingTpl" /></div>
                 </div>
-                @if (noEstimate()) {
+                <!-- only once the rewrite is done: it may still bring an estimate -->
+                @if (noEstimate() && !rewriting()) {
                   <p class="zw-muted">
                     {{
                       'Für diesen Artikel gibt es noch keine Vergleiche. Setz deinen Preis selbst.'
