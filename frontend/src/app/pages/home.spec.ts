@@ -25,6 +25,14 @@ describe('Home', () => {
     return { harness, element: harness.routeNativeElement as HTMLElement };
   }
 
+  it('links every category tile to its listings on /search', async () => {
+    const { element } = await setup([]);
+    const tiles = [...element.querySelectorAll<HTMLAnchorElement>('a.zw-cat')];
+    expect(tiles[0].getAttribute('href')).toBe('/search?category=Computers');
+    expect(tiles[0].textContent).toContain('Computer');
+    expect(tiles.at(-1)!.getAttribute('href')).toBe('/search');
+  });
+
   it('shows new listings as cards linking to their detail page', async () => {
     const { element } = await setup([
       { id: 2, title: 'Dell monitor', priceChf: 120, condition: 'LIKE_NEW', locality: 'Bern' },

@@ -32,7 +32,7 @@
     @for (category of categories; track category.name) {
       <a class="zw-cat" routerLink="/search" [queryParams]="{ category: category.name }">
         <app-icon [name]="category.icon" [size]="28" />
-        <span>{{ category.name }}</span>
+        <span>{{ category.name | t }}</span>
       </a>
     }
     <a class="zw-cat" routerLink="/search">

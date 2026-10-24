@@ -45,6 +45,8 @@ class SecurityTest {
         mvc.perform(get("/api/openapi.json")).andExpect(status().isOk());
         mvc.perform(post("/api/searches").contentType(MediaType.APPLICATION_JSON).content("{\"text\":\"bike\"}"))
             .andExpect(status().is(org.hamcrest.Matchers.not(401)));
+        mvc.perform(post("/api/searches/refine").contentType(MediaType.APPLICATION_JSON).content("{}"))
+            .andExpect(status().is(org.hamcrest.Matchers.not(401)));
     }
     @Test void oversizedSearchRequirementsAreRejected() throws Exception {
         var item = "{\"attribute\":\"a\",\"value\":\"b\"}";

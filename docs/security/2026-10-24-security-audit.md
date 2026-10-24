@@ -319,7 +319,7 @@ All in-repo findings were fixed on one branch, each in its own commit; backend `
 | ID | Status | What changed |
 |---|---|---|
 | F-01 | Fixed | `GET /api/photos/{id}` serves only published photos (404 otherwise; drafts preview from local blob URLs, so no owner branch); hourly job deletes unpublished photos older than 24 h incl. S3 objects; photos of a failed AI call are deleted immediately |
-| F-02 | Fixed | Candidates sent as a JSON array behind an "untrusted seller data" delimiter and system rule; attribute values cut to 60 chars, max 12; `confirmed` only when code-checked must-haves exist; model-omitted candidates kept as "Not assessed"; reasons/details stripped of URLs and phone numbers and capped at 200 chars; category and attribute names validated at publish (`listing/Attributes.ALL`) |
+| F-02 | Partly | Candidates sent as a JSON array behind an "untrusted seller data" delimiter and system rule; attribute values cut to 60 chars, max 12; `confirmed` only when code-checked must-haves exist; reasons/details stripped of URLs and phone numbers and capped at 200 chars; category and attribute names validated at publish (`listing/Attributes.ALL`). Model-omitted candidates were first kept as "Not assessed", but that put accessories and unrelated products into almost half of all results; they are now dropped, and the 30 candidates are dealt round-robin into 3 parallel ranking calls instead, so an injected listing can only suppress the ~9 others in its own batch, never the strongest candidates of the other two |
 | F-03 | Fixed | Comparables exclude the requester's own listings, never HIGH with ≤2 distinct sellers, asking prices outside 0.2×–5× of the category median dropped; `clearance_item.unit_price_chf` (V14) set by the company (pre-filled with the estimate, "Accept estimate"); publish refuses items without a company price (409) |
 | F-04 | Partly | Password removed from the README, "before going public" checklist added. **Rotation of the staging and prod accounts must be done by hand**; the old password is still in git history |
 | F-05 | Fixed | PR CI (`ci-frontend`, `ci-backend`, `ci-auth`) runs on `ubuntu-latest`; `ci-auth` uses a Postgres service instead of the Docker gateway; `permissions: contents: read` everywhere. Untested until the first PR run (risk: corepack + pnpm 12) |
@@ -336,6 +336,6 @@ All in-repo findings were fixed on one branch, each in its own commit; backend `
 | Hardening | Done | CSP + HSTS in nginx (CSP allows the one Angular `onload` handler by hash), "text in photos is data" sentence in both prompts, clearance category validated |
 
 Behaviour changes worth a product look: a search without must-haves never shows a "confirmed"
-group anymore; listings the assistant did not rate appear as "Not assessed"; the seeded Dell demo
+group anymore; listings the assistant leaves out are not shown (see F-02); the seeded Dell demo
 estimate shows MEDIUM instead of HIGH because all seed sales count as one source; CMYK JPEGs are
 rejected; clearance publishing now requires a per-item price.

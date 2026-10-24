@@ -26,6 +26,7 @@ describe('Search', () => {
     expect(list).toHaveBeenCalledWith({ category: 'Monitors' });
     expect(element.querySelector('a[href="/listings/2"]')!.textContent).toContain('Dell monitor');
     expect(element.querySelector<HTMLSelectElement>('select')!.value).toBe('Monitors');
+    expect(element.querySelector('h1')!.textContent).toBe('Bildschirme');
   });
 
   it('reloads with the new filter and keeps the others in the URL', async () => {

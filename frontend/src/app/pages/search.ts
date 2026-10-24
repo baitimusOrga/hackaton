@@ -5,6 +5,7 @@ import { map, switchMap } from 'rxjs';
 import { ListingsService } from '../api/services';
 import { CATEGORIES } from '../categories';
 import { ListingMap } from '../components/listing-map';
+import { TranslatePipe } from '../i18n/i18n';
 import { SummaryCard } from '../ui/summary-card';
 
 type FilterName = 'q' | 'category' | 'maxPrice' | 'postcode' | 'radiusKm';
@@ -36,7 +37,7 @@ function filtersOf(params: ParamMap) {
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-search',
-  imports: [ListingMap, SummaryCard],
+  imports: [ListingMap, SummaryCard, TranslatePipe],
   templateUrl: './search.html',
   styles: `
     .filters {
