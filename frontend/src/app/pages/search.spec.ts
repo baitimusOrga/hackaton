@@ -47,12 +47,12 @@ describe('Search', () => {
     expect(partial.list).toHaveBeenCalledWith({ postcode: '80' });
   });
 
-  it('measures the radius from the buyer position, no postcode needed', async () => {
-    const { list } = await setup('/search?radiusKm=5&lat=47.378&lon=8.523', []);
-    expect(list).toHaveBeenCalledWith({ radiusKm: 5, lat: 47.378, lon: 8.523 });
+  it('ignores a radius without a full postcode', async () => {
+    const { list } = await setup('/search?radiusKm=5', []);
+    expect(list).toHaveBeenCalledWith({});
   });
 
-  it('sets the radius from a typed postcode without asking for the position', async () => {
+  it('sets the radius from a typed postcode', async () => {
     const { list, harness, element } = await setup('/search?postcode=8004', []);
     const radius = element.querySelector<HTMLSelectElement>('select[name="radiusKm"]')!;
     radius.value = '10';

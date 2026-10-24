@@ -20,7 +20,6 @@ import {
 } from '../api/models';
 import { CATEGORIES } from '../categories';
 import { Condition, CONDITION_LABELS } from '../conditions';
-import { Position, SessionLocation } from '../device-location';
 import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
 import { chf } from '../ui/chf';
@@ -44,10 +43,8 @@ const GROUPS = [
   { fit: 'NEEDS_DETAILS', title: 'Möglich', sub: 'Angaben fehlen', mark: 'maybe' },
   { fit: 'ALTERNATIVE', title: 'Alternativen', sub: 'ausserhalb deiner Suche', mark: 'alt' },
 ] as const;
-const NEAR_ME_KM = 25;
-const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube den Standortzugriff.';
 
-/** Search: free text → the sentence with tokens + facets → results in three groups, refinable by text and position. */
+/** Search: free text → the sentence with tokens + facets → results in three groups, refinable by text. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-find',
@@ -286,8 +283,6 @@ export class Find {
   protected readonly radius = signal<number | null>(null);
   protected readonly keywords = signal('');
   protected readonly conditions = signal<Condition[]>([]);
-  /** The buyer's position, rounded to ~100 m; kept in memory only, never in the URL or storage. */
-  protected readonly position = signal<Position | null>(null);
   /** Keys of the tokens the buyer tapped off; their values stay, so a second tap restores them. */
   protected readonly off = signal<ReadonlySet<string>>(new Set());
   protected readonly openFacet = signal<string | null>(null);
@@ -341,7 +336,7 @@ export class Find {
         phrase: this.budgetPhrase(),
       });
     }
-    if (this.postcode().trim() || this.position()) {
+    if (this.postcode().trim()) {
       tokens.push({
         key: 'region',
         kind: 'region',
@@ -366,7 +361,7 @@ export class Find {
         conditions.length === 1
           ? this.i18n.t(CONDITION_LABELS[conditions[0]])
           : count(conditions.length),
-      region: on('region') && (this.postcode().trim() || this.position()) ? this.regionLabel() : '',
+      region: on('region') && this.postcode().trim() ? this.regionLabel() : '',
       auction: this.auctionsOnly() ? this.i18n.t('Auktion') : '',
       requirements: count(requirements),
       keywords: count(this.keywordList().length),
@@ -377,10 +372,9 @@ export class Find {
     return !!(s.category || s.price || s.conditions || s.region || s.auction || s.keywords);
   });
   private readonly router = inject(Router);
-  private readonly location = inject(SessionLocation);
   /** The text the filters were read from; it stays in the URL next to the filters. */
   protected readonly asked = signal('');
-  /** The filters as URL query params (null = not in the URL); the position and off tokens never go in. */
+  /** The filters as URL query params (null = not in the URL); off tokens never go in. */
   private readonly query = computed(() => {
     const on = (key: string) => !this.off().has(key);
     const pc = on('region') ? this.postcode().trim() : '';
@@ -402,23 +396,12 @@ export class Find {
     };
   });
   private original = '';
-  private nearMe = false;
   /** A facet changed something since it opened: search when it closes. */
   private dirty = false;
   private seq = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
-    // The header's location chip applies to a shown search that has no postcode of its own.
-    effect(() => {
-      const here = this.location.position();
-      untracked(() => {
-        if (!this.searched() || this.postcode().trim()) return;
-        if (here && !this.position()) void this.useMyPosition();
-        else if (!here && this.position()) this.clearRegion();
-      });
-    });
-
     // Keep the filters in the URL so a reload or a shared link shows the same search.
     effect(() => {
       const queryParams = this.query();
@@ -487,7 +470,7 @@ export class Find {
       regionPhrase: params.get('plzp')?.slice(0, 80) ?? null,
       maxDistanceKm: km === null ? undefined : Number(km),
     });
-    this.afterParse({ postcode: params.get('plz') ?? undefined });
+    this.showMatches();
   }
 
   find(): void {
@@ -505,7 +488,7 @@ export class Find {
         this.results.set(null);
         this.searched.set(true);
         this.loading.set(false);
-        this.afterParse(req);
+        this.showMatches();
       },
       error: () => this.failed(),
     });
@@ -534,7 +517,7 @@ export class Find {
         this.adjust.set('');
         this.apply(req);
         this.loading.set(false);
-        this.afterParse(req);
+        this.showMatches();
       },
       error: () => this.failed(),
     });
@@ -551,14 +534,7 @@ export class Find {
     this.regionPhrase.set(req.regionPhrase ?? null);
     this.radius.set(req.maxDistanceKm ?? null);
     this.keywords.set(req.keywords.join(', '));
-    this.nearMe = !!req.nearMe;
     this.off.set(new Set());
-  }
-
-  /** Searches around the position if asked for, or if the user shared it this session and gave no postcode. */
-  private afterParse(req: Pick<SearchRequirements, 'nearMe' | 'postcode'>): void {
-    if (req.nearMe || (!req.postcode && this.location.position())) void this.useMyPosition();
-    else this.showMatches();
   }
 
   /** A token tap: off ↔ on, then search at once. */
@@ -617,8 +593,6 @@ export class Find {
   protected setPostcode(value: string): void {
     this.postcode.set(value);
     this.regionPhrase.set(null);
-    this.position.set(null);
-    this.nearMe = false;
     this.turnOn('region');
     this.dirty = true;
   }
@@ -667,29 +641,6 @@ export class Find {
   protected clearRegion(): void {
     this.postcode.set('');
     this.radius.set(null);
-    this.position.set(null);
-    this.nearMe = false;
-    this.dirty = false;
-    this.showMatches();
-  }
-
-  /** "Mein Standort": asks the browser once per session, then searches around the position instead of a postcode. */
-  protected async useMyPosition(byHand = false): Promise<void> {
-    const position = await this.location.locate();
-    if (!position) {
-      this.position.set(null);
-      this.radius.set(null);
-      this.nearMe = false;
-      this.dirty = false;
-      return this.showMatches(this.i18n.t(NO_POSITION));
-    }
-    this.position.set(position);
-    // set in the facet → a chip; the sentence's own "in meiner Nähe" stays underlined
-    if (byHand) this.regionPhrase.set(null);
-    this.postcode.set('');
-    if (this.radius() === null) this.radius.set(NEAR_ME_KM);
-    this.nearMe = true;
-    this.turnOn('region');
     this.dirty = false;
     this.showMatches();
   }
@@ -727,7 +678,6 @@ export class Find {
   /** The effective requirements: off tokens are left out, their values stay for a second tap. */
   private requirements(): SearchRequirements {
     const on = (key: string) => !this.off().has(key);
-    const position = on('region') ? this.position() : null;
     const budget = on('budget') ? this.budget() : null;
     return {
       mustHave: this.mustHave().filter((r) => on(this.key('must', r))),
@@ -737,9 +687,6 @@ export class Find {
       maxBudgetChf: budget ?? undefined,
       postcode: (on('region') && this.postcode().trim()) || undefined,
       maxDistanceKm: on('region') ? (this.radius() ?? undefined) : undefined,
-      nearMe: on('region') && this.nearMe,
-      latitude: position?.latitude ?? null,
-      longitude: position?.longitude ?? null,
       conditions: this.conditions(),
       budgetPhrase: budget === null ? null : this.budgetPhrase(),
       regionPhrase: on('region') ? this.regionPhrase() : null,
@@ -777,8 +724,6 @@ export class Find {
   }
 
   private regionLabel(): string {
-    if (this.position())
-      return this.i18n.t('{km} km um deinen Standort', { km: this.radius() ?? NEAR_ME_KM });
     const pc = this.postcode().trim();
     return this.radius() ? this.i18n.t('{km} km um {pc}', { km: this.radius()!, pc }) : pc;
   }

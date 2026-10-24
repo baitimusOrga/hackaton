@@ -222,10 +222,6 @@
             {{ 'Ganze Schweiz' | t }}
           </button>
         </div>
-        <button appButton variant="ghost" size="sm" type="button" (click)="useMyPosition(true)">
-          <app-icon name="pin" [size]="16" />
-          <span>{{ (position() ? 'Standort aktualisieren' : 'Mein Standort') | t }}</span>
-        </button>
       </app-facet>
       <app-facet
         [label]="'Verkaufsart' | t"
