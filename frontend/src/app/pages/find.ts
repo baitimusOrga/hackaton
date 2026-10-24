@@ -10,8 +10,14 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
-import { SearchService } from '../api/services';
-import { Requirement, SearchMatch, SearchRequirements, SearchResults } from '../api/models';
+import { ListingsService, SearchService } from '../api/services';
+import {
+  ListingSummary,
+  Requirement,
+  SearchMatch,
+  SearchRequirements,
+  SearchResults,
+} from '../api/models';
 import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
 import { chf } from '../ui/chf';
@@ -171,6 +177,7 @@ const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube de
 })
 export class Find {
   private readonly search = inject(SearchService);
+  private readonly listings = inject(ListingsService);
   private readonly i18n = inject(I18n);
 
   protected readonly rows = [
@@ -195,6 +202,16 @@ export class Find {
   protected readonly position = signal<Position | null>(null);
   protected readonly matching = signal(false);
   protected readonly results = signal<SearchResults | null>(null);
+  // shortcut: matches are filtered to auctions in the browser; move into SearchRequirements if lists get long
+  protected readonly auctionsOnly = signal(false);
+  /** All running auctions, shown on /find?mode=auction before a search. */
+  protected readonly auctions = signal<ListingSummary[] | null>(null);
+  protected readonly shown = computed(() => {
+    const res = this.results();
+    if (!res || !this.auctionsOnly()) return res;
+    const auction = (m: SearchMatch) => m.listing?.saleMode === 'AUCTION';
+    return { ...res, matches: (res.matches ?? []).filter(auction) };
+  });
   protected readonly progress = signal('');
   private readonly router = inject(Router);
   /** The text the filters were read from; it stays in the URL next to the filters. */
@@ -212,6 +229,7 @@ export class Find {
       km: pc && this.radius() ? String(this.radius()) : null,
       must: json(this.mustHave()),
       nice: json(this.niceToHave()),
+      mode: this.auctionsOnly() ? 'auction' : null,
     };
   });
   private initial: SearchRequirements | null = null;
@@ -235,6 +253,10 @@ export class Find {
     inject(ActivatedRoute)
       .queryParamMap.pipe(takeUntilDestroyed())
       .subscribe((params) => {
+        if (params.get('mode') === 'auction' && !this.auctionsOnly()) {
+          this.auctionsOnly.set(true);
+          this.listings.list({ saleMode: 'AUCTION' }).subscribe((list) => this.auctions.set(list));
+        }
         if (FILTER_KEYS.some((k) => params.has(k))) {
           if (!this.searched() || !sameQuery(params, this.query())) this.restore(params);
           return;

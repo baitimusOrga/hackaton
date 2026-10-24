@@ -22,7 +22,7 @@
   </form>
   <div class="zw-hero__chips" role="group" [attr.aria-label]="'Schnellfilter' | t">
     @for (filter of quickFilters; track filter) {
-      <app-chip>{{ filter | t }}</app-chip>
+      <app-chip (click)="quickFilter(filter)">{{ filter | t }}</app-chip>
     }
   </div>
   <p class="zw-hero__hint">
@@ -38,27 +38,22 @@
   </nav>
 </section>
 
-<section class="zw-container zw-section" aria-labelledby="h-auction">
-  <app-section-heading
-    headingId="h-auction"
-    heading="Endet bald"
-    linkText="Alle Auktionen"
-    link="/find"
-  />
-  <div class="zw-grid">
-    @for (auction of auctions; track auction.title) {
-      <app-listing-card
-        mode="auction"
-        link="/"
-        [title]="auction.title"
-        [price]="auction.bid"
-        [bids]="auction.bids"
-        [endsAt]="auction.endsAt"
-        [meta]="auction.meta | t"
-      />
-    }
-  </div>
-</section>
+@if (auctions()?.length) {
+  <section class="zw-container zw-section" aria-labelledby="h-auction">
+    <app-section-heading
+      headingId="h-auction"
+      heading="Endet bald"
+      linkText="Alle Auktionen"
+      link="/find"
+      [queryParams]="{ mode: 'auction' }"
+    />
+    <div class="zw-grid">
+      @for (auction of auctions(); track auction.id) {
+        <app-summary-card [listing]="auction" />
+      }
+    </div>
+  </section>
+}
 
 <section class="zw-container zw-section zw-section--last" aria-labelledby="h-near">
   <app-section-heading

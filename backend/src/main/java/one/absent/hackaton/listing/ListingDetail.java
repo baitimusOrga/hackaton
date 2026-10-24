@@ -11,10 +11,14 @@ public record ListingDetail(long id, String title, BigDecimal priceChf, Conditio
                             Map<String, String> attributes, Instant createdAt,
                             @Schema(nullable = true) String sellerName,
                             @Schema(nullable = true) Double latitude,
-                            @Schema(nullable = true) Double longitude) {
+                            @Schema(nullable = true) Double longitude,
+                            SaleMode saleMode,
+                            @Schema(nullable = true) Instant endsAt,
+                            @Schema(nullable = true) BigDecimal currentBidChf,
+                            int bidCount) {
 
     public ListingSummary summary() {
         return new ListingSummary(id, title, priceChf, condition, category, postcode, locality, imageUrl, latitude,
-                longitude);
+                longitude, saleMode, endsAt, currentBidChf, bidCount);
     }
 }

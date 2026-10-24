@@ -39,12 +39,20 @@ public class ListingController {
                                      @RequestParam(required = false) String postcode,
                                      @RequestParam(required = false) Double radiusKm,
                                      @RequestParam(required = false) Double lat,
-                                     @RequestParam(required = false) Double lon) {
+                                     @RequestParam(required = false) Double lon,
+                                     @RequestParam(required = false) SaleMode saleMode) {
+        List<ListingSummary> found = find(q, category, maxPrice, postcode, radiusKm, lat, lon, saleMode);
+        return saleMode == SaleMode.AUCTION
+                ? found.stream().sorted(Comparator.comparing(ListingSummary::endsAt)).toList() : found;
+    }
+
+    private List<ListingSummary> find(String q, String category, BigDecimal maxPrice, String postcode,
+                                      Double radiusKm, Double lat, Double lon, SaleMode saleMode) {
         String code = postcode == null || postcode.isBlank() ? null : postcode.strip();
         boolean here = lat != null && lon != null; // the buyer's position wins over the postcode
         if (radiusKm == null || (code == null && !here)) {
             return listings.search(contains(q), lower(category), maxPrice, code == null ? null : code + "%",
-                    null, null, null, null).stream().map(listing -> listing.detail().summary()).toList();
+                    saleMode, null, null, null, null).stream().map(listing -> listing.detail().summary()).toList();
         }
         if (radiusKm <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The radius must be more than 0 km.");
@@ -53,7 +61,7 @@ public class ListingController {
                 () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Postcode " + code + " not found."));
         double latSpan = Coordinates.latitudeSpan(radiusKm);
         double lonSpan = origin.longitudeSpan(radiusKm);
-        return listings.search(contains(q), lower(category), maxPrice, null,
+        return listings.search(contains(q), lower(category), maxPrice, null, saleMode,
                         origin.latitude() - latSpan, origin.latitude() + latSpan,
                         origin.longitude() - lonSpan, origin.longitude() + lonSpan)
                 .stream().map(Listing::detail)

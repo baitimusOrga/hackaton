@@ -469,6 +469,7 @@ export class Sell {
     ),
   );
   protected readonly price = signal<number | null>(null);
+  protected readonly auctionDays = signal<number | null>(null);
   protected readonly postcode = signal(lastLocation().postcode);
   protected readonly locality = signal(lastLocation().locality);
   protected readonly canContinue = computed(() => {
@@ -933,6 +934,7 @@ export class Sell {
           .map((f) => [f.name, f.value.trim()]),
       ),
       photoIds: this.photoIdsToPublish(),
+      auctionDays: this.auctionDays(),
     };
     this.busy.set(true);
     this.api.publish({ body }).subscribe({
