@@ -108,7 +108,7 @@ class DraftControllerTest {
         assertThat(body).contains("\"type\":\"GAP\"", "\"type\":\"DRAFT\"", "\"photoIds\":[" + id + "]");
         ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
         verify(ai).streamLines(anyString(), text.capture(), anyList(), any());
-        assertThat(text.getValue()).contains("Size: 27\"", "in Swiss German", // German unless the UI asks otherwise
+        assertThat(text.getValue()).contains("Size: 27\"", "in standard German as written in Switzerland", // German unless the UI asks otherwise
                 "Photo sizes in pixels (width x height): photo 1 is 4x2.");
     }
 

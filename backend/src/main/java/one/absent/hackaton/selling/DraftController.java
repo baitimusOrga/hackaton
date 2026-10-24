@@ -125,7 +125,7 @@ public class DraftController {
                     .collect(Collectors.joining("\n")));
 
     /** The UI languages; every text the AI writes is in the seller's one. */
-    static final Map<String, String> LANGUAGES = Map.of("de", "Swiss German (ss, never ß)", "fr", "French",
+    static final Map<String, String> LANGUAGES = Map.of("de", "standard German as written in Switzerland (ss, never ß; no dialect)", "fr", "French",
             "it", "Italian", "en", "English");
 
     static String languageRule(String language) {
