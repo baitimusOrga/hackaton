@@ -50,14 +50,15 @@ public class DraftController {
               numbers in the title; those belong in facts.
             - description: written as the seller, first person, 2 to 3 sentences: what it is, known model
               details, visible wear. Never mention photos, pictures, images or labels ("The photo shows..." is
-              wrong). Never claim it works, is complete, or includes accessories. No marketing language and no
-              filler such as "more details on request".
+              wrong). Never claim it works, is complete, or includes accessories. No marketing language, no
+              hedging and no filler such as "more details on request" or "I will add details later".
             """;
 
     static final String TEXT_SYSTEM = """
             You rewrite the title and description of a Swiss secondhand listing after the seller corrected facts.
             Facts with source LABEL or SELLER are true and win over the current text. SUGGESTION and WEB facts are
-            unconfirmed: never state them as certain. Keep what the current description says about visible wear.
+            unconfirmed: leave them out rather than hedge ("vermutlich", "nach meiner Einschätzung" are wrong).
+            Keep what the current description says about visible wear. Write in Swiss German (ss, never ß).
             Rules:
             %s""".formatted(TEXT_RULES);
 

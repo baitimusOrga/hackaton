@@ -61,12 +61,12 @@
           @if (item.category) {
             <div class="fact">
               <dt>{{ 'Kategorie' | t }}</dt>
-              <dd>{{ item.category }}</dd>
+              <dd>{{ item.category | t }}</dd>
             </div>
           }
           @for (attribute of item.attributes | keyvalue; track attribute.key) {
             <div class="fact">
-              <dt>{{ attribute.key }}</dt>
+              <dt>{{ attribute.key | t }}</dt>
               <dd>{{ attribute.value }}</dd>
             </div>
           }

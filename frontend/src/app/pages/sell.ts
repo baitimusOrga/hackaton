@@ -316,7 +316,7 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       position: sticky;
       top: calc(72px + var(--space-6));
       max-height: calc(100vh - 72px - 2 * var(--space-6));
-      overflow-y: auto;
+      overflow: hidden auto;
       display: flex;
       flex-direction: column;
       gap: var(--space-3);
@@ -328,6 +328,9 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       justify-content: space-between;
       gap: var(--space-3);
       min-height: 20px;
+    }
+    .aside__photo {
+      flex-shrink: 0;
     }
     .aside__photo,
     .card__photo {
@@ -460,8 +463,14 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
         padding-left: var(--space-4);
         padding-right: var(--space-4);
       }
-      .bar .strong {
+      .bar .strong,
+      .bar__in > .bar__step:not(.close) {
         display: none;
+      }
+      .q {
+        font-size: 26px;
+        line-height: 30px;
+        overflow-wrap: anywhere;
       }
       .col {
         flex-basis: 100%;
@@ -680,6 +689,19 @@ export class Sell {
   private readonly i18n = inject(I18n);
   private readonly store = inject(DraftStore);
   protected readonly restored = signal(false);
+  // the fact a photo answer did not show; its question comes back with a hint
+  protected readonly missed = signal<string | null>(null);
+  protected readonly missedText = computed(() => {
+    const fact = this.missed();
+    return fact
+      ? this.i18n.t(
+          'Darauf konnten wir {name} nicht lesen. Geh näher ran oder gib es selbst ein.',
+          {
+            name: this.i18n.t(fact),
+          },
+        )
+      : '';
+  });
   // after a photo answered a photo question: what was read from it, shown before the next question
   protected readonly readFact = signal<{ fact: string; value: string } | null>(null);
   protected readonly published = signal<{
@@ -855,7 +877,13 @@ export class Sell {
             },
           ]
         : this.marksOn(index + 1).map((m) => ({ ...m, kind: m.privacy ? 'privacy' : 'detect' }));
-    return { index, photo: this.photos()[index], scanning: waiting && !marks.length, marks };
+    return {
+      index,
+      photo: this.photos()[index],
+      scanning: waiting && !marks.length,
+      marks,
+      compact: asking && !!card && card.kind !== 'PHOTO',
+    };
   });
   protected readonly asideTitle = computed(() =>
     this.draft() ? this.fields().title : this.i18n.t('Wird aus dem Foto erkannt'),
@@ -872,11 +900,13 @@ export class Sell {
     const rows = [{ name: t('Kategorie'), value: t(this.fields().category), muted: false }];
     for (const name of this.keyFacts()) {
       const fact = this.facts().find((f) => f.name === name && f.value.trim());
+      const guess = fact && (fact.source === 'SUGGESTION' || fact.source === 'WEB');
+      // only confirmed facts are published: a guess says so
       if (fact)
         rows.push({
           name: t(name),
-          value: fact.value,
-          muted: fact.source === 'SUGGESTION' || fact.source === 'WEB',
+          value: guess ? `${fact.value} · ${t('Vorschlag')}` : fact.value,
+          muted: !!guess,
         });
       else if (this.skipped().has(name))
         rows.push({ name: t(name), value: t('nicht bestätigt'), muted: true });
@@ -934,13 +964,19 @@ export class Sell {
     });
     effect(() => this.moveEstimate(this.draft()?.price ?? null));
     // every step and the success screen start at the top
-    const host = inject(ElementRef<HTMLElement>).nativeElement;
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    // "Selbst eingeben" / "Ändern" puts the cursor into the answer field
+    effect(() => {
+      if (this.typing())
+        setTimeout(() => host.querySelector<HTMLInputElement>('#gap-answer')?.focus());
+    });
     effect(() => {
       this.step();
       this.published();
       this.readFact();
       this.answered();
       host.scrollTop = 0;
+      this.typing.set(false);
       this.confirmRestart.set(false);
     });
   }
@@ -1013,7 +1049,9 @@ export class Sell {
     const name = this.i18n.t(card.fact);
     if (card.kind === 'CONFIRM')
       return this.i18n.t('{name}: {value} – stimmt das?', { name, value: card.value ?? '' });
-    if (card.prompt) return card.prompt;
+    // typing instead of photographing: ask for the value, not for a photo
+    if (card.kind === 'PHOTO' && this.typing()) return this.i18n.t('{name}?', { name });
+    if (card.prompt) return /[.?!]$/.test(card.prompt) ? card.prompt : card.prompt + '.';
     if (card.fact === CONDITION) return this.i18n.t('In welchem Zustand ist er?');
     return this.i18n.t('{name}?', { name });
   }
@@ -1141,8 +1179,9 @@ export class Sell {
       await this.stream.run(
         {
           photoIds: this.photos().map((p) => p.id!),
+          // read from a label or given by the seller: known, the AI must not ask again
           confirmedFacts: this.facts()
-            .filter((f) => f.source === 'SELLER' && f.value.trim())
+            .filter((f) => (f.source === 'SELLER' || f.source === 'LABEL') && f.value.trim())
             .map((f) => ({ name: f.name, value: f.value.trim() })),
         },
         (event) => {
@@ -1160,10 +1199,21 @@ export class Sell {
     if (drafted || hadDraft) {
       // a failed re-run keeps the previous draft; the photo card counts as skipped
       if (!drafted && photoGap) this.skip(photoGap);
-      const read = photoGap && this.facts().find((f) => f.name === photoGap.fact && f.value.trim());
+      const read =
+        photoGap &&
+        this.facts().find(
+          (f) =>
+            f.name === photoGap.fact &&
+            f.value.trim() &&
+            (f.source === 'LABEL' || f.source === 'SELLER'),
+        );
       if (drafted && read && this.step() === 2) {
         this.readFact.set({ fact: read.name, value: read.value });
-        this.textStale = true;
+        if (read.name === 'Brand' || read.name === 'Model') this.rewriteText();
+        else this.textStale = true;
+      } else if (drafted && photoGap && this.step() === 2) {
+        // the photo did not show it: same question again, with a hint why
+        this.missed.set(photoGap.fact);
       } else if (this.step() === 2 && !this.cards().length) this.finishGaps();
     } else {
       this.streamFailed.set(true);
@@ -1194,8 +1244,9 @@ export class Sell {
         });
         return false;
       case 'DRAFT':
-        this.aiGaps.set(this.pendingGaps);
-        this.applyDraft(event.draft!);
+        this.aiGaps.set(this.draft() ? this.mergeGaps(this.pendingGaps) : this.pendingGaps);
+        if (this.draft()) this.mergeDraft(event.draft!);
+        else this.applyDraft(event.draft!);
         return true;
       case 'ERROR':
         this.banner.show(event.detail ?? this.i18n.t('Der Entwurf konnte nicht erstellt werden.'));
@@ -1207,14 +1258,61 @@ export class Sell {
 
   private pendingGaps: Gap[] = [];
 
-  private applyDraft(raw: ListingDraft): void {
-    // Swiss spelling: the AI sometimes writes ß
-    const draft: ListingDraft = {
+  /** Questions of a later run keep the wording of the first one; questions it left out stay. */
+  private mergeGaps(fresh: Gap[]): Gap[] {
+    const before = this.aiGaps();
+    const kept = fresh.map((gap) => {
+      const old = before.find((o) => o.fact === gap.fact);
+      return old
+        ? { ...gap, prompt: old.prompt, options: old.options?.length ? old.options : gap.options }
+        : gap;
+    });
+    return [...kept, ...before.filter((o) => !fresh.some((g) => g.fact === o.fact))];
+  }
+
+  /**
+   * A later run (after a photo answer) only adds: new facts, a label reading that replaces a guess, a
+   * condition if none was known, the new photo ids. Title and description stay; the AI rewrites them.
+   */
+  private mergeDraft(raw: ListingDraft): void {
+    const next = this.swissDraft(raw);
+    this.draft.update((old) => ({
+      ...old!,
+      photoIds: next.photoIds,
+      privacyWarnings: next.privacyWarnings,
+    }));
+    if (next.condition && !this.fields().condition)
+      this.fields.update((fields) => ({ ...fields, condition: next.condition! }));
+    this.facts.update((facts) => {
+      const merged = [...facts];
+      for (const f of next.facts ?? []) {
+        if (!f.name || !f.value?.trim()) continue;
+        const i = merged.findIndex((m) => m.name === f.name);
+        const fact: Fact = { name: f.name, value: f.value, source: f.source ?? 'SUGGESTION' };
+        if (i < 0) merged.push(fact);
+        else if (
+          fact.source === 'LABEL' &&
+          merged[i].source !== 'SELLER' &&
+          merged[i].source !== 'LABEL'
+        )
+          merged[i] = fact;
+      }
+      return merged;
+    });
+  }
+
+  private swissDraft(raw: ListingDraft): ListingDraft {
+    return {
       ...raw,
       title: swiss(raw.title),
       description: swiss(raw.description),
       facts: raw.facts?.map((f) => ({ ...f, value: swiss(f.value) })),
     };
+  }
+
+  private applyDraft(raw: ListingDraft): void {
+    // Swiss spelling: the AI sometimes writes ß
+    const draft = this.swissDraft(raw);
     this.draft.set(draft);
     this.fields.update((fields) => {
       const next = { ...fields };
@@ -1263,6 +1361,7 @@ export class Sell {
 
   private nextCard(): void {
     this.restored.set(false);
+    this.missed.set(null);
     this.answered.update((n) => n + 1);
     this.typing.set(false);
     this.draftAnswer.set('');

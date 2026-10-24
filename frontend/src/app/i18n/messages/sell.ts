@@ -569,4 +569,10 @@ export const SELL_MESSAGES: Messages = {
     it: 'Per questo articolo non ci sono ancora confronti. Stabilisci tu il prezzo.',
     en: 'There are no comparisons for this item yet. Set your own price.',
   },
+  'Darauf konnten wir {name} nicht lesen. Geh näher ran oder gib es selbst ein.': {
+    fr: "On n'a pas pu lire {name} sur cette photo. Rapproche-toi ou saisis-le toi-même.",
+    it: 'Non siamo riusciti a leggere {name} in questa foto. Avvicinati o inseriscilo tu.',
+    en: "We couldn't read the {name} on that one. Get closer or type it in.",
+  },
+  Vorschlag: { fr: 'Suggestion', it: 'Suggerimento', en: 'Suggestion' },
 };

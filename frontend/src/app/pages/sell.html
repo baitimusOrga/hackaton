@@ -131,7 +131,7 @@
                       [class.danger]="confirmRestart()"
                       (click)="restart()"
                     >
-                      {{ (confirmRestart() ? 'Entwurf wirklich verwerfen?' : 'Anderes Foto') | t }}
+                      {{ (confirmRestart() ? 'Entwurf wirklich verwerfen?' : 'Neu beginnen') | t }}
                     </button>
                     <span class="push zw-small zw-muted">{{
                       analyzing() || busy() ? '' : remaining()
@@ -176,6 +176,9 @@
                   <div class="stack" data-testid="gap" aria-live="polite">
                     <span class="zw-caption">{{ remaining() }}</span>
                     <h1 id="sell-q" class="q">{{ cardTitle(card) }}</h1>
+                    @if (missed() === card.fact) {
+                      <p class="zw-muted">{{ missedText() }}</p>
+                    }
                   </div>
                   @if (card.kind === 'PHOTO' && !typing() && photos().length < maxPhotos) {
                     <ng-container *ngTemplateOutlet="stageTpl" />
@@ -190,6 +193,7 @@
                       </button>
                     </div>
                   } @else if (card.fact === conditionGap) {
+                    <ng-container *ngTemplateOutlet="stageTpl" />
                     <div class="chips">
                       @for (condition of conditions; track condition.value) {
                         <button
@@ -202,6 +206,7 @@
                       }
                     </div>
                   } @else if (card.options.length && !typing()) {
+                    <ng-container *ngTemplateOutlet="stageTpl" />
                     <div class="chips">
                       @for (option of card.options; track option) {
                         <button type="button" class="choice" (click)="answer(card, option)">
@@ -787,6 +792,7 @@
         [label]="'Erkennung' | t"
         [marks]="st.marks"
         [scanning]="st.scanning"
+        [compact]="st.compact"
       />
       <div class="status">
         <span class="zw-caption">{{ step() === 1 ? analyzeStatus() : '' }}</span>

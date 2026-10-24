@@ -323,6 +323,38 @@ describe('Sell', () => {
     expect(run.mock.calls[1][0].photoIds).toEqual([7, 8]);
   });
 
+  it('a photo answer adds to what is known and never drops it', async () => {
+    const photoGap: DraftEvent = {
+      type: 'GAP',
+      gap: { fact: 'Model', kind: 'PHOTO', prompt: 'Fotografiere das Typenschild', options: [] },
+    };
+    const english: DraftEvent = {
+      type: 'GAP',
+      gap: { fact: 'Model', kind: 'PHOTO', prompt: 'Please photograph the label', options: [] },
+    };
+    const poorer = { ...DRAFT, photoIds: [7, 8], title: 'Monitor', condition: null, facts: [] };
+    const { fixture, element, uploadPhotos, run } = await questions([
+      streams(photoGap, done(DRAFT)),
+      streams(english, done(poorer)),
+    ]);
+    uploadPhotos.mockReturnValue(of([8]));
+    const input = element.querySelector<HTMLInputElement>('.foot2 input[type="file"]')!;
+    Object.defineProperty(input, 'files', {
+      value: [new File(['y'], 'label.png', { type: 'image/png' })],
+    });
+    input.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    const sell = fixture.componentInstance;
+
+    // the label read before goes along as known, so the AI does not ask again
+    expect(run.mock.calls[1][0].confirmedFacts).toContainEqual({ name: 'Brand', value: 'Dell' });
+    expect(sell['facts']().map((f: { name: string }) => f.name)).toEqual(['Brand', 'Size']);
+    expect(sell['fields']()).toMatchObject({ title: 'Dell U2719D', condition: 'GOOD' });
+    const card = element.querySelector('[data-testid="gap"]')!.textContent;
+    expect(card).toContain('Fotografiere das Typenschild');
+    expect(card).toContain('Darauf konnten wir Modell nicht lesen');
+  });
+
   it('offers to analyse again when the stream fails before the draft', async () => {
     const { fixture, element, uploadPhotos, run } = await analyse([
       async (_b, onEvent) => {
@@ -450,7 +482,7 @@ describe('Sell', () => {
   it('throws the draft away only after a second click', async () => {
     const { fixture, element } = await analyse([streams(done(DRAFT))]);
 
-    button(element, 'Anderes Foto').click();
+    button(element, 'Neu beginnen').click();
     await fixture.whenStable();
 
     expect(store.clear).not.toHaveBeenCalled();

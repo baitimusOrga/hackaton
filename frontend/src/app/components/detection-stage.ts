@@ -16,7 +16,7 @@ export interface StageMark {
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-detection-stage',
   template: `
-    <figure class="stage" [attr.aria-label]="label()">
+    <figure class="stage" [class.stage--compact]="compact()" [attr.aria-label]="label()">
       <div class="stage__frame">
         <img [src]="src()" [alt]="alt()" />
         <div class="fx">
@@ -85,6 +85,9 @@ export interface StageMark {
       display: block;
       max-width: 100%;
       max-height: 60vh;
+    }
+    .stage--compact .stage__frame img {
+      max-height: 32vh;
     }
     .fx {
       position: absolute;
@@ -307,6 +310,8 @@ export class DetectionStage {
   readonly label = input('');
   readonly marks = input<StageMark[]>([]);
   readonly scanning = input(false);
+  /** a smaller photo beside a chip question */
+  readonly compact = input(false);
 
   /**
    * Where each label goes: above, below or inside its box, whichever does not cover a label placed
