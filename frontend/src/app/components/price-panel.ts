@@ -86,11 +86,8 @@ const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW
   `,
   template: `
     @if (view(); as v) {
-      @if (v.noEstimate) {
-        <p class="zw-muted zw-small">
-          <strong>{{ 'Keine Schätzung.' | t }}</strong> {{ v.explanation }}
-        </p>
-      } @else {
+      <!-- without an estimate only the own price field below is shown -->
+      @if (!v.noEstimate) {
         <div>
           <p class="zw-muted zw-small">
             {{ 'Ähnliche Artikel auf Zweit:' | t }} <strong>{{ v.rangeText }}</strong
@@ -240,9 +237,8 @@ export class PricePanel {
   protected readonly view = computed(() => {
     const est = this.estimate();
     if (!est) return null;
-    const explanation = est.explanation ?? '';
     const items = est.evidence ?? [];
-    if (est.midChf == null) return { noEstimate: true as const, explanation };
+    if (est.midChf == null) return { noEstimate: true as const };
     return this.estimateView(est, items);
   });
 

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { ListingsService, PlacesService, SellingService } from '../api/services';
 import { DraftEvent, ListingDraft } from '../api/models';
 import { DraftStore } from '../draft-store';
@@ -404,6 +404,24 @@ describe('Sell', () => {
       description: 'My Dell U2719D monitor.',
     });
     expect(sell['draft']()!.price).toEqual(price);
+  });
+
+  it('shows a busy hint and a sheen on the preview while the text is rewritten', async () => {
+    const reply = new Subject<object>();
+    const rewriteText = vi.fn().mockReturnValue(reply);
+    const { fixture, element } = await full(DRAFT, { rewriteText });
+    fixture.componentInstance['rewriteText']();
+    button(element, 'Schritt für Schritt').click();
+    await fixture.whenStable();
+    const aside = () => element.querySelector('aside')!;
+
+    expect(aside().textContent).toContain('Wird angepasst');
+    expect(aside().querySelector('.aside__title.zw-shimmer')).not.toBeNull();
+
+    reply.next({ title: 'Dell U2719D 27"', description: 'Mein Monitor.' });
+    await fixture.whenStable();
+    expect(aside().textContent).not.toContain('Wird angepasst');
+    expect(aside().querySelector('.zw-shimmer')).toBeNull();
   });
 
   it('skipping every question needs no rewrite', async () => {

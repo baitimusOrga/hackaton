@@ -291,7 +291,6 @@ export const SELL_MESSAGES: Messages = {
   Gut: { fr: 'Bon', it: 'Buono', en: 'Good' },
   Gebraucht: { fr: 'Occasion', it: 'Usato', en: 'Used' },
   Defekt: { fr: 'Défectueux', it: 'Difettoso', en: 'Faulty' },
-  'Keine Schätzung.': { fr: "Pas d'estimation.", it: 'Nessuna stima.', en: 'No estimate.' },
   'Ähnliche Artikel auf Zweit:': {
     fr: 'Articles similaires sur Zweit :',
     it: 'Articoli simili su Zweit:',
@@ -433,11 +432,6 @@ export const SELL_MESSAGES: Messages = {
     it: 'Puoi anche trascinare o incollare le foto qui.',
     en: 'You can also drag or paste photos here.',
   },
-  'Titel und Beschreibung werden angepasst…': {
-    fr: 'Adaptation du titre et de la description…',
-    it: 'Adattamento di titolo e descrizione…',
-    en: 'Adjusting title and description…',
-  },
   Erkennung: { fr: 'Reconnaissance', it: 'Riconoscimento', en: 'Detection' },
   'Foto wählen': { fr: 'Choisir la photo', it: 'Scegli la foto', en: 'Choose photo' },
   'Offene Punkte': { fr: 'Points ouverts', it: 'Punti aperti', en: 'Open points' },
@@ -555,4 +549,5 @@ export const SELL_MESSAGES: Messages = {
     en: '{step} of {steps}',
   },
   Übernehmen: { fr: 'Appliquer', it: 'Applica', en: 'Apply' },
+  'Wird angepasst': { fr: 'Mise à jour', it: 'Aggiornamento', en: 'Updating' },
 };

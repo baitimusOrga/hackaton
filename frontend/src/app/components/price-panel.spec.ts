@@ -87,7 +87,7 @@ describe('PricePanel', () => {
     expect(strategies().length).toBe(3);
   });
 
-  it('shows no estimate, only the own price', () => {
+  it('without an estimate shows only the own price, no note', () => {
     const { element } = setup({
       lowChf: null,
       midChf: null,
@@ -97,8 +97,8 @@ describe('PricePanel', () => {
       explanation: 'No estimate: we could not identify brand and model.',
       evidence: [],
     });
-    expect(element.textContent).toContain('Keine Schätzung');
-    expect(element.textContent).toContain('brand and model');
+    expect(element.textContent).not.toContain('Keine Schätzung');
+    expect(element.textContent).not.toContain('brand and model');
     expect(element.querySelectorAll('input[type="radio"]').length).toBe(0);
     expect(element.querySelector<HTMLInputElement>('input[name="price"]')!.required).toBe(true);
   });

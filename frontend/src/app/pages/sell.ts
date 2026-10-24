@@ -296,6 +296,13 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       gap: var(--space-3);
       margin-bottom: var(--space-8);
     }
+    .aside__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      min-height: 20px;
+    }
     .aside__photo,
     .card__photo {
       position: relative;

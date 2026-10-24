@@ -282,12 +282,8 @@
               }
               @case (3) {
                 <h1 id="sell-q" class="q">{{ 'Zu welchem Preis?' | t }}</h1>
-                @if (rewriting()) {
-                  <p class="zw-muted zw-small" aria-live="polite">
-                    {{ 'Titel und Beschreibung werden angepasst…' | t }}
-                  </p>
-                }
-                <div class="flashable">
+                <ng-container *ngTemplateOutlet="rewritingTpl" />
+                <div class="flashable" [class.zw-shimmer]="rewriting()">
                   <app-price-panel
                     [estimate]="shownEstimate()"
                     [condition]="fields().condition"
@@ -346,7 +342,10 @@
         @if (!published()) {
           <aside class="aside" [attr.aria-label]="'Dein Inserat' | t">
             <div class="aside__in">
-              <span class="zw-caption">{{ 'Dein Inserat' | t }}</span>
+              <div class="aside__head">
+                <span class="zw-caption">{{ 'Dein Inserat' | t }}</span>
+                <ng-container *ngTemplateOutlet="rewritingTpl" />
+              </div>
               @if (previewPhoto(); as url) {
                 <div class="aside__photo" [style.background-image]="'url(' + url + ')'"></div>
               } @else {
@@ -358,7 +357,11 @@
                 </div>
               }
               @for (title of [asideTitle()]; track title) {
-                <p class="aside__title flashable" [class.zw-muted]="!draft()">
+                <p
+                  class="aside__title flashable"
+                  [class.zw-muted]="!draft()"
+                  [class.zw-shimmer]="rewriting()"
+                >
                   {{ title }}
                   @if (draft()) {
                     <span class="flash"></span>
@@ -368,12 +371,16 @@
               <p class="zw-muted zw-small">{{ asideMeta() }}</p>
               @if (step() >= 3 && price(); as amount) {
                 @for (shown of [amount]; track shown) {
-                  <p class="zw-price flashable">{{ shown | chf }}<span class="flash"></span></p>
+                  <p class="zw-price flashable" [class.zw-shimmer]="rewriting()">
+                    {{ shown | chf }}<span class="flash"></span>
+                  </p>
                 }
               }
               @if (draft()) {
                 @for (text of [fields().description]; track text) {
-                  <p class="zw-muted zw-small flashable">{{ text }}<span class="flash"></span></p>
+                  <p class="zw-muted zw-small flashable" [class.zw-shimmer]="rewriting()">
+                    {{ text }}<span class="flash"></span>
+                  </p>
                 }
               }
               <div>
@@ -439,11 +446,7 @@
       <section class="sec" aria-labelledby="sec-item">
         <h2 id="sec-item">{{ 'Artikel' | t }}</h2>
         <ng-container *ngTemplateOutlet="openTpl" />
-        @if (rewriting()) {
-          <p class="zw-muted zw-small" aria-live="polite">
-            {{ 'Titel und Beschreibung werden angepasst…' | t }}
-          </p>
-        }
+        <ng-container *ngTemplateOutlet="rewritingTpl" />
         <div class="zw-field">
           <label class="zw-label" for="sell-title">{{ 'Titel' | t }}</label>
           <input
@@ -819,5 +822,14 @@
       {{ 'Entwurf wiederhergestellt.' | t }}
       <button type="button" class="zw-link" (click)="startOver()">{{ 'Neu beginnen' | t }}</button>
     </p>
+  }
+</ng-template>
+
+<ng-template #rewritingTpl>
+  @if (rewriting()) {
+    <span class="zw-busy" role="status">
+      {{ 'Wird angepasst' | t }}
+      <span class="zw-busy__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+    </span>
   }
 </ng-template>
