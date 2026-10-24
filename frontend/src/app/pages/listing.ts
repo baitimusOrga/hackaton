@@ -27,6 +27,7 @@ import { SummaryCard } from '../ui/summary-card';
     ListingMap,
     SectionHeading,
     SummaryCard,
+    TranslatePipe,
   ],
   templateUrl: './listing.html',
   styles: `

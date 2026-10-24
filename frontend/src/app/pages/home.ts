@@ -85,6 +85,7 @@ const SAMPLE_AUCTIONS = [
     ListingMap,
     SectionHeading,
     SummaryCard,
+    TranslatePipe,
   ],
   selector: 'app-home',
   host: { class: 'zw-bleed' },
