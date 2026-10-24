@@ -16,7 +16,8 @@ public record ListingDetail(long id, String title, BigDecimal priceChf, Conditio
                             SaleMode saleMode,
                             @Schema(nullable = true) Instant endsAt,
                             @Schema(nullable = true) BigDecimal currentBidChf,
-                            int bidCount) {
+                            int bidCount,
+                            ListingStatus status) {
 
     public ListingSummary summary() {
         return new ListingSummary(id, title, priceChf, condition, category, postcode, locality, imageUrl, latitude,

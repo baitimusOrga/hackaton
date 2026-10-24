@@ -34,24 +34,31 @@
         </div>
 
         <div class="group tight">
+          <button
+            appButton
+            variant="primary"
+            [block]="true"
+            type="button"
+            [disabled]="buying() || bought() || item.status !== 'AVAILABLE'"
+            (click)="buy(item.id!)"
+          >
+            @if (bought()) {
+              {{ 'Gekauft' | t }}
+            } @else if (item.status === 'SOLD') {
+              {{ 'Verkauft' | t }}
+            } @else if (item.status !== 'AVAILABLE') {
+              {{ 'Nicht verfügbar' | t }}
+            } @else {
+              {{ buying() ? ('Wird gesendet…' | t) : ('Kaufen' | t) }}
+            }
+          </button>
           @if (bought()) {
             <p role="status">
               {{ 'Gekauft! Du findest den Kauf unter «Käufe und Verkäufe».' | t }}
             </p>
-          } @else {
-            <button
-              appButton
-              variant="primary"
-              [block]="true"
-              type="button"
-              [disabled]="buying()"
-              (click)="buy(item.id!)"
-            >
-              {{ buying() ? ('Wird gesendet…' | t) : ('Kaufen' | t) }}
-            </button>
-            @if (buyError()) {
-              <p class="zw-help zw-help--error" role="alert">{{ buyError() }}</p>
-            }
+          }
+          @if (buyError()) {
+            <p class="zw-help zw-help--error" role="alert">{{ buyError() }}</p>
           }
         </div>
       }

@@ -14,8 +14,20 @@ import { ListingPage } from './listing';
 describe('ListingPage', () => {
   for (const outcome of ['success', 'error', 'late success', 'late error']) {
     it(`resets purchase state when opening a recommendation after ${outcome}`, async () => {
-      const desk = { id: 4, title: 'Desk', description: 'Oak desk', priceChf: 80 };
-      const chair = { id: 5, title: 'Chair', description: 'Office chair', priceChf: 40 };
+      const desk = {
+        id: 4,
+        title: 'Desk',
+        description: 'Oak desk',
+        priceChf: 80,
+        status: 'AVAILABLE',
+      };
+      const chair = {
+        id: 5,
+        title: 'Chair',
+        description: 'Office chair',
+        priceChf: 40,
+        status: 'AVAILABLE',
+      };
       const response = new Subject<void>();
       const failure = new HttpErrorResponse({ status: 409, error: { detail: 'Already sold' } });
       const buy = vi.fn().mockReturnValueOnce(response).mockReturnValue(of(undefined));
@@ -121,6 +133,22 @@ describe('ListingPage', () => {
     await new Promise((resolve) => setTimeout(resolve));
     expect(harness.routeNativeElement!.querySelector('h1')!.textContent).toBe('Chair');
     expect(scroller.scrollToPosition).toHaveBeenCalledWith([0, 0]);
+  });
+
+  it('disables the buy button of a sold listing', async () => {
+    const get = vi.fn().mockReturnValue(of({ id: 4, title: 'Desk', priceChf: 1, status: 'SOLD' }));
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: '4' })) } },
+        { provide: ListingsService, useValue: { get, list: () => of([]) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(ListingPage);
+    await fixture.whenStable();
+    const button = (fixture.nativeElement as HTMLElement).querySelector('button.zw-btn--primary')!;
+    expect(button.textContent!.trim()).toBe('Verkauft');
+    expect((button as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('polls the auction, shows the outbid line and places a bid', async () => {

@@ -22,5 +22,6 @@ export interface ListingDetail {
   priceChf?: number;
   saleMode?: 'FIXED' | 'AUCTION';
   sellerName?: (string | null);
+  status?: 'AVAILABLE' | 'SOLD' | 'ENDED' | 'WITHDRAWN';
   title?: string;
 }
