@@ -822,6 +822,18 @@ textarea.zw-input {
   .zw-shell {
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
+  /* Long titles and prices must not widen a phone page. */
+  h1,
+  h2,
+  h3 {
+    overflow-wrap: anywhere;
+  }
+  img {
+    max-width: 100%;
+  }
+  .zw-main > :not(.zw-container, .zw-bleed, router-outlet) {
+    padding-top: var(--space-4);
+  }
 }
 
 /* Sections */

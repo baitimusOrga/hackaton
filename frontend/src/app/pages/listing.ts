@@ -249,6 +249,15 @@ interface BidStatus {
       justify-content: space-between;
       margin-bottom: var(--space-4);
     }
+    @media (max-width: 720px) {
+      .cols {
+        padding-top: var(--space-4);
+      }
+      .fact {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2px;
+      }
+    }
   `,
 })
 export class ListingPage {

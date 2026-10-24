@@ -143,6 +143,7 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      padding-bottom: env(safe-area-inset-bottom);
     }
     .bar {
       position: sticky;
