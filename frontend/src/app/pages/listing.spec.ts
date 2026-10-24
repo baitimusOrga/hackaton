@@ -2,13 +2,65 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { AuctionState } from '../api/models';
-import { AuctionsService, ListingsService } from '../api/services';
+import { AuctionsService, ListingsService, PurchasesService } from '../api/services';
 import { Auth } from '../auth/auth';
 import { ListingPage } from './listing';
 
 describe('ListingPage', () => {
+  for (const outcome of ['success', 'error', 'late success', 'late error']) {
+    it(`resets purchase state when opening a recommendation after ${outcome}`, async () => {
+      const desk = { id: 4, title: 'Desk', description: 'Oak desk', priceChf: 80 };
+      const chair = { id: 5, title: 'Chair', description: 'Office chair', priceChf: 40 };
+      const response = new Subject<void>();
+      const failure = new HttpErrorResponse({ status: 409, error: { detail: 'Already sold' } });
+      const buy = vi.fn().mockReturnValueOnce(response).mockReturnValue(of(undefined));
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([{ path: 'listings/:id', component: ListingPage }]),
+          {
+            provide: ListingsService,
+            useValue: {
+              get: ({ id }: { id: number }) => of(id === 4 ? desk : chair),
+              list: () => of([desk, chair]),
+            },
+          },
+          { provide: PurchasesService, useValue: { buy } },
+          { provide: Auth, useValue: { user: signal({ id: 'buyer' }) } },
+        ],
+      });
+      const harness = await RouterTestingHarness.create('/listings/4');
+      const element = harness.routeNativeElement!;
+      const purchaseButton = () =>
+        element.querySelector<HTMLButtonElement>('button[variant="primary"]')!;
+      purchaseButton().click();
+      if (outcome === 'success') response.next();
+      if (outcome === 'error') response.error(failure);
+      await harness.fixture.whenStable();
+      if (outcome === 'success') expect(element.querySelector('[role="status"]')).not.toBeNull();
+      if (outcome === 'error') expect(element.querySelector('[role="alert"]')).not.toBeNull();
+      if (outcome.startsWith('late')) expect(purchaseButton().disabled).toBe(true);
+
+      element.querySelector<HTMLAnchorElement>('a[href="/listings/5"]')!.click();
+      await harness.fixture.whenStable();
+      if (outcome === 'late success') response.next();
+      if (outcome === 'late error') response.error(failure);
+      await harness.fixture.whenStable();
+      expect(element.querySelector('h1')!.textContent).toBe('Chair');
+      expect(element.textContent).toContain('Office chair');
+      expect(element.textContent).not.toContain('Oak desk');
+      expect(element.querySelector('[role="status"]')).toBeNull();
+      expect(element.querySelector('[role="alert"]')).toBeNull();
+      expect(purchaseButton().disabled).toBe(false);
+      purchaseButton().click();
+      await harness.fixture.whenStable();
+      expect(buy.mock.calls.map(([params]) => params)).toEqual([{ id: 4 }, { id: 5 }]);
+      expect(element.querySelector('[role="status"]')).not.toBeNull();
+    });
+  }
+
   for (const [sellerName, label] of [
     ['Test Seller', 'Test Seller (eigene Angabe)'],
     [null, 'Demo-Inserat'],

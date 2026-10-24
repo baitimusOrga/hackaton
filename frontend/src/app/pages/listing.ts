@@ -320,21 +320,24 @@ export class ListingPage {
   /** The bid count right after the own bid; the status explains that bid until a poll shows newer bids. */
   private readonly ownBidCount = signal<number | null>(null);
   protected readonly bidding = signal(false);
-  protected readonly buying = signal(false);
-  protected readonly bought = signal(false);
-  protected readonly buyError = signal('');
+  protected readonly buying = linkedSignal({ source: this.listing, computation: () => false });
+  protected readonly bought = linkedSignal({ source: this.listing, computation: () => false });
+  protected readonly buyError = linkedSignal({ source: this.listing, computation: () => '' });
 
   protected buy(id: number): void {
     if (this.buying()) return;
     if (!this.auth.user()) return this.signIn();
+    const item = this.listing();
     this.buying.set(true);
     this.buyError.set('');
     this.purchases.buy({ id }, new HttpContext().set(HANDLES_ERRORS, true)).subscribe({
       next: () => {
+        if (this.listing() !== item) return;
         this.bought.set(true);
         this.buying.set(false);
       },
       error: (err: HttpErrorResponse) => {
+        if (this.listing() !== item) return;
         this.buying.set(false);
         if (err.status === 401) return this.signIn();
         this.buyError.set(messageOf(err, this.i18n));
