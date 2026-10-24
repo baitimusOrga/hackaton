@@ -18,7 +18,14 @@ export const routes: Routes = [
   {
     path: 'profile',
     canActivate: [authGuard],
-    loadComponent: () => import('./pages/profile').then((m) => m.Profile),
+    loadComponent: () => import('./pages/profile-layout').then((m) => m.ProfileLayout),
+    children: [
+      { path: '', loadComponent: () => import('./pages/profile').then((m) => m.Profile) },
+      {
+        path: 'trades',
+        loadComponent: () => import('./pages/profile-trades').then((m) => m.ProfileTrades),
+      },
+    ],
   },
   { path: 'login', loadComponent: () => import('./pages/login').then((m) => m.Login) },
   {

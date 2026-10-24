@@ -40,7 +40,6 @@ describe('Profile settings', () => {
     const { element } = await setup();
     expect(element.textContent).toContain('nora@example.ch');
     expect(element.textContent).toContain('bestätigt');
-    expect(element.textContent).toContain('dabei seit');
   });
 
   it('saves a trimmed new name', async () => {

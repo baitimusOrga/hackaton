@@ -727,6 +727,24 @@
         }
       }
     },
+    "/api/me/trades" : {
+      "get" : {
+        "tags" : [ "Trades" ],
+        "operationId" : "trades",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Trades"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/listings/{id}" : {
       "get" : {
         "tags" : [ "Listings" ],
@@ -1910,6 +1928,23 @@
           },
           "locality" : {
             "type" : "string"
+          }
+        }
+      },
+      "Trades" : {
+        "type" : "object",
+        "properties" : {
+          "sold" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ListingSummary"
+            }
+          },
+          "bought" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ListingSummary"
+            }
           }
         }
       },

@@ -2,6 +2,22 @@ import type { Messages } from '../i18n';
 
 export const PROFILE_MESSAGES: Messages = {
   'Mein Konto': { fr: 'Mon compte', it: 'Il mio account', en: 'My account' },
+  'Käufe und Verkäufe': {
+    fr: 'Achats et ventes',
+    it: 'Acquisti e vendite',
+    en: 'Purchases and sales',
+  },
+  Gekauft: { fr: 'Acheté', it: 'Acquistato', en: 'Bought' },
+  'Noch nichts gekauft. Gewonnene Auktionen erscheinen hier.': {
+    fr: 'Rien acheté pour l’instant. Les enchères remportées apparaissent ici.',
+    it: 'Ancora nessun acquisto. Le aste vinte appaiono qui.',
+    en: 'Nothing bought yet. Auctions you win show up here.',
+  },
+  'Noch nichts verkauft.': {
+    fr: 'Rien vendu pour l’instant.',
+    it: 'Ancora nessuna vendita.',
+    en: 'Nothing sold yet.',
+  },
   Einstellungen: { fr: 'Paramètres', it: 'Impostazioni', en: 'Settings' },
   Konto: { fr: 'Compte', it: 'Account', en: 'Account' },
   Name: { fr: 'Nom', it: 'Nome', en: 'Name' },
