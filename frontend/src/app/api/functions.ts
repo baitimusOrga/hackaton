@@ -21,6 +21,8 @@ export type { GetProject$Params as GetProject$Params } from './fn/clearance/get-
 export { getProject as getProject } from './fn/clearance/get-project';
 export type { Create$Params as Create$Params } from './fn/search/create';
 export { create as create } from './fn/search/create';
+export type { Refine$Params as Refine$Params } from './fn/search/refine';
+export { refine as refine } from './fn/search/refine';
 export type { Matches$Params as Matches$Params } from './fn/search/matches';
 export { matches as matches } from './fn/search/matches';
 export type { UploadPhotos$Params as UploadPhotos$Params } from './fn/selling/upload-photos';
