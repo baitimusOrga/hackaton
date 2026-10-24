@@ -26,8 +26,10 @@ Pro), bottom safe area respected. The design follows the web design system (toke
   `padding-bottom: env(safe-area-inset-bottom)`, z-index 20 (below the sell page's 30, above the
   sticky header's 10). `display: none` from 720px.
 - Five targets, each a 44px-high touch target, icon 24px over an 11px/14px label
-  (`font-weight: 500`): Start `/`, Suchen `/find`, Verkaufen (the plus button), Nachrichten
-  `/messages`, Meine Suchen `/saved`. `nav aria-label="Hauptnavigation"`; the header's nav is
+  (`font-weight: 500`): Start `/`, Suchen `/find`, Verkaufen (the plus button), Konto
+  (`/profile` signed in, `/login` signed out). Two groups of equal width around the sell button
+  keep it centred. (Rebased onto main on 2026-10-24: Nachrichten and Meine Suchen were removed from
+  the product by then, so the mockup's fifth and fourth targets are gone.) `nav aria-label="Hauptnavigation"`; the header's nav is
   hidden on phones so the label is not duplicated.
 - Active target: ink colour plus a 2px ink bar at the top edge of the item; inactive targets are
   `--ink-muted`. `routerLinkActive` with `exact: true` for `/`.
@@ -98,23 +100,18 @@ Below 720px:
   closes the sheet. From 720px the form is the plain left column as today and `filterOpen` has no
   effect (the overlay and header row are `display: none`).
 
-## Meine Suchen — new route `/saved`, `pages/saved.ts`
-
-Placeholder like `pages/messages.ts`: h1 "Meine Suchen", muted line "Hier siehst du bald deine
-gespeicherten Suchen." Behind `authGuard`. The header's "Meine Suchen" link points to `/saved` too.
-
 ## Other pages, below 720px
 
-Listing detail, Nachrichten, Login/Register, Business, Business project, the old `/search`: CSS
+Listing detail, Profile, Login/Register, Info, About, the old `/search`: CSS
 only. Rules checked at 393px: no horizontal overflow (`overflow-wrap: anywhere` on titles, images
 `max-width: 100%`), inputs and primary buttons full width, interactive controls at least 44px
-high, multi-column grids collapse to one column, tables (business project) scroll horizontally in
+high, multi-column grids collapse to one column, wide tables scroll horizontally in
 their own box instead of widening the page.
 
 ## i18n
 
 New German keys with FR/IT/EN in `i18n/messages.ts`: "Start", "Verkaufen, neues Inserat",
-"Hier siehst du bald deine gespeicherten Suchen.", "Filter", "{count} Treffer anzeigen",
+"Filter", "{count} Treffer anzeigen",
 "Treffer anzeigen", "Aus deinem Satz übernommen. Antippen zum Entfernen.", "Schliessen" (if
 missing). Existing keys are reused where the text exists.
 
@@ -124,7 +121,6 @@ missing). Existing keys are reused where the text exists.
   the target matching the current URL is marked active.
 - `pages/find.spec.ts` (extend): Filter button opens the sheet (`role="dialog"` present, focus on
   close), Escape closes, submit closes.
-- `pages/saved.spec.ts`: renders the title.
 - `shell/footer.spec.ts` or `shell/account.spec.ts`: shows Anmelden signed out, Abmelden signed
   in, logout calls `Auth.logout`.
 - Header spec (if any) updated for the moved logout.
