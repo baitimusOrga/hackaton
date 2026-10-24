@@ -1,6 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  linkedSignal,
+  signal,
+} from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { map } from 'rxjs';
 import { Auth } from '../auth/auth';
 import { SessionLocation } from '../device-location';
 import { ErrorBanner } from '../errors';
@@ -30,7 +39,12 @@ export class Header {
     ),
   );
   protected readonly docked = computed(() => !this.hero.visible());
-  protected readonly query = signal('');
+  /** The URL's `q` (the shown search); typing edits it, every navigation resets it to the URL. */
+  private readonly urlQuery = toSignal(
+    inject(ActivatedRoute).queryParamMap.pipe(map((params) => params.get('q') ?? '')),
+    { initialValue: '' },
+  );
+  protected readonly query = linkedSignal(() => this.urlQuery());
   protected readonly signingOut = signal(false);
 
   /** The location chip: shares the position for this session (searches use it) or stops using it. */

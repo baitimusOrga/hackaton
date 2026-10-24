@@ -6,257 +6,423 @@
   [class.dragging]="dragging()"
 >
   @if (view() === 'steps') {
-    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="sell-q">
-      <div class="top">
-        <span class="zw-caption">{{
-          'Verkaufen · {step} von {steps}' | t: { step: step(), steps }
-        }}</span>
-        <button appButton size="sm" type="button" (click)="view.set('full')">
-          <app-icon name="menu" />
-          <span>{{ 'Alles auf einer Seite' | t }}</span>
-        </button>
-        <button
-          type="button"
-          class="zw-link close"
-          [attr.aria-label]="'Schliessen' | t"
-          (click)="close()"
+    <div class="sell">
+      <header class="bar">
+        <div
+          class="progress"
+          role="progressbar"
+          [attr.aria-label]="'Fortschritt' | t"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          [attr.aria-valuenow]="progress()"
         >
-          <app-icon name="x" />
-        </button>
-      </div>
+          <div [style.width.%]="progress()"></div>
+        </div>
+        <div class="bar__in">
+          <a routerLink="/" class="zw-wordmark"><span class="zw-wordmark__name">Zweit.</span></a>
+          <span class="strong">{{ 'Verkaufen' | t }}</span>
+          @if (!published()) {
+            <span class="zw-caption bar__step">{{
+              '{step} von {steps}' | t: { step: step(), steps }
+            }}</span>
+            @if (draft()) {
+              <button type="button" class="zw-link" (click)="view.set('full')">
+                {{ 'Zur Übersicht' | t }}
+              </button>
+            }
+          }
+          <button
+            type="button"
+            class="zw-link close"
+            [class.bar__step]="published()"
+            [attr.aria-label]="'Schliessen' | t"
+            (click)="close()"
+          >
+            <app-icon name="x" />
+          </button>
+        </div>
+      </header>
       <ng-container *ngTemplateOutlet="restoredTpl" />
 
-      @switch (step()) {
-        @case (1) {
-          @if (analyzing() || streamFailed()) {
-            <div class="stack">
-              <h1 id="sell-q">
-                {{ (streamFailed() ? 'Das hat nicht geklappt.' : 'Wir schauen uns das an…') | t }}
-              </h1>
-              <p class="zw-muted" aria-live="polite">
-                @if (streamFailed()) {
-                  {{ 'Deine Fotos sind gespeichert. Versuch es nochmals.' | t }}
-                } @else {
-                  {{ '{n} erkannt' | t: { n: detections().length } }}
-                }
-              </p>
-            </div>
-            <ng-container *ngTemplateOutlet="scanTpl" />
-            @if (streamFailed()) {
-              <div class="foot">
-                <span></span>
-                <button appButton variant="primary" type="button" (click)="runStream()">
-                  {{ 'Nochmals auswerten' | t }}
+      <main class="main">
+        <div class="col" [class.col--center]="published()">
+          @if (published(); as done) {
+            <div class="done">
+              <div class="check" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" pathLength="1" /></svg>
+              </div>
+              <div class="stack done__text">
+                <h1 id="sell-q" class="q">{{ 'Dein Inserat ist online.' | t }}</h1>
+                <p class="zw-muted">
+                  {{
+                    'Käufer in deiner Nähe sehen es ab jetzt. Wir melden uns, sobald jemand eine Frage stellt.'
+                      | t
+                  }}
+                </p>
+              </div>
+              <div class="chips done__acts">
+                <button appButton type="button" (click)="startOver()">
+                  {{ 'Noch etwas verkaufen' | t }}
+                </button>
+                <button appButton variant="primary" type="button" (click)="openListing(done.id)">
+                  {{ 'Inserat ansehen' | t }}
                 </button>
               </div>
-            }
-          } @else if (currentCard(); as card) {
-            <ng-container *ngTemplateOutlet="scanTpl" />
-            <div class="stack" data-testid="gap" aria-live="polite">
-              <span class="zw-caption">{{
-                'Frage {n} von {total}'
-                  | t: { n: answered() + 1, total: answered() + cards().length }
-              }}</span>
-              <h1 id="sell-q" class="q--sm">{{ card.prompt }}</h1>
-              @if (card.kind === 'CONFIRM' && !typing()) {
-                <div class="chips">
-                  <button
-                    appButton
-                    variant="primary"
-                    type="button"
-                    (click)="answer(card, card.value ?? '')"
-                  >
-                    {{ 'Stimmt' | t }}
-                  </button>
-                  <button appButton type="button" (click)="typing.set(true)">
-                    {{ 'Ändern' | t }}
-                  </button>
-                </div>
-              } @else if (card.kind === 'PHOTO' && !typing() && photos().length < maxPhotos) {
-                <div class="chips">
-                  <label class="zw-btn zw-btn--primary file">
-                    <app-icon name="camera" />
-                    <span>{{ (busy() ? 'Wird hochgeladen…' : 'Foto aufnehmen') | t }}</span>
+              <div class="card">
+                <div class="card__photo" [style.background-image]="'url(' + done.photo + ')'"></div>
+                <app-badge class="tag">{{ 'Festpreis' | t }}</app-badge>
+                <p class="card__title">{{ done.title }}</p>
+                <p class="zw-muted zw-small">{{ done.meta }}</p>
+                <p class="zw-price">{{ done.price | chf }}</p>
+              </div>
+            </div>
+          } @else {
+            @switch (step()) {
+              @case (1) {
+                @if (!photos().length) {
+                  <div class="stack">
+                    <h1 id="sell-q" class="q">{{ 'Was verkaufst du?' | t }}</h1>
+                    <p class="zw-muted">
+                      {{ 'Ein Foto genügt, am besten der ganze Artikel. Den Rest fragen wir.' | t }}
+                    </p>
+                  </div>
+                  <label class="shoot">
+                    <app-icon name="camera" [size]="48" />
+                    <span>{{ 'Foto aufnehmen' | t }}</span>
                     <input
                       type="file"
                       accept="image/*"
                       capture="environment"
                       class="zw-sr-only"
-                      [disabled]="busy()"
                       (change)="addPhotos($any($event.target), true)"
                     />
                   </label>
-                  <button type="button" class="zw-link" (click)="typing.set(true)">
-                    {{ 'Lieber eintippen' | t }}
-                  </button>
-                </div>
-              } @else if (card.fact === conditionGap) {
-                <div class="chips">
-                  @for (condition of conditions; track condition.value) {
-                    <button appButton type="button" (click)="answer(card, condition.value)">
-                      {{ condition.label | t }}
+                  <label class="zw-link upload">
+                    {{ 'Foto hochladen' | t }}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      class="zw-sr-only"
+                      (change)="addPhotos($any($event.target), true)"
+                    />
+                  </label>
+                  <p class="zw-muted zw-small upload">
+                    {{ 'Du kannst Fotos auch hierher ziehen oder einfügen.' | t }}
+                  </p>
+                } @else {
+                  <div class="stack">
+                    <h1 id="sell-q" class="q">
+                      @if (streamFailed()) {
+                        {{ 'Das hat nicht geklappt.' | t }}
+                      } @else if (draft() && !analyzing()) {
+                        {{ fields().title }}
+                      } @else {
+                        {{ 'Wir schauen genau hin.' | t }}
+                      }
+                    </h1>
+                  </div>
+                  <ng-container *ngTemplateOutlet="stageTpl" />
+                  <div class="foot2">
+                    <!-- throwing the draft away takes a second click -->
+                    <button
+                      type="button"
+                      class="zw-link"
+                      [class.danger]="confirmRestart()"
+                      (click)="restart()"
+                    >
+                      {{ (confirmRestart() ? 'Entwurf wirklich verwerfen?' : 'Neu beginnen') | t }}
                     </button>
-                  }
-                </div>
-              } @else {
-                @if (card.options.length) {
-                  <div class="chips">
-                    @for (option of card.options; track option) {
-                      <button appButton size="sm" type="button" (click)="answer(card, option)">
-                        {{ option }}
+                    <span class="push zw-small zw-muted">{{
+                      analyzing() || busy() ? '' : remaining()
+                    }}</span>
+                    @if (streamFailed()) {
+                      <button appButton variant="primary" type="button" (click)="runStream()">
+                        {{ 'Nochmals auswerten' | t }}
+                      </button>
+                    } @else {
+                      <button
+                        appButton
+                        variant="primary"
+                        type="button"
+                        [disabled]="!canContinue()"
+                        (click)="next()"
+                      >
+                        {{ (analyzing() || busy() ? 'Foto wird ausgewertet…' : 'Weiter') | t }}
                       </button>
                     }
                   </div>
                 }
-                <div class="zw-field">
-                  <label class="zw-label" for="gap-answer">{{ card.fact }}</label>
-                  <input
-                    id="gap-answer"
-                    class="zw-input"
-                    maxlength="500"
-                    [value]="draftAnswer()"
-                    (input)="draftAnswer.set($any($event.target).value)"
-                  />
+              }
+              @case (2) {
+                @if (readFact(); as read) {
+                  <div class="stack">
+                    <app-badge variant="green" class="tag">{{ 'Vom Foto gelesen' | t }}</app-badge>
+                    <h1 id="sell-q" class="q">{{ read.value }}.</h1>
+                    <p class="zw-muted">
+                      {{ 'Damit finden wir die passenden Vergleichspreise.' | t }}
+                    </p>
+                  </div>
+                  <ng-container *ngTemplateOutlet="stageTpl" />
+                  <div class="foot2">
+                    <span class="push"></span>
+                    <button appButton variant="primary" type="button" (click)="continueAfterRead()">
+                      {{ 'Weiter' | t }}
+                    </button>
+                  </div>
+                } @else if (currentCard(); as card) {
+                  <div class="stack" data-testid="gap" aria-live="polite">
+                    <span class="zw-caption">{{ remaining() }}</span>
+                    <h1 id="sell-q" class="q">{{ cardTitle(card) }}</h1>
+                    @if (missed() === card.fact) {
+                      <p class="zw-muted">{{ missedText() }}</p>
+                    }
+                  </div>
+                  @if (card.kind === 'PHOTO' && !typing() && photos().length < maxPhotos) {
+                    <ng-container *ngTemplateOutlet="stageTpl" />
+                  } @else if (card.kind === 'CONFIRM' && !typing()) {
+                    <ng-container *ngTemplateOutlet="stageTpl" />
+                    <div class="chips">
+                      <button type="button" class="choice" (click)="answer(card, card.value ?? '')">
+                        {{ 'Stimmt' | t }}
+                      </button>
+                      <button type="button" class="choice" (click)="typing.set(true)">
+                        {{ 'Ändern' | t }}
+                      </button>
+                    </div>
+                  } @else if (card.fact === conditionGap) {
+                    <ng-container *ngTemplateOutlet="stageTpl" />
+                    <div class="chips">
+                      @for (condition of conditions; track condition.value) {
+                        <button
+                          type="button"
+                          class="choice"
+                          (click)="answer(card, condition.value)"
+                        >
+                          {{ condition.label | t }}
+                        </button>
+                      }
+                    </div>
+                  } @else if (card.options.length && !typing()) {
+                    <ng-container *ngTemplateOutlet="stageTpl" />
+                    <div class="chips">
+                      @for (option of card.options; track option) {
+                        <button type="button" class="choice" (click)="answer(card, option)">
+                          {{ option }}
+                        </button>
+                      }
+                    </div>
+                    <div>
+                      <button type="button" class="zw-link" (click)="typing.set(true)">
+                        {{ 'Anderer Wert' | t }}
+                      </button>
+                    </div>
+                  }
+                  @if (
+                    typing() ||
+                    (card.kind === 'ASK' && !card.options.length && card.fact !== conditionGap) ||
+                    (card.kind === 'PHOTO' && photos().length >= maxPhotos)
+                  ) {
+                    <div class="zw-field">
+                      <label class="zw-label" for="gap-answer">{{ card.fact | t }}</label>
+                      <div class="manual">
+                        <input
+                          id="gap-answer"
+                          class="zw-input"
+                          maxlength="500"
+                          [value]="draftAnswer()"
+                          (input)="draftAnswer.set($any($event.target).value)"
+                          (keydown.enter)="
+                            $event.preventDefault();
+                            draftAnswer().trim() && answer(card, draftAnswer())
+                          "
+                        />
+                        <button
+                          appButton
+                          variant="primary"
+                          type="button"
+                          [disabled]="!draftAnswer().trim()"
+                          (click)="answer(card, draftAnswer())"
+                        >
+                          {{ 'Übernehmen' | t }}
+                        </button>
+                      </div>
+                    </div>
+                  }
+                  <div class="foot2">
+                    <!-- same order on every question: back left, skip and answers right; a photo question has no back -->
+                    @if (card.kind !== 'PHOTO') {
+                      <button type="button" class="zw-link" (click)="back()">
+                        {{ 'Zurück' | t }}
+                      </button>
+                    }
+                    <button type="button" class="zw-link link--muted push" (click)="skip(card)">
+                      {{ (card.kind === 'PHOTO' ? 'Überspringen' : 'Weiss ich nicht') | t }}
+                    </button>
+                    @if (card.kind === 'PHOTO' && photos().length < maxPhotos) {
+                      @if (busy() || analyzing()) {
+                        <button appButton variant="primary" type="button" disabled>
+                          {{ 'Foto wird ausgewertet…' | t }}
+                        </button>
+                      } @else {
+                        @if (!typing()) {
+                          <button appButton type="button" (click)="typing.set(true)">
+                            {{ 'Selbst eingeben' | t }}
+                          </button>
+                        }
+                        @if (!stage()?.capture) {
+                          <ng-container
+                            *ngTemplateOutlet="captureTpl; context: { $implicit: false }"
+                          />
+                        }
+                      }
+                    }
+                  </div>
+                }
+              }
+              @case (3) {
+                <div class="stack">
+                  <h1 id="sell-q" class="q">{{ 'Zu welchem Preis?' | t }}</h1>
+                  <!-- the slot keeps its height, so nothing jumps when the hint goes -->
+                  <div class="busy-slot"><ng-container *ngTemplateOutlet="rewritingTpl" /></div>
                 </div>
-                <div>
+                <!-- only once the rewrite is done: it may still bring an estimate -->
+                @if (noEstimate() && !rewriting()) {
+                  <p class="zw-muted">
+                    {{
+                      'Für diesen Artikel gibt es noch keine Vergleiche. Setz deinen Preis selbst.'
+                        | t
+                    }}
+                  </p>
+                }
+                <div class="flashable" [class.zw-shimmer]="rewriting()">
+                  <app-price-panel
+                    [estimate]="shownEstimate()"
+                    [condition]="fields().condition"
+                    [(price)]="price"
+                    [(auctionDays)]="auctionDays"
+                  />
+                  @for (run of [priceRun()]; track run) {
+                    @if (run) {
+                      <span class="flash flash--wide"></span>
+                    }
+                  }
+                </div>
+                <div class="foot2">
+                  <button type="button" class="zw-link" (click)="back()">{{ 'Zurück' | t }}</button>
                   <button
                     appButton
                     variant="primary"
                     type="button"
-                    [disabled]="!draftAnswer().trim()"
-                    (click)="answer(card, draftAnswer())"
+                    class="push"
+                    [disabled]="!canContinue()"
+                    (click)="next()"
                   >
-                    {{ 'Speichern' | t }}
+                    {{ 'Weiter' | t }}
                   </button>
                 </div>
               }
-            </div>
-            <div class="foot">
-              <button type="button" class="zw-link" (click)="skip(card)">
-                {{ 'Überspringen' | t }}
-              </button>
-              <button appButton type="button" (click)="finishGaps()">
-                {{ 'Zur Übersicht' | t }}
-              </button>
-            </div>
-          } @else {
-            <div class="stack">
-              <h1 id="sell-q">{{ 'Was verkaufst du?' | t }}</h1>
-              <p class="zw-muted">
-                {{ 'Mach ein Foto. Den Rest erkennen wir und fragen nur, was fehlt.' | t }}
-              </p>
-            </div>
-            @if (photos().length) {
-              <ng-container *ngTemplateOutlet="photosTpl" />
-            } @else {
-              <label class="drop">
-                <app-icon name="camera" [size]="40" />
-                <span class="zw-option__title">{{ 'Foto aufnehmen oder hochladen' | t }}</span>
-                <span class="zw-muted zw-small">{{
-                  'Artikel, Typenschild, Mängel. Bis zu {max} Fotos.' | t: { max: maxPhotos }
-                }}</span>
-                <span class="zw-muted zw-small">{{
-                  'Du kannst Fotos auch hierher ziehen oder einfügen.' | t
-                }}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  class="zw-sr-only"
-                  (change)="addPhotos($any($event.target))"
-                />
-              </label>
+              @case (4) {
+                <h1 id="sell-q" class="q">{{ 'Wie kommt er zum Käufer?' | t }}</h1>
+                <div class="stack">
+                  <ng-container *ngTemplateOutlet="placeTpl" />
+                </div>
+                @if (!fields().condition) {
+                  <div class="stack">
+                    <p class="strong">{{ 'Zustand' | t }}</p>
+                    <ng-container *ngTemplateOutlet="conditionTpl" />
+                  </div>
+                }
+                <ng-container *ngTemplateOutlet="privacyTpl" />
+                <p class="zw-muted zw-small">{{ 'Inserieren ist gratis. Keine Provision.' | t }}</p>
+                <div class="foot2">
+                  <button type="button" class="zw-link" (click)="back()">{{ 'Zurück' | t }}</button>
+                  <button
+                    appButton
+                    variant="primary"
+                    type="submit"
+                    class="push"
+                    [disabled]="!fields().condition"
+                  >
+                    {{ 'Vorschau ansehen' | t }}
+                  </button>
+                </div>
+              }
             }
-            <!-- TODO: "Ohne Foto weiter": a listing needs uploaded photo ids; the backend has no draft without photos. -->
-            <div class="foot">
-              <span></span>
-              <button
-                appButton
-                variant="primary"
-                type="button"
-                [disabled]="!canContinue()"
-                (click)="next()"
-              >
-                {{ (busy() ? 'Fotos werden ausgewertet…' : 'Weiter') | t }}
-              </button>
-            </div>
           }
-        }
-        @case (2) {
-          <div class="head">
-            @if (photos()[0]; as photo) {
-              <img class="thumb" [src]="photo.url" alt="" />
-            }
-            <div class="stack">
-              <h1 id="sell-q" class="q--sm">{{ fields().title || ('Dein Artikel' | t) }}</h1>
-              @if (labelFacts().length) {
-                <p class="zw-muted zw-small">
-                  {{ 'Vom Typenschild gelesen:' | t }}
-                  @for (fact of labelFacts(); track fact.name; let last = $last) {
-                    {{ fact.value }}{{ last ? '' : ', ' }}
+        </div>
+
+        @if (!published()) {
+          <aside class="aside" [attr.aria-label]="'Dein Inserat' | t">
+            <div class="aside__in">
+              <div class="aside__head">
+                <span class="zw-caption">{{ 'Dein Inserat' | t }}</span>
+                <ng-container *ngTemplateOutlet="rewritingTpl" />
+              </div>
+              @if (previewPhoto(); as url) {
+                <div class="aside__photo" [style.background-image]="'url(' + url + ')'"></div>
+              } @else {
+                <div class="aside__photo aside__photo--empty">{{ 'Noch kein Foto' | t }}</div>
+              }
+              @if (draft()) {
+                <div>
+                  <app-badge class="tag">{{
+                    (auctionDays() === null ? 'Festpreis' : 'Auktion') | t
+                  }}</app-badge>
+                </div>
+              }
+              @for (title of [asideTitle()]; track title) {
+                <p
+                  class="aside__title flashable"
+                  [class.zw-muted]="!draft()"
+                  [class.zw-shimmer]="rewriting()"
+                >
+                  {{ title }}
+                  @if (draft()) {
+                    <span class="flash"></span>
                   }
                 </p>
               }
-              <button type="button" class="zw-link" (click)="view.set('full')">
-                {{ 'Stimmt nicht, ändern' | t }}
-              </button>
-            </div>
-          </div>
-          <ng-container *ngTemplateOutlet="openTpl" />
-          <ng-container *ngTemplateOutlet="factsTpl" />
-          <ng-container *ngTemplateOutlet="footTpl" />
-        }
-        @case (3) {
-          <h1 id="sell-q">{{ 'In welchem Zustand ist er?' | t }}</h1>
-          <ng-container *ngTemplateOutlet="conditionTpl" />
-          <ng-container *ngTemplateOutlet="footTpl" />
-        }
-        @case (4) {
-          <h1 id="sell-q">{{ 'Zu welchem Preis?' | t }}</h1>
-          <ng-container *ngTemplateOutlet="priceTpl" />
-          <ng-container *ngTemplateOutlet="footTpl" />
-        }
-        @case (5) {
-          <h1 id="sell-q">{{ 'Wie kommt er zum Käufer?' | t }}</h1>
-          <ng-container *ngTemplateOutlet="placeTpl" />
-          <ng-container *ngTemplateOutlet="privacyTpl" />
-          <div class="preview">
-            @if (previewPhoto(); as url) {
-              <img [src]="url" alt="" />
-            }
-            <div class="preview__text">
-              <span class="zw-caption">{{
-                (auctionDays() === null
-                  ? 'Festpreis · so erscheint es'
-                  : 'Auktion · so erscheint es'
-                ) | t
-              }}</span>
-              <span class="ellipsis">{{ fields().title }}</span>
-              @if (price(); as amount) {
-                <span class="zw-price">{{ amount | chf }}</span>
+              <p class="zw-muted zw-small">{{ asideMeta() }}</p>
+              @if (step() >= 3 && price(); as amount) {
+                @for (shown of [amount]; track shown) {
+                  <p class="zw-price flashable" [class.zw-shimmer]="rewriting()">
+                    {{ shown | chf }}<span class="flash"></span>
+                  </p>
+                }
               }
-              <!-- TODO: add "Abholung oder Versand" once the listing has delivery options. -->
-              <span class="zw-muted zw-small">{{ conditionLabel() }} · {{ locality() }}</span>
+              @if (draft()) {
+                @for (text of [fields().description]; track text) {
+                  <p class="zw-muted zw-small flashable" [class.zw-shimmer]="rewriting()">
+                    {{ text }}<span class="flash"></span>
+                  </p>
+                }
+              }
+              <div>
+                @for (row of asideFacts(); track row.name + row.value) {
+                  <div class="fact-row">
+                    <span class="fact-row__name">{{ row.name }}</span>
+                    <span [class.zw-muted]="row.muted">{{ row.value }}</span>
+                    <span class="flash flash--row"></span>
+                  </div>
+                }
+              </div>
             </div>
-          </div>
-          <p class="zw-muted zw-small">
-            {{
-              'Titel und Beschreibung haben wir aus deinen Fotos und Antworten geschrieben. Du kannst sie jederzeit ändern. Inserieren ist gratis.'
-                | t
-            }}
-          </p>
-          <div class="foot">
-            <button type="button" class="zw-link" (click)="back()">{{ 'Zurück' | t }}</button>
-            <button type="button" class="zw-link link--muted" (click)="view.set('full')">
-              {{ 'Erst prüfen' | t }}
-            </button>
-            <button appButton variant="primary" type="submit" [disabled]="busy()">
-              {{ (busy() ? 'Wird veröffentlicht…' : 'Veröffentlichen') | t }}
-            </button>
-          </div>
+          </aside>
         }
-      }
+      </main>
     </div>
+  } @else if (view() === 'preview') {
+    <app-listing-preview
+      [listing]="previewListing()"
+      [auction]="auctionDays() !== null"
+      (back)="closePreview()"
+      (edit)="closePreview('full')"
+    >
+      <button appButton variant="primary" type="submit" [disabled]="busy()">
+        {{ (busy() ? 'Wird veröffentlicht…' : 'Veröffentlichen') | t }}
+      </button>
+    </app-listing-preview>
   } @else {
     <header class="page-head">
       <div>
@@ -270,13 +436,13 @@
         </button>
       </div>
     </header>
+    <ng-container *ngTemplateOutlet="restoredTpl" />
     <div class="page" role="region" aria-labelledby="sell-full">
-      <ng-container *ngTemplateOutlet="restoredTpl" />
       <section class="sec" aria-labelledby="sec-photos">
         <h2 id="sec-photos">{{ 'Fotos' | t }}</h2>
         <ng-container *ngTemplateOutlet="photosTpl" />
         @if (detections().length || privacyMarks().length) {
-          <ng-container *ngTemplateOutlet="scanTpl" />
+          <ng-container *ngTemplateOutlet="stageTpl" />
         }
         @if (labelFacts().length) {
           <p class="zw-muted zw-small">
@@ -306,11 +472,7 @@
       <section class="sec" aria-labelledby="sec-item">
         <h2 id="sec-item">{{ 'Artikel' | t }}</h2>
         <ng-container *ngTemplateOutlet="openTpl" />
-        @if (rewriting()) {
-          <p class="zw-muted zw-small" aria-live="polite">
-            {{ 'Titel und Beschreibung werden angepasst…' | t }}
-          </p>
-        }
+        <ng-container *ngTemplateOutlet="rewritingTpl" />
         <div class="zw-field">
           <label class="zw-label" for="sell-title">{{ 'Titel' | t }}</label>
           <input
@@ -334,7 +496,7 @@
           >
             @for (category of categories(); track category.name) {
               <option [value]="category.name" [selected]="category.name === fields().category">
-                {{ category.name }}
+                {{ category.name! | t }}
               </option>
             }
           </select>
@@ -376,7 +538,7 @@
         <h2 id="sec-price">{{ 'Preis' | t }}</h2>
         <app-price-panel
           [compact]="true"
-          [estimate]="draft()?.price"
+          [estimate]="shownEstimate()"
           [condition]="fields().condition"
           [(price)]="price"
           [(auctionDays)]="auctionDays"
@@ -391,7 +553,14 @@
       <div class="foot full-foot">
         <span class="zw-muted zw-small">{{ 'Inserieren ist gratis. Keine Provision.' | t }}</span>
         <!-- TODO: "Entwurf speichern": the backend cannot store a draft yet. -->
-        <button appButton type="button" disabled>{{ 'Entwurf speichern' | t }}</button>
+        <button
+          appButton
+          type="button"
+          [disabled]="!draft() || !fields().condition"
+          (click)="openPreview()"
+        >
+          {{ 'Vorschau' | t }}
+        </button>
         <!-- Publishing needs the photo ids from the draft ("Fotos auswerten"). -->
         <button appButton variant="primary" type="submit" [disabled]="!draft() || busy()">
           {{ (busy() && draft() ? 'Wird veröffentlicht…' : 'Veröffentlichen') | t }}
@@ -400,15 +569,6 @@
     </div>
   }
 </form>
-
-<ng-template #footTpl>
-  <div class="foot">
-    <button type="button" class="zw-link" (click)="back()">{{ 'Zurück' | t }}</button>
-    <button appButton variant="primary" type="button" [disabled]="!canContinue()" (click)="next()">
-      {{ 'Weiter' | t }}
-    </button>
-  </div>
-</ng-template>
 
 <ng-template #photosTpl>
   <ul class="zw-list shots" [attr.aria-label]="'Fotos' | t">
@@ -491,7 +651,7 @@
     <div>
       @for (fact of facts(); track fact.name; let i = $index) {
         <div class="fact" data-testid="fact">
-          <label class="zw-label" [for]="'fact-' + i">{{ fact.name }}</label>
+          <label class="zw-label" [for]="'fact-' + i">{{ fact.name | t }}</label>
           <input
             class="zw-input"
             [id]="'fact-' + i"
@@ -591,7 +751,7 @@
 
 <ng-template #priceTpl>
   <app-price-panel
-    [estimate]="draft()?.price"
+    [estimate]="shownEstimate()"
     [condition]="fields().condition"
     [(price)]="price"
     [(auctionDays)]="auctionDays"
@@ -641,36 +801,54 @@
   <!-- TODO: pickup / shipping checkboxes ("Versand, Käufer zahlt CHF 35.–", "Im Preis inbegriffen"): CreateListingRequest has no delivery options yet. -->
 </ng-template>
 
-<ng-template #scanTpl>
-  @if (photos()[shownPhoto()]; as photo) {
-    <figure class="scan" [attr.aria-label]="'Erkennung' | t">
-      <img [src]="photo.url" [alt]="'Foto {n}' | t: { n: shownPhoto() + 1 }" />
-      @for (mark of marksOn(shownPhoto() + 1); track $index) {
-        <div
-          class="mark"
-          [class.mark--privacy]="mark.privacy"
-          [style.left.%]="mark.box[0] * 100"
-          [style.top.%]="mark.box[1] * 100"
-          [style.width.%]="mark.box[2] * 100"
-          [style.height.%]="mark.box[3] * 100"
-          [attr.data-testid]="mark.privacy ? 'privacy' : 'detection'"
-        >
-          <span>{{ mark.label }}</span>
-        </div>
-      }
-    </figure>
-    @if (photos().length > 1) {
-      <div class="chips" [attr.aria-label]="'Foto wählen' | t">
-        @for (p of photos(); track p.url; let i = $index) {
-          <button
-            appButton
-            size="sm"
-            type="button"
-            [attr.aria-pressed]="shownPhoto() === i"
-            (click)="shownPhoto.set(i)"
-          >
-            {{ 'Foto {n}' | t: { n: i + 1 } }}
-          </button>
+<ng-template #captureTpl let-small let-text="text">
+  <label class="zw-btn file" [class.zw-btn--primary]="!small" [class.zw-btn--sm]="small">
+    <app-icon name="camera" />
+    <span>{{ text ?? ('Foto aufnehmen' | t) }}</span>
+    <input
+      type="file"
+      accept="image/*"
+      capture="environment"
+      class="zw-sr-only"
+      (change)="addPhotos($any($event.target), true)"
+    />
+  </label>
+</ng-template>
+
+<ng-template #stageTpl>
+  @if (stage(); as st) {
+    @if (st.photo; as photo) {
+      <app-detection-stage
+        [src]="photo.url"
+        [alt]="'Foto {n}' | t: { n: st.index + 1 }"
+        [label]="'Erkennung' | t"
+        [marks]="st.marks"
+        [scanning]="st.scanning"
+        [compact]="st.compact"
+        [action]="st.capture"
+      >
+        @if (st.capture) {
+          <ng-container
+            *ngTemplateOutlet="captureTpl; context: { $implicit: true, text: st.marks[0].label }"
+          />
+        }
+      </app-detection-stage>
+      <div class="status">
+        <span class="zw-caption">{{ step() === 1 ? analyzeStatus() : '' }}</span>
+        @if (photos().length > 1 && step() === 1) {
+          <span class="chips push" [attr.aria-label]="'Foto wählen' | t">
+            @for (p of photos(); track p.url; let i = $index) {
+              <button
+                appButton
+                size="sm"
+                type="button"
+                [attr.aria-pressed]="shownPhoto() === i"
+                (click)="shownPhoto.set(i)"
+              >
+                {{ 'Foto {n}' | t: { n: i + 1 } }}
+              </button>
+            }
+          </span>
         }
       </div>
     }
@@ -697,9 +875,35 @@
 
 <ng-template #restoredTpl>
   @if (restored()) {
-    <p class="zw-muted zw-small" aria-live="polite">
-      {{ 'Entwurf wiederhergestellt.' | t }}
-      <button type="button" class="zw-link" (click)="startOver()">{{ 'Neu beginnen' | t }}</button>
-    </p>
+    <div class="restored" role="status">
+      <div class="restored__in">
+        <span>{{ 'Dein Entwurf von vorhin ist wieder da.' | t }}</span>
+        <!-- step 1 has its own "Neu beginnen" in the footer -->
+        @if (step() !== 1) {
+          <button type="button" class="zw-link push" (click)="startOver()">
+            {{ 'Neu beginnen' | t }}
+          </button>
+        } @else {
+          <span class="push"></span>
+        }
+        <button
+          type="button"
+          class="zw-link close"
+          [attr.aria-label]="'Hinweis schliessen' | t"
+          (click)="restored.set(false)"
+        >
+          <app-icon name="x" />
+        </button>
+      </div>
+    </div>
+  }
+</ng-template>
+
+<ng-template #rewritingTpl>
+  @if (rewriting()) {
+    <span class="zw-busy" role="status">
+      {{ 'Wird angepasst' | t }}
+      <span class="zw-busy__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+    </span>
   }
 </ng-template>

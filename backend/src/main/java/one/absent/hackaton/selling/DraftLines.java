@@ -74,7 +74,10 @@ class DraftLines implements Consumer<String> {
                 boolean ok = l.name() != null && l.kind() != null && l.prompt() != null
                         && (CONDITION.equals(l.name()) || Categories.FACT_NAMES.contains(l.name()));
                 if (ok) {
-                    gaps.add(new Gap(l.name(), l.kind(), l.prompt(), l.options() == null ? List.of() : l.options()));
+                    // a hint box that is not on one of the photos is dropped, the question stays
+                    boolean hint = onImage(l);
+                    gaps.add(new Gap(l.name(), l.kind(), l.prompt(), l.options() == null ? List.of() : l.options(),
+                            hint ? l.photo() : null, hint ? l.box() : null));
                 }
                 yield ok;
             }

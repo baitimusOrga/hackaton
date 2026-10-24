@@ -60,6 +60,25 @@ class DraftLinesTest {
         assertThat(events).isEmpty();
     }
 
+    @Test void aPhotoQuestionKeepsAValidHintBoxAndDropsABadOne() {
+        when(prices.estimate(any(), any(), any(), any())).thenReturn(mock(PriceEstimate.class));
+        lines.accept("""
+                {"type":"gap","name":"Model","kind":"PHOTO","prompt":"Fotografiere den Modellnamen","options":[],
+                 "photo":1,"box":[0.38,0.38,0.3,0.16]}""".replace("\n", ""));
+        lines.accept("""
+                {"type":"gap","name":"Frame size","kind":"PHOTO","prompt":"Fotografiere das Sitzrohr","options":[],
+                 "photo":5,"box":[0.1,0.1,0.2,0.2]}""".replace("\n", ""));
+        lines.accept("{\"type\":\"draft\",\"category\":\"Bikes\",\"title\":\"Trek\",\"description\":\"Velo.\","
+                + "\"condition\":\"GOOD\",\"facts\":[]}");
+        lines.finish(List.of(7L, 8L), prices);
+
+        assertThat(events.get(0).gap().photo()).isEqualTo(1);
+        assertThat(events.get(0).gap().box()).containsExactly(0.38, 0.38, 0.3, 0.16);
+        // photo 5 does not exist: the question stays, the hint box goes
+        assertThat(events.get(1).gap().fact()).isEqualTo("Frame size");
+        assertThat(events.get(1).gap().box()).isNull();
+    }
+
     @Test void noDraftLineIsAnError() {
         assertThatThrownBy(() -> lines.finish(List.of(7L), prices)).isInstanceOf(ResponseStatusException.class);
     }

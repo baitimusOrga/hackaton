@@ -4,5 +4,6 @@
 import { ConfirmedFact } from '../models/confirmed-fact';
 export interface DraftRequest {
   confirmedFacts: Array<ConfirmedFact>;
+  language?: (string | null);
   photoIds: Array<number>;
 }

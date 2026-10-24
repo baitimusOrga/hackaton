@@ -16,4 +16,5 @@ export const MESSAGES: Messages = {
   ...INFO_MESSAGES,
   ...PROFILE_MESSAGES,
   ...ERROR_MESSAGES,
+  ...CATALOG_MESSAGES,
 };
