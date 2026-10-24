@@ -45,11 +45,13 @@ public class DraftController {
 
     /** Shared by the draft and the rewrite after the seller changed facts. */
     static final String TEXT_RULES = """
-            - title: at most 60 characters, brand + model + one distinguishing variant (size or year).
-              No CPU, RAM, storage or part numbers in the title; those belong in facts.
+            - title: at most 60 characters, brand + model + one distinguishing variant (size or year). Name the
+              brand once. A clear defect (e.g. broken display) stays in the title. No CPU, RAM, storage or part
+              numbers in the title; those belong in facts.
             - description: written as the seller, first person, 2 to 3 sentences: what it is, known model
               details, visible wear. Never mention photos, pictures, images or labels ("The photo shows..." is
-              wrong). Never claim it works, is complete, or includes accessories. No marketing language.
+              wrong). Never claim it works, is complete, or includes accessories. No marketing language and no
+              filler such as "more details on request".
             """;
 
     static final String TEXT_SYSTEM = """
@@ -82,7 +84,8 @@ public class DraftController {
                {"type":"gap","name":"Frame size","kind":"ASK","prompt":"What is the frame size?","options":["S","M","L","XL"]}
                kind: PHOTO when a photo would show it (the prompt says exactly what to photograph, e.g.
                "Please photograph the type plate on the back"), CONFIRM when you suggested a value, otherwise ASK.
-               options: 2 to 6 short typical answers for this very item, or [] when free text fits better.
+               prompt: one short sentence, at most 60 characters, no quotes. options: 2 to 6 short typical
+               answers for this very item, or [] when free text fits better.
                For Brand and Model prefer PHOTO when the item usually carries its name (frame lettering, type
                plate, label). A PHOTO gap may add "photo" and "box" (as for detections) marking where on an
                existing photo the missing detail most likely is, e.g. the spot on the frame where the model name

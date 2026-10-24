@@ -552,4 +552,21 @@ export const SELL_MESSAGES: Messages = {
   },
   Weitermachen: { fr: 'Continuer', it: 'Continua', en: 'Continue' },
   'nicht bestätigt': { fr: 'non confirmé', it: 'non confermato', en: 'not confirmed' },
+  'Anderes Foto': { fr: 'Autre photo', it: 'Altra foto', en: 'Different photo' },
+  'Entwurf wirklich verwerfen?': {
+    fr: 'Vraiment supprimer le brouillon ?',
+    it: 'Eliminare davvero la bozza?',
+    en: 'Really discard the draft?',
+  },
+  '{name}: {value} – stimmt das?': {
+    fr: '{name} : {value} – c’est juste ?',
+    it: '{name}: {value} – è corretto?',
+    en: '{name}: {value} – is that right?',
+  },
+  '{name}?': { fr: '{name} ?', it: '{name}?', en: '{name}?' },
+  'Für diesen Artikel gibt es noch keine Vergleiche. Setz deinen Preis selbst.': {
+    fr: "Il n'y a pas encore de comparaisons pour cet article. Fixe ton prix toi-même.",
+    it: 'Per questo articolo non ci sono ancora confronti. Stabilisci tu il prezzo.',
+    en: 'There are no comparisons for this item yet. Set your own price.',
+  },
 };

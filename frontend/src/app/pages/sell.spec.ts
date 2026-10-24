@@ -251,7 +251,7 @@ describe('Sell', () => {
 
     button(element, 'Weiter').click();
     await fixture.whenStable();
-    expect(element.querySelector('[data-testid="gap"]')!.textContent).toContain('Model?');
+    expect(element.querySelector('[data-testid="gap"]')!.textContent).toContain('Modell?');
     expect(element.textContent).toContain('2 von 4');
   });
 
@@ -274,7 +274,9 @@ describe('Sell', () => {
     await fixture.whenStable();
     button(element, 'Übernehmen').click();
     await fixture.whenStable();
-    expect(element.querySelector('[data-testid="gap"]')!.textContent).toContain('Size: 27"?');
+    expect(element.querySelector('[data-testid="gap"]')!.textContent).toContain(
+      'Grösse: 27" – stimmt das?',
+    );
     button(element, 'Stimmt').click();
     await fixture.whenStable();
     button(element, 'Weiss ich nicht').click();
@@ -374,10 +376,12 @@ describe('Sell', () => {
     expect(element.textContent).toContain('Vom Foto gelesen');
     button(element, 'Weiter').click();
     await fixture.whenStable();
-    expect(element.querySelector('[data-testid="gap"]')!.textContent).toContain('Size: 27"?');
+    expect(element.querySelector('[data-testid="gap"]')!.textContent).toContain(
+      'Grösse: 27" – stimmt das?',
+    );
   });
 
-  it('rewrites title, description and price once when the questions are done', async () => {
+  it('rewrites title, description and price right after the model is confirmed', async () => {
     const price = { lowChf: 300, midChf: 350, highChf: 400, provisional: false, evidence: [] };
     const rewriteText = vi
       .fn()
@@ -390,10 +394,9 @@ describe('Sell', () => {
     await fixture.whenStable();
     button(element, 'Übernehmen').click();
     await fixture.whenStable();
-    button(element, 'Stimmt').click();
+    expect(rewriteText).toHaveBeenCalledOnce(); // the model changes title and price at once
+    button(element, 'Stimmt').click(); // same value: no further rewrite
     await fixture.whenStable();
-    expect(rewriteText).not.toHaveBeenCalled(); // not while answering
-
     button(element, 'Weiss ich nicht').click();
     await fixture.whenStable();
 
@@ -428,6 +431,30 @@ describe('Sell', () => {
     await fixture.whenStable();
     expect(aside().textContent).not.toContain('Wird angepasst');
     expect(aside().querySelector('.zw-shimmer')).toBeNull();
+  });
+
+  it('back from the price goes to the findings when no question is left', async () => {
+    const { fixture, element } = await questions([streams(done(DRAFT))]);
+    for (let i = 0; i < 3; i++) {
+      button(element, 'Weiss ich nicht').click();
+      await fixture.whenStable();
+    }
+
+    button(element, 'Zurück').click();
+    await fixture.whenStable();
+
+    expect(element.textContent).toContain('1 von 4');
+    expect(element.querySelector('h1')!.textContent).toContain('Dell U2719D');
+  });
+
+  it('throws the draft away only after a second click', async () => {
+    const { fixture, element } = await analyse([streams(done(DRAFT))]);
+
+    button(element, 'Anderes Foto').click();
+    await fixture.whenStable();
+
+    expect(store.clear).not.toHaveBeenCalled();
+    expect(element.textContent).toContain('Entwurf wirklich verwerfen?');
   });
 
   it('skipping every question needs no rewrite', async () => {

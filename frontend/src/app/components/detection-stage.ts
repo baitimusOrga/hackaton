@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 /** One box on the photo: a detection, a privacy mark or where to photograph a missing detail. */
 export interface StageMark {
@@ -33,7 +33,7 @@ export interface StageMark {
           } @else if (marks().length) {
             <div class="dim"></div>
           }
-          @for (mark of marks(); track mark.label + $index; let i = $index) {
+          @for (mark of placed(); track mark.label + $index; let i = $index) {
             <div
               class="glass"
               [class.glass--privacy]="mark.kind === 'privacy'"
@@ -45,20 +45,23 @@ export interface StageMark {
               [style.animation-delay.ms]="i * 120"
               [attr.data-testid]="mark.kind === 'detect' ? 'detection' : mark.kind"
             >
-              <span
-                class="pill"
-                [class.pill--above]="mark.box[1] > 0.14"
-                [style.animation-delay.ms]="i * 120 + 350"
-              >
-                <span class="pill__icon" aria-hidden="true">
-                  @if (mark.kind === 'hint') {
-                    <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /></svg>
-                  } @else {
-                    <svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" /></svg>
-                  }
+              @if (mark.pill) {
+                <span
+                  class="pill"
+                  [class.pill--above]="mark.pill === 'above'"
+                  [class.pill--inside]="mark.pill === 'inside'"
+                  [style.animation-delay.ms]="i * 120 + 350"
+                >
+                  <span class="pill__icon" aria-hidden="true">
+                    @if (mark.kind === 'hint') {
+                      <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /></svg>
+                    } @else {
+                      <svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" /></svg>
+                    }
+                  </span>
+                  {{ mark.label }}
                 </span>
-                {{ mark.label }}
-              </span>
+              }
             </div>
           }
         </div>
@@ -174,6 +177,10 @@ export interface StageMark {
       color: #fff;
       font: 600 13px/18px var(--font-sans);
       animation: zwLabel 0.5s ease-out 0.35s both;
+    }
+    .pill--inside {
+      top: 8px;
+      left: 8px;
     }
     .pill--above {
       top: auto;
@@ -301,9 +308,45 @@ export class DetectionStage {
   readonly marks = input<StageMark[]>([]);
   readonly scanning = input(false);
 
+  /**
+   * Where each label goes: above, below or inside its box, whichever does not cover a label placed
+   * before; a label with no free spot is left out (the box stays). Sizes are estimated as fractions of
+   * a ~560px wide photo.
+   */
+  protected readonly placed = computed(() => {
+    const taken: Rect[] = [];
+    return this.marks().map((mark) => {
+      const [x, y, , h] = mark.box;
+      const width = Math.min(0.95, (mark.label.length * 7.5 + 44) / 560);
+      const height = 0.075;
+      const spots: [Pill, Rect][] = [
+        ['above', { x, y: y - height - 0.015, w: width, h: height }],
+        ['below', { x, y: y + h + 0.015, w: width, h: height }],
+        ['inside', { x: x + 0.015, y: y + 0.015, w: width, h: height }],
+      ];
+      const free = spots.find(
+        ([, r]) =>
+          r.y >= 0 && r.y + r.h <= 1 && r.x + r.w <= 1.02 && !taken.some((t) => overlaps(r, t)),
+      );
+      if (free) taken.push(free[1]);
+      return { ...mark, pill: free?.[0] ?? null };
+    });
+  });
+
   // fixed spread of the sparks in the scanning sweep, as in the design
   protected readonly sparks = Array.from({ length: 14 }, (_, i) => {
     const x = ((i * 37) % 92) + 4;
     return { x, y: ((i * 53) % 88) + 6, delay: Math.round(x * 15) };
   });
 }
+
+type Pill = 'above' | 'below' | 'inside';
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+const overlaps = (a: Rect, b: Rect) =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;

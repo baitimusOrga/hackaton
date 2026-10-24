@@ -15,7 +15,7 @@ const AI: Gap[] = [
 ];
 
 describe('openGaps', () => {
-  it('asks identity first, then condition, then the rest, at most five', () => {
+  it('asks identity first, then condition, then the rest, up to the limit', () => {
     const cards = openGaps(
       BIKE,
       [{ name: 'Brand', value: 'Trek', source: 'LABEL' }],
@@ -37,9 +37,11 @@ describe('openGaps', () => {
       hint: { photo: 1, box: [0.38, 0.38, 0.3, 0.16] },
     });
     expect(cards[1].hint).toBeUndefined();
-    expect(cards[1].kind).toBe('PHOTO');
+    // the condition is picked from chips; a title without AI text is left to the page (translated)
+    expect(cards[1]).toMatchObject({ kind: 'ASK', prompt: '' });
     expect(cards[2].options).toEqual(['M', 'L']);
-    expect(cards[3]).toMatchObject({ kind: 'ASK', prompt: 'Wheel size?', options: [] });
+    expect(cards[3]).toMatchObject({ kind: 'ASK', prompt: '', options: [] });
+    expect(openGaps(BIKE, [], '', AI, new Set(), 2).map((c) => c.fact)).toEqual(['Brand', 'Model']);
   });
 
   it('turns a suggestion into a confirm card and drops confirmed and skipped facts', () => {
@@ -58,11 +60,11 @@ describe('openGaps', () => {
       {
         fact: 'Model',
         kind: 'CONFIRM',
-        prompt: 'Model: Marlin 7?',
+        prompt: '',
         options: [],
         value: 'Marlin 7',
       },
-      { fact: 'Brakes', kind: 'ASK', prompt: 'Brakes?', options: [] },
+      { fact: 'Brakes', kind: 'ASK', prompt: '', options: [] },
     ]);
   });
 });

@@ -32,7 +32,8 @@ import { devicePosition } from '../device-location';
 import { DraftStore } from '../draft-store';
 import { DraftStream } from '../draft-stream';
 import { ErrorBanner, HANDLES_ERRORS, translateError } from '../errors';
-import { CONDITION, GapCard, KnownFact, completeness, openGaps } from '../gaps';
+import { CONDITION, GapCard, KnownFact, MAX_CARDS, completeness, openGaps } from '../gaps';
+import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
 import { Chip } from '../ui/chip';
@@ -110,6 +111,7 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
     RouterLink,
     DetectionStage,
     PricePanel,
+    Badge,
     Button,
     ChfPipe,
     Chip,
@@ -139,7 +141,10 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       min-height: 100vh;
     }
     .bar {
-      position: relative;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg-000);
       border-bottom: var(--border-1) solid var(--line-soft);
     }
     .bar__in {
@@ -270,10 +275,14 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       color: var(--ink);
       cursor: pointer;
     }
-    .choice:hover,
-    .choice:focus-visible {
-      background: var(--bg-900);
-      color: var(--ink-inverse);
+    .choice:hover {
+      background: var(--bg-100);
+    }
+    .danger {
+      color: var(--danger);
+    }
+    .busy-slot {
+      min-height: 16px;
     }
     .manual {
       display: flex;
@@ -305,7 +314,9 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
     }
     .aside__in {
       position: sticky;
-      top: var(--space-6);
+      top: calc(72px + var(--space-6));
+      max-height: calc(100vh - 72px - 2 * var(--space-6));
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: var(--space-3);
@@ -339,17 +350,6 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       font-weight: 600;
     }
     .tag {
-      display: inline-flex;
-      align-items: center;
-      height: 20px;
-      padding: 0 6px;
-      font-size: 12px;
-      line-height: 16px;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      border: var(--border-1) solid var(--line);
-      border-radius: var(--radius-1);
       align-self: flex-start;
     }
     .fact-row {
@@ -449,10 +449,22 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       background-size: 260% 100%;
       animation: zwShimmer 1.2s ease-out 0.5s both;
     }
+    /* Small screens: photo and question first; the preview would push them off the screen. */
     @media (max-width: 900px) {
       .aside {
+        display: none;
+      }
+      .bar__in,
+      .main {
+        gap: var(--space-4);
+        padding-left: var(--space-4);
+        padding-right: var(--space-4);
+      }
+      .bar .strong {
+        display: none;
+      }
+      .col {
         flex-basis: 100%;
-        margin-top: 0;
       }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -679,6 +691,7 @@ export class Sell {
   } | null>(null);
   // the price range on screen; moves smoothly to a new estimate (e.g. after the model is confirmed)
   protected readonly shownEstimate = signal<PriceEstimate | null>(null);
+  protected readonly noEstimate = computed(() => this.shownEstimate()?.midChf == null);
   // bumped when the range moves, so the highlight plays again
   protected readonly priceRun = signal(0);
 
@@ -736,8 +749,16 @@ export class Sell {
   protected readonly keyFacts = computed(
     () => this.categories().find((c) => c.name === this.fields().category)?.keyFacts ?? [],
   );
+  // at most MAX_CARDS questions per round, so "Noch N Fragen" goes down with every answer
   protected readonly cards = computed(() =>
-    openGaps(this.keyFacts(), this.facts(), this.fields().condition, this.aiGaps(), this.skipped()),
+    openGaps(
+      this.keyFacts(),
+      this.facts(),
+      this.fields().condition,
+      this.aiGaps(),
+      this.skipped(),
+      MAX_CARDS - this.answered(),
+    ),
   );
   protected readonly currentCard = computed<GapCard | undefined>(() =>
     this.gapsActive() ? this.cards()[0] : undefined,
@@ -746,7 +767,9 @@ export class Sell {
     Math.round(completeness(this.keyFacts(), this.facts()) * 100),
   );
   protected readonly openNames = computed(() =>
-    [...new Set([...this.cards().map((c) => c.fact), ...this.skipped()])].join(', '),
+    [...new Set([...this.cards().map((c) => c.fact), ...this.skipped()])]
+      .map((name) => this.i18n.t(name))
+      .join(', '),
   );
   protected readonly photoIdsToPublish = computed(() =>
     (this.draft()?.photoIds ?? []).filter((_, i) => !this.excluded().has(i)),
@@ -807,17 +830,31 @@ export class Sell {
     const card = this.currentCard();
     const last = this.photos().length - 1;
     const waiting = this.busy() || this.analyzing();
-    const hint = this.step() === 2 && !waiting && !this.readFact() ? card?.hint : undefined;
-    const index = hint ? hint.photo - 1 : this.step() === 2 ? last : this.shownPhoto();
-    const marks: StageMark[] = hint
-      ? [
-          {
-            box: hint.box,
-            label: this.i18n.t('{name} hier', { name: this.i18n.t(card!.fact) }),
-            kind: 'hint',
-          },
-        ]
-      : this.marksOn(index + 1).map((m) => ({ ...m, kind: m.privacy ? 'privacy' : 'detect' }));
+    const asking = this.step() === 2 && !waiting && !this.readFact();
+    const hint = asking ? card?.hint : undefined;
+    // a confirm card shows the detection it asks about
+    const seen =
+      asking && card?.kind === 'CONFIRM'
+        ? this.detections().find((d) => d.fact?.name === card.fact)
+        : undefined;
+    const index = hint
+      ? hint.photo - 1
+      : seen
+        ? (seen.photo ?? 1) - 1
+        : this.step() === 2
+          ? last
+          : this.shownPhoto();
+    const marks: StageMark[] = seen
+      ? [{ box: seen.box ?? [], label: seen.label ?? '', kind: 'detect' }]
+      : hint
+        ? [
+            {
+              box: hint.box,
+              label: this.i18n.t('{name} hier', { name: this.i18n.t(card!.fact) }),
+              kind: 'hint',
+            },
+          ]
+        : this.marksOn(index + 1).map((m) => ({ ...m, kind: m.privacy ? 'privacy' : 'detect' }));
     return { index, photo: this.photos()[index], scanning: waiting && !marks.length, marks };
   });
   protected readonly asideTitle = computed(() =>
@@ -902,7 +939,9 @@ export class Sell {
       this.step();
       this.published();
       this.readFact();
+      this.answered();
       host.scrollTop = 0;
+      this.confirmRestart.set(false);
     });
   }
 
@@ -961,6 +1000,24 @@ export class Sell {
     this.restored.set(true);
   }
 
+  // "Neu beginnen" asks once more before it throws the draft away
+  protected readonly confirmRestart = signal(false);
+
+  protected restart(): void {
+    if (this.confirmRestart()) void this.startOver();
+    else this.confirmRestart.set(true);
+  }
+
+  /** The question as shown: the AI's wording, or phrased here from the (translated) fact name. */
+  protected cardTitle(card: GapCard): string {
+    const name = this.i18n.t(card.fact);
+    if (card.kind === 'CONFIRM')
+      return this.i18n.t('{name}: {value} – stimmt das?', { name, value: card.value ?? '' });
+    if (card.prompt) return card.prompt;
+    if (card.fact === CONDITION) return this.i18n.t('In welchem Zustand ist er?');
+    return this.i18n.t('{name}?', { name });
+  }
+
   /** Forgets the saved draft and starts with an empty page. */
   protected async startOver(): Promise<void> {
     await this.store.clear();
@@ -974,6 +1031,7 @@ export class Sell {
 
   protected next(): void {
     if (!this.canContinue()) return;
+    this.restored.set(false);
     if (this.step() === 1) {
       if (this.cards().length) {
         this.step.set(2);
@@ -983,10 +1041,12 @@ export class Sell {
   }
 
   protected back(): void {
+    this.restored.set(false);
     if (this.step() === 3 && this.cards().length) {
       this.step.set(2);
       this.gapsActive.set(true);
-    } else this.step.update((s) => Math.max(1, s - 1));
+    } else if (this.step() === 3) this.step.set(1);
+    else this.step.update((s) => Math.max(1, s - 1));
   }
 
   /** After the "read" moment of a photo question: on to the next question, or the price. */
@@ -1075,7 +1135,7 @@ export class Sell {
     this.streamFailed.set(false);
     this.detections.set([]);
     this.privacyMarks.set([]);
-    this.aiGaps.set([]);
+    this.pendingGaps = [];
     let drafted = false;
     try {
       await this.stream.run(
@@ -1114,16 +1174,27 @@ export class Sell {
   private onEvent(event: DraftEvent): boolean {
     switch (event.type) {
       case 'DETECTION':
-        this.detections.update((all) => [...all, event.detection!]);
+        this.detections.update((all) => [
+          ...all,
+          { ...event.detection!, label: swiss(event.detection!.label) },
+        ]);
         this.shownPhoto.set((event.detection!.photo ?? 1) - 1);
         return false;
       case 'PRIVACY':
-        this.privacyMarks.update((all) => [...all, event.privacy!]);
+        this.privacyMarks.update((all) => [
+          ...all,
+          { ...event.privacy!, text: swiss(event.privacy!.text) },
+        ]);
         return false;
       case 'GAP':
-        this.aiGaps.update((all) => [...all, event.gap!]);
+        this.pendingGaps.push({
+          ...event.gap!,
+          prompt: swiss(event.gap!.prompt),
+          options: event.gap!.options?.map(swiss),
+        });
         return false;
       case 'DRAFT':
+        this.aiGaps.set(this.pendingGaps);
         this.applyDraft(event.draft!);
         return true;
       case 'ERROR':
@@ -1134,7 +1205,16 @@ export class Sell {
     }
   }
 
-  private applyDraft(draft: ListingDraft): void {
+  private pendingGaps: Gap[] = [];
+
+  private applyDraft(raw: ListingDraft): void {
+    // Swiss spelling: the AI sometimes writes ß
+    const draft: ListingDraft = {
+      ...raw,
+      title: swiss(raw.title),
+      description: swiss(raw.description),
+      facts: raw.facts?.map((f) => ({ ...f, value: swiss(f.value) })),
+    };
     this.draft.set(draft);
     this.fields.update((fields) => {
       const next = { ...fields };
@@ -1169,7 +1249,9 @@ export class Sell {
           ? facts.map((f) => (f.name === card.fact ? fact : f))
           : [fact, ...facts],
       );
-      this.textStale ||= changed;
+      // brand and model change what the item is: title and price follow right away, the rest at the end
+      if (changed && (card.fact === 'Brand' || card.fact === 'Model')) this.rewriteText();
+      else this.textStale ||= changed;
     }
     this.nextCard();
   }
@@ -1180,6 +1262,7 @@ export class Sell {
   }
 
   private nextCard(): void {
+    this.restored.set(false);
     this.answered.update((n) => n + 1);
     this.typing.set(false);
     this.draftAnswer.set('');
@@ -1230,10 +1313,12 @@ export class Sell {
           if (run !== this.rewriteRun) return;
           this.fields.update((fields) => ({
             ...fields,
-            title: this.sellerFields.has('title') ? fields.title : (text.title ?? fields.title),
+            title: this.sellerFields.has('title')
+              ? fields.title
+              : swiss(text.title) || fields.title,
             description: this.sellerFields.has('description')
               ? fields.description
-              : (text.description ?? fields.description),
+              : swiss(text.description) || fields.description,
           }));
           if (text.price) this.draft.update((draft) => draft && { ...draft, price: text.price });
           this.rewriting.set(false);
@@ -1380,6 +1465,11 @@ export class Sell {
       error: () => this.busy.set(false),
     });
   }
+}
+
+/** Swiss spelling for AI text: ss, never ß. */
+function swiss(text: string | null | undefined): string {
+  return (text ?? '').replaceAll('ß', 'ss');
 }
 
 function isImage(file: File): boolean {

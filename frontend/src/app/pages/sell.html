@@ -70,7 +70,7 @@
               </div>
               <div class="card">
                 <div class="card__photo" [style.background-image]="'url(' + done.photo + ')'"></div>
-                <span class="tag">{{ 'Festpreis' | t }}</span>
+                <app-badge class="tag">{{ 'Festpreis' | t }}</app-badge>
                 <p class="card__title">{{ done.title }}</p>
                 <p class="zw-muted zw-small">{{ done.meta }}</p>
                 <p class="zw-price">{{ done.price | chf }}</p>
@@ -124,8 +124,14 @@
                   </div>
                   <ng-container *ngTemplateOutlet="stageTpl" />
                   <div class="foot2">
-                    <button type="button" class="zw-link" (click)="startOver()">
-                      {{ 'Neu beginnen' | t }}
+                    <!-- throwing the draft away takes a second click -->
+                    <button
+                      type="button"
+                      class="zw-link"
+                      [class.danger]="confirmRestart()"
+                      (click)="restart()"
+                    >
+                      {{ (confirmRestart() ? 'Entwurf wirklich verwerfen?' : 'Anderes Foto') | t }}
                     </button>
                     <span class="push zw-small zw-muted">{{
                       analyzing() || busy() ? '' : remaining()
@@ -169,11 +175,12 @@
                 } @else if (currentCard(); as card) {
                   <div class="stack" data-testid="gap" aria-live="polite">
                     <span class="zw-caption">{{ remaining() }}</span>
-                    <h1 id="sell-q" class="q">{{ card.prompt }}</h1>
+                    <h1 id="sell-q" class="q">{{ cardTitle(card) }}</h1>
                   </div>
                   @if (card.kind === 'PHOTO' && !typing() && photos().length < maxPhotos) {
                     <ng-container *ngTemplateOutlet="stageTpl" />
                   } @else if (card.kind === 'CONFIRM' && !typing()) {
+                    <ng-container *ngTemplateOutlet="stageTpl" />
                     <div class="chips">
                       <button type="button" class="choice" (click)="answer(card, card.value ?? '')">
                         {{ 'Stimmt' | t }}
@@ -240,23 +247,24 @@
                     </div>
                   }
                   <div class="foot2">
+                    <!-- same order on every question: back left, skip and answers right -->
+                    <button type="button" class="zw-link" (click)="back()">
+                      {{ 'Zurück' | t }}
+                    </button>
+                    <button type="button" class="zw-link link--muted push" (click)="skip(card)">
+                      {{ (card.kind === 'PHOTO' ? 'Überspringen' : 'Weiss ich nicht') | t }}
+                    </button>
                     @if (card.kind === 'PHOTO' && photos().length < maxPhotos) {
-                      <button type="button" class="zw-link link--muted" (click)="skip(card)">
-                        {{ 'Überspringen' | t }}
-                      </button>
                       @if (busy() || analyzing()) {
-                        <button appButton variant="primary" type="button" class="push" disabled>
+                        <button appButton variant="primary" type="button" disabled>
                           {{ 'Foto wird ausgewertet…' | t }}
                         </button>
                       } @else {
-                        <button
-                          appButton
-                          type="button"
-                          class="push"
-                          (click)="typing.set(!typing())"
-                        >
-                          {{ 'Selbst eingeben' | t }}
-                        </button>
+                        @if (!typing()) {
+                          <button appButton type="button" (click)="typing.set(true)">
+                            {{ 'Selbst eingeben' | t }}
+                          </button>
+                        }
                         <label class="zw-btn zw-btn--primary file">
                           <app-icon name="camera" />
                           <span>{{ 'Foto aufnehmen' | t }}</span>
@@ -269,20 +277,24 @@
                           />
                         </label>
                       }
-                    } @else {
-                      <button type="button" class="zw-link" (click)="back()">
-                        {{ 'Zurück' | t }}
-                      </button>
-                      <button type="button" class="zw-link link--muted push" (click)="skip(card)">
-                        {{ 'Weiss ich nicht' | t }}
-                      </button>
                     }
                   </div>
                 }
               }
               @case (3) {
-                <h1 id="sell-q" class="q">{{ 'Zu welchem Preis?' | t }}</h1>
-                <ng-container *ngTemplateOutlet="rewritingTpl" />
+                <div class="stack">
+                  <h1 id="sell-q" class="q">{{ 'Zu welchem Preis?' | t }}</h1>
+                  <!-- the slot keeps its height, so nothing jumps when the hint goes -->
+                  <div class="busy-slot"><ng-container *ngTemplateOutlet="rewritingTpl" /></div>
+                </div>
+                @if (noEstimate()) {
+                  <p class="zw-muted">
+                    {{
+                      'Für diesen Artikel gibt es noch keine Vergleiche. Setz deinen Preis selbst.'
+                        | t
+                    }}
+                  </p>
+                }
                 <div class="flashable" [class.zw-shimmer]="rewriting()">
                   <app-price-panel
                     [estimate]="shownEstimate()"
@@ -353,7 +365,7 @@
               }
               @if (draft()) {
                 <div>
-                  <span class="tag">{{ 'Festpreis' | t }}</span>
+                  <app-badge class="tag">{{ 'Festpreis' | t }}</app-badge>
                 </div>
               }
               @for (title of [asideTitle()]; track title) {
@@ -470,7 +482,7 @@
           >
             @for (category of categories(); track category.name) {
               <option [value]="category.name" [selected]="category.name === fields().category">
-                {{ category.name }}
+                {{ category.name! | t }}
               </option>
             }
           </select>
@@ -617,7 +629,7 @@
     <div>
       @for (fact of facts(); track fact.name; let i = $index) {
         <div class="fact" data-testid="fact">
-          <label class="zw-label" [for]="'fact-' + i">{{ fact.name }}</label>
+          <label class="zw-label" [for]="'fact-' + i">{{ fact.name | t }}</label>
           <input
             class="zw-input"
             [id]="'fact-' + i"
@@ -821,11 +833,11 @@
     <div class="restored" role="status">
       <div class="restored__in">
         <span>{{ 'Dein Entwurf von vorhin ist wieder da.' | t }}</span>
-        <button type="button" class="zw-link push" (click)="restored.set(false)">
-          {{ 'Weitermachen' | t }}
-        </button>
-        <button appButton size="sm" type="button" (click)="startOver()">
+        <button type="button" class="zw-link push" (click)="startOver()">
           {{ 'Neu beginnen' | t }}
+        </button>
+        <button appButton variant="primary" size="sm" type="button" (click)="restored.set(false)">
+          {{ 'Weitermachen' | t }}
         </button>
       </div>
     </div>

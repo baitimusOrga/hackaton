@@ -73,6 +73,15 @@ class SellingControllerTest {
                 .andExpect(jsonPath("$.detail").value("Some photos are unknown or already used. Please add them again."));
     }
 
+    @Test void theCatalogFactsOfACategoryCanBePublished() throws Exception {
+        var seller = jwt().jwt(j -> j.subject("seller").claim("name", "Seller").claim("email", "s@example.com"));
+        mvc.perform(post("/api/listings").with(seller).contentType(MediaType.APPLICATION_JSON)
+                        .content(REQUEST.replace("Office furniture", "Bikes")
+                                .replace("{\"Material\":\"Wood\"}",
+                                        "{\"Frame size\":\"M\",\"Wheel size\":\"29\\\"\",\"Gears\":\"12\",\"Brakes\":\"Disc\"}")))
+                .andExpect(status().isCreated());
+    }
+
     @Test void unknownCategoryAndAttributeNamesAreRejected() throws Exception {
         var seller = jwt().jwt(j -> j.subject("seller").claim("name", "Seller").claim("email", "s@example.com"));
         mvc.perform(post("/api/listings").with(seller).contentType(MediaType.APPLICATION_JSON)
