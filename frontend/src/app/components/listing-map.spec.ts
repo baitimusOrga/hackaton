@@ -62,6 +62,11 @@ describe('ListingMap', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toContain('With coordinates');
     expect(rows[0]).toContain('CHF 20');
-    expect(scroll).toHaveBeenCalled();
+    expect(scroll).toHaveBeenCalledTimes(1);
+    element
+      .querySelector('.leaflet-interactive')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await TestBed.inject(ApplicationRef).whenStable();
+    expect(scroll).toHaveBeenCalledTimes(2);
   });
 });

@@ -65,10 +65,6 @@ export class ListingMap {
   constructor() {
     const injector = inject(Injector);
     const destroyRef = inject(DestroyRef);
-    // the list only exists after the render that follows the click
-    effect(() =>
-      this.list()?.nativeElement.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }),
-    );
     afterNextRender(() => {
       const map = L.map(this.host().nativeElement).setView(SWITZERLAND, 7);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -98,7 +94,18 @@ export class ListingMap {
               continue;
             }
             L.circle(at, { radius, className: 'zw-map-area' })
-              .on('click', () => this.selected.set(group))
+              .on('click', () => {
+                this.selected.set(group);
+                // after the render, so the list exists on the first click and is re-shown on every later one
+                afterNextRender(
+                  () =>
+                    this.list()?.nativeElement.scrollIntoView?.({
+                      block: 'nearest',
+                      behavior: 'smooth',
+                    }),
+                  { injector },
+                );
+              })
               .bindTooltip(String(group.length), {
                 permanent: true,
                 direction: 'center',
