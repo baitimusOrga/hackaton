@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { ListingsService, PlacesService, SellingService } from '../api/services';
 import { DraftEvent, ListingDraft } from '../api/models';
 import { DraftStore } from '../draft-store';
@@ -235,6 +235,15 @@ describe('Sell', () => {
     expect(paste.defaultPrevented).toBe(true);
     expect(text.defaultPrevented).toBe(false);
     expect(fixture.componentInstance['photos']()).toHaveLength(2);
+  });
+
+  it('drops a photo the server refuses, so another one can be added', async () => {
+    const uploadPhotos = vi.fn().mockReturnValue(throwError(() => new Error('415')));
+    const { fixture, element, run } = await analyse([], { uploadPhotos });
+
+    expect(fixture.componentInstance['photos']()).toHaveLength(0);
+    expect(run).not.toHaveBeenCalled();
+    expect(element.querySelector('input[multiple]')).not.toBeNull();
   });
 
   it('analyses right after the photo, shows the findings, then asks for the model first', async () => {

@@ -1176,7 +1176,12 @@ export class Sell {
         this.busy.set(false);
         void this.runStream();
       },
-      error: () => this.busy.set(false),
+      // the banner says why; the rejected photos go, so the seller can add others
+      error: () => {
+        fresh.forEach((p) => URL.revokeObjectURL(p.url));
+        this.photos.update((photos) => photos.filter((p) => p.id !== undefined));
+        this.busy.set(false);
+      },
     });
   }
 
