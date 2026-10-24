@@ -23,7 +23,17 @@ export interface MapItem {
 
 const SWITZERLAND = L.latLng(46.8, 8.2);
 
-/** OpenStreetMap with one area circle per cluster of listings within `areaKm` of each other, labelled with its listing count; a click lists them. The exact spot stays private. */
+// explicit icon: Leaflet's default-icon path detection breaks with the bundler's file names
+const PIN = L.icon({
+  iconUrl: '/leaflet/marker-icon.png',
+  iconRetinaUrl: '/leaflet/marker-icon-2x.png',
+  shadowUrl: '/leaflet/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  shadowSize: [41, 41],
+});
+
+/** OpenStreetMap with one area circle per cluster of listings within `areaKm` of each other, labelled with its listing count; a click lists them. With `pin`, a plain marker per listing instead. The exact spot stays private. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing-map',
@@ -38,6 +48,7 @@ export class ListingMap {
   readonly items = input.required<MapItem[]>();
   readonly areaKm = input(5);
   readonly label = input('Karte der Inserate');
+  readonly pin = input(false);
 
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('map');
   private readonly router = inject(Router);
@@ -68,8 +79,12 @@ export class ListingMap {
             else areas.push({ at, group: [item] });
           }
           for (const { at, group } of areas) {
+            if (this.pin()) {
+              L.marker(at, { icon: PIN, keyboard: false, interactive: false }).addTo(shapes);
+              continue;
+            }
             L.circle(at, { radius, className: 'zw-map-area' })
-              .bindPopup(this.popup(group))
+              .bindPopup(this.popup(group), { maxHeight: 240 })
               .bindTooltip(String(group.length), {
                 permanent: true,
                 direction: 'center',
