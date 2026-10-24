@@ -65,7 +65,7 @@
     headingId="h-near"
     heading="Neu in deiner Nähe"
     linkText="Alles in 25 km"
-    link="/find"
+    link="/search"
   />
   @if (nearby(); as items) {
     @if (items.length) {
@@ -85,6 +85,13 @@
     </div>
   }
 </section>
+
+@if (listings()?.length) {
+  <section class="zw-container zw-section" aria-labelledby="h-map">
+    <app-section-heading headingId="h-map" heading="Auf der Karte" />
+    <app-listing-map [items]="listings()!" label="Karte der Inserate" />
+  </section>
+}
 
 <section class="zw-biz" aria-labelledby="h-biz">
   <div class="zw-container zw-biz__inner">

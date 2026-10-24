@@ -8,6 +8,7 @@ import { ListingsService } from '../api/services';
 import { conditionLabel, metaLine } from '../conditions';
 import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Badge } from '../ui/badge';
+import { ListingMap } from '../components/listing-map';
 import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
 import { SectionHeading } from '../ui/section-heading';
@@ -23,9 +24,9 @@ import { SummaryCard } from '../ui/summary-card';
     Badge,
     Button,
     ChfPipe,
+    ListingMap,
     SectionHeading,
     SummaryCard,
-    TranslatePipe,
   ],
   templateUrl: './listing.html',
   styles: `

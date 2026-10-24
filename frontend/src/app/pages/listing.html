@@ -86,6 +86,17 @@
         </div>
       }
 
+      @if (typeof item.latitude === 'number' && typeof item.longitude === 'number') {
+        <div class="group tight">
+          <h2>Gegend</h2>
+          <!-- the postcode area, not the address: the exact spot stays private -->
+          <app-listing-map
+            [items]="[item]"
+            [label]="'Karte der Gegend um ' + item.postcode + ' ' + item.locality"
+          />
+        </div>
+      }
+
       <div class="group tight">
         <h2>{{ 'Fragen' | t }}</h2>
         <!-- TODO: backend has no public questions; list them here ("Name: Frage" / "Verkäufer: Antwort") once it does. -->
