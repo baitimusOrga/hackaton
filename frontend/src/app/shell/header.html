@@ -53,13 +53,6 @@
       </button>
     }
     <nav class="zw-nav" [attr.aria-label]="'Hauptnavigation' | t">
-      @if (docked()) {
-        <a routerLink="/find" [attr.aria-label]="'Meine Suchen' | t"
-          ><app-icon name="bookmark"
-        /></a>
-      } @else {
-        <a routerLink="/find"><app-icon name="bookmark" />{{ 'Meine Suchen' | t }}</a>
-      }
       <a appButton [routerLink]="[{ outlets: { modal: ['sell'] } }]"
         ><app-icon name="camera" /><span>{{ 'Verkaufen' | t }}</span></a
       >

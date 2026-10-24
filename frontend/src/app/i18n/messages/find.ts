@@ -29,7 +29,6 @@ export const FIND_MESSAGES: Messages = {
     it: 'Tocca per rimuovere, tutti i dettagli a sinistra.',
     en: 'Tap to remove, all details on the left.',
   },
-  'Suche speichern': { fr: 'Enregistrer la recherche', it: 'Salva la ricerca', en: 'Save search' },
   Filter: { fr: 'Filtres', it: 'Filtri', en: 'Filters' },
   Anforderungen: { fr: 'Exigences', it: 'Requisiti', en: 'Requirements' },
   Muss: { fr: 'Obligatoire', it: 'Indispensabile', en: 'Must have' },

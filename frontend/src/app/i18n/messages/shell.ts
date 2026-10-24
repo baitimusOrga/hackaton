@@ -73,7 +73,6 @@ export const SHELL_MESSAGES: Messages = {
     it: 'Navigazione principale',
     en: 'Main navigation',
   },
-  'Meine Suchen': { fr: 'Mes recherches', it: 'Le mie ricerche', en: 'My searches' },
   Verkaufen: { fr: 'Vendre', it: 'Vendi', en: 'Sell' },
   Abmelden: { fr: 'Se déconnecter', it: 'Esci', en: 'Sign out' },
   Anmelden: { fr: 'Se connecter', it: 'Accedi', en: 'Sign in' },
