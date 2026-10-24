@@ -48,6 +48,7 @@ export interface StageMark {
                   class="tag"
                   [class.tag--above]="mark.pill === 'above'"
                   [class.tag--inside]="mark.pill === 'inside'"
+                  [class.tag--end]="mark.end"
                 >
                   @if (mark.kind === 'hint') {
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -182,6 +183,13 @@ export interface StageMark {
       top: 6px;
       left: 6px;
     }
+    .tag--end {
+      left: auto;
+      right: 0;
+    }
+    .tag--inside.tag--end {
+      right: 6px;
+    }
     .tag--above {
       top: auto;
       bottom: calc(100% + 6px);
@@ -282,22 +290,31 @@ export class DetectionStage {
   protected readonly placed = computed(() => {
     const taken: Rect[] = [];
     return this.marks().map((mark) => {
-      const [x, y, , h] = mark.box;
+      const [x, y, w, h] = mark.box;
       // a hint label also carries the camera button
       const button = mark.kind === 'hint' ? 150 : 0;
       const width = Math.min(0.95, (mark.label.length * 7.5 + 44 + button) / 560);
       const height = mark.kind === 'hint' ? 0.11 : 0.075;
-      const spots: [Pill, Rect][] = [
-        ['above', { x, y: y - height - 0.015, w: width, h: height }],
-        ['below', { x, y: y + h + 0.015, w: width, h: height }],
-        ['inside', { x: x + 0.015, y: y + 0.015, w: width, h: height }],
+      // each row starts at the box's left edge, or ends at its right edge when there is no room
+      const rows: [Pill, number][] = [
+        ['above', y - height - 0.015],
+        ['below', y + h + 0.015],
+        ['inside', y + 0.015],
       ];
-      const free = spots.find(
-        ([, r]) =>
-          r.y >= 0 && r.y + r.h <= 1 && r.x + r.w <= 1.02 && !taken.some((t) => overlaps(r, t)),
+      const spots = rows.flatMap(([pill, top]) =>
+        [false, true].map((end) => ({
+          pill,
+          end,
+          rect: { x: end ? x + w - width : x, y: top, w: width, h: height },
+        })),
       );
-      if (free) taken.push(free[1]);
-      return { ...mark, pill: free?.[0] ?? null };
+      const fits = (r: Rect) => r.y >= 0 && r.y + r.h <= 1 && r.x >= -0.02 && r.x + r.w <= 1.02;
+      // the hint label carries the camera button, so it always gets a place
+      const free =
+        spots.find((s) => fits(s.rect) && !taken.some((t) => overlaps(s.rect, t))) ??
+        (mark.kind === 'hint' ? (spots.find((s) => fits(s.rect)) ?? spots[4]) : undefined);
+      if (free) taken.push(free.rect);
+      return { ...mark, pill: free?.pill ?? null, end: free?.end ?? false };
     });
   });
 
