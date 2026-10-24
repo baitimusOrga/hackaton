@@ -4,7 +4,7 @@ import { Icon } from '../ui/icon';
 
 export type TokenKind = 'must' | 'nice' | 'budget' | 'region';
 
-/** A requirement, the budget or the region as the page shows it: `phrase` is where it sits in the sentence. */
+/** A requirement, the budget or the region as the page shows it: `key` is unique per token, `phrase` is where it sits in the sentence. */
 export interface Token {
   key: string;
   kind: TokenKind;
@@ -22,6 +22,7 @@ export interface Segment {
  * Tokens without a hit are returned as chips.
  */
 export function place(text: string, tokens: Token[]): { segments: Segment[]; chips: Token[] } {
+  // shortcut: indices assume toLowerCase keeps the length (not for İ); fine for de/fr/it/en
   const lower = text.toLowerCase();
   const ranges: { start: number; end: number; token: Token }[] = [];
   const chips: Token[] = [];
@@ -56,7 +57,7 @@ export function place(text: string, tokens: Token[]): { segments: Segment[]; chi
   selector: 'app-find-sentence',
   imports: [Icon, TranslatePipe],
   template: `<p class="zw-caption">{{ 'Du suchst' | t }}</p>
-    <p class="sentence">
+    <h1 class="sentence">
       @for (s of placed().segments; track $index) {
         @if (s.token; as tok) {
           <button
@@ -77,7 +78,7 @@ export function place(text: string, tokens: Token[]): { segments: Segment[]; chi
           <span>{{ s.text }}</span>
         }
       }
-    </p>
+    </h1>
     <p class="zw-help">{{ hint() }}</p>
     @if (placed().chips.length) {
       <div class="extra">
@@ -135,10 +136,6 @@ export function place(text: string, tokens: Token[]): { segments: Segment[]; chi
     .token:hover {
       color: var(--blue-text);
     }
-    .token:focus-visible {
-      outline: var(--border-2) solid var(--focus);
-      outline-offset: 2px;
-    }
     .extra {
       display: flex;
       align-items: center;
@@ -146,7 +143,7 @@ export function place(text: string, tokens: Token[]): { segments: Segment[]; chi
       gap: var(--space-2);
     }
     .extra .zw-chip {
-      max-width: none;
+      max-width: 100%;
     }
     @media (max-width: 639px) {
       .sentence {

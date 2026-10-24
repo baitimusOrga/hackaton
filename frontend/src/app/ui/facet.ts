@@ -5,6 +5,7 @@ import {
   input,
   model,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
 import { TranslatePipe } from '../i18n/i18n';
@@ -27,7 +28,7 @@ import { Icon } from './icon';
       [class.facet__trigger--on]="summary()"
       [class.facet__trigger--open]="open()"
       [attr.aria-expanded]="open()"
-      (click)="open.set(!open())"
+      (click)="toggle()"
     >
       <span>{{ label() }}</span>
       @if (summary()) {
@@ -38,7 +39,12 @@ import { Icon } from './icon';
     @if (open()) {
       <!-- pointer-only; keyboard users close with Escape or "Übernehmen" -->
       <div class="facet__backdrop" aria-hidden="true" (click)="close()"></div>
-      <div class="facet__panel" role="dialog" [attr.aria-label]="label()">
+      <div
+        class="facet__panel"
+        [class.facet__panel--end]="end()"
+        role="dialog"
+        [attr.aria-label]="label()"
+      >
         <div class="facet__body"><ng-content /></div>
         <div class="facet__foot">
           <button appButton variant="ghost" size="sm" type="button" (click)="clear()">
@@ -79,10 +85,6 @@ import { Icon } from './icon';
     .facet__trigger--open {
       background: var(--bg-100);
     }
-    .facet__trigger:focus-visible {
-      outline: var(--border-2) solid var(--focus);
-      outline-offset: 2px;
-    }
     .facet__summary {
       max-width: 160px;
       overflow: hidden;
@@ -116,6 +118,10 @@ import { Icon } from './icon';
       border-radius: var(--radius-1);
       animation: facetFade 0.12s linear both;
     }
+    .facet__panel--end {
+      left: auto;
+      right: 0;
+    }
     .facet__body {
       display: flex;
       flex-direction: column;
@@ -142,8 +148,8 @@ import { Icon } from './icon';
         opacity: 1;
       }
     }
-    @media (max-width: 639px) {
-      /* a bottom sheet on phones */
+    @media (max-width: 639px), (max-height: 520px) {
+      /* a bottom sheet on phones and short viewports */
       .facet__backdrop {
         z-index: 19;
         background: var(--overlay);
@@ -171,6 +177,14 @@ export class Facet {
   /** "Zurücksetzen": the parent empties this facet; the panel closes afterwards. */
   readonly cleared = output<void>();
   private readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>('trigger');
+  protected readonly end = signal(false);
+
+  protected toggle(): void {
+    const rect = this.trigger().nativeElement.getBoundingClientRect();
+    // flip to the right edge when the 300 px panel would leave the viewport
+    this.end.set(rect.left + 300 > document.documentElement.clientWidth - 16);
+    this.open.set(!this.open());
+  }
 
   protected close(): void {
     if (!this.open()) return;

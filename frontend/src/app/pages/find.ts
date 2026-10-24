@@ -297,13 +297,13 @@ export class Find {
   protected readonly tokens = computed<Token[]>(() => {
     const tokens: Token[] = [
       ...this.mustHave().map((r) => ({
-        key: 'must:' + r.attribute,
+        key: this.key('must', r),
         kind: 'must' as const,
         label: this.label(r),
         phrase: r.phrase ?? null,
       })),
       ...this.niceToHave().map((r) => ({
-        key: 'nice:' + r.attribute,
+        key: this.key('nice', r),
         kind: 'nice' as const,
         label: this.label(r),
         phrase: r.phrase ?? null,
@@ -333,8 +333,8 @@ export class Find {
     const count = (n: number) => (n ? String(n) : '');
     const conditions = this.conditions();
     const requirements =
-      this.mustHave().filter((r) => on('must:' + r.attribute)).length +
-      this.niceToHave().filter((r) => on('nice:' + r.attribute)).length;
+      this.mustHave().filter((r) => on(this.key('must', r))).length +
+      this.niceToHave().filter((r) => on(this.key('nice', r))).length;
     return {
       category: this.category() ? this.i18n.t(this.category()!) : '',
       price: on('budget') && this.budget() !== null ? `${this.i18n.t('bis')} ${this.budget()}` : '',
@@ -371,8 +371,8 @@ export class Find {
       plz: pc || null,
       plzp: pc ? this.regionPhrase() : null,
       km: pc && this.radius() ? String(this.radius()) : null,
-      must: json(this.mustHave().filter((r) => on('must:' + r.attribute))),
-      nice: json(this.niceToHave().filter((r) => on('nice:' + r.attribute))),
+      must: json(this.mustHave().filter((r) => on(this.key('must', r)))),
+      nice: json(this.niceToHave().filter((r) => on(this.key('nice', r)))),
       cond: this.conditions().length ? this.conditions().join(',') : null,
       mode: this.auctionsOnly() ? 'auction' : null,
     };
@@ -687,8 +687,8 @@ export class Find {
     const position = on('region') ? this.position() : null;
     const budget = on('budget') ? this.budget() : null;
     return {
-      mustHave: this.mustHave().filter((r) => on('must:' + r.attribute)),
-      niceToHave: this.niceToHave().filter((r) => on('nice:' + r.attribute)),
+      mustHave: this.mustHave().filter((r) => on(this.key('must', r))),
+      niceToHave: this.niceToHave().filter((r) => on(this.key('nice', r))),
       category: this.category()?.trim() || null,
       keywords: this.keywordList(),
       maxBudgetChf: budget ?? undefined,
@@ -717,6 +717,11 @@ export class Find {
 
   protected list(row: Row): Requirement[] {
     return this[row]();
+  }
+
+  /** Token key: unique per list, attribute and comparison. */
+  private key(kind: 'must' | 'nice', r: Requirement): string {
+    return `${kind}:${r.attribute}:${r.comparison ?? 'EXACT'}`;
   }
 
   protected label(r: Requirement): string {

@@ -47,7 +47,7 @@ const MARKS: Record<CardFit, string> = { ok: '✓', maybe: '?', alt: '↗' };
     }
     @if (why()) {
       <p class="zw-card__why" [class.zw-card__why--ok]="fit() === 'ok'">
-        <span aria-hidden="true">{{ MARKS[fit() ?? 'maybe'] }}</span
+        <span aria-hidden="true">{{ mark() }}</span
         ><span>{{ why() }}</span>
       </p>
     }
@@ -69,7 +69,7 @@ export class ListingCard {
   /** Search results: one line why the listing is shown, in the colour of `fit`. */
   readonly why = input('');
   readonly fit = input<CardFit | null>(null);
-  protected readonly MARKS = MARKS;
+  protected readonly mark = computed(() => MARKS[this.fit() ?? 'maybe']);
   protected readonly modeLabel = computed(() => MODE_LABELS[this.mode()]);
   protected readonly priceText = computed(() => chf(this.price()));
   protected readonly originalText = computed(() => chf(this.originalPrice() ?? 0));

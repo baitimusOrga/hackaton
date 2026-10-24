@@ -189,7 +189,7 @@ opened (`dirty` flag). "Zurücksetzen" clears that facet, closes and searches. T
   skeleton. Order inside a group is the backend's (by score).
 - Card: `app-summary-card` as today (photo, badges, title, price, meta), plus a **why line**
   (14 / 20, weight 500, flex gap 6 px, mark then text) in the group's colour with the backend's
-  `reason`. Implemented as optional inputs `why` and `whyTone` (`'ok' | 'muted'`) on
+  `reason`. Implemented as optional inputs `why` and `fit` (`'ok' | 'maybe' | 'alt'`) on
   `ListingCard`, passed through by `SummaryCard`. Below the card the page keeps today's muted
   detail lines (`details(m)`: "Nicht angegeben: …" for Möglich, the differences for
   Alternativen). No score or fit label on the card anymore.
@@ -208,11 +208,11 @@ names), `maxp` and `plzp` (budget and region phrase, only when present). `FILTER
 - `pages/find.ts` stays the orchestrator (state signals, URL sync, API calls, token model, groups)
   but loses the form markup and the per-field debounce; target well under its current 512 lines.
 - New `pages/find-sentence.ts` (`app-find-sentence`, used by this page only): inputs `text`,
-  `tokens`, `off` (set of keys); output `toggle` (key). Pure rendering of segments and chips; the
+  `tokens`, `off` (set of keys); output `toggled` (key). Pure rendering of segments and chips; the
   page owns the state.
 - New `ui/facet.ts` (`app-facet`) as above: a generic dropdown facet, next to `chip.ts` and
   `button.ts`.
-- `ui/listing-card.ts`, `ui/summary-card.ts`: `why`, `whyTone` inputs.
+- `ui/listing-card.ts`, `ui/summary-card.ts`: `why`, `fit` inputs.
 - Styles stay component-scoped (`styles:`) except the skeleton and group layout, which live in
   `find.ts`.
 - New strings in `i18n/messages/find.ts` (de keys with fr / it / en): Du suchst, the two hint

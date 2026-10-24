@@ -6,6 +6,7 @@ const TOKENS: Token[] = [
   { key: 'must:Year', kind: 'must', label: 'Year: 2017', phrase: '2017' },
   { key: 'nice:RAM', kind: 'nice', label: 'RAM: 16 GB', phrase: null },
   { key: 'budget', kind: 'budget', label: 'Bis CHF 600.–', phrase: 'bis chf 600' },
+  { key: 'must:Display', kind: 'must', label: 'Display: 27"', phrase: '27 Zoll' },
 ];
 const TEXT = 'Ein iMac 2017 mit 5K, bis CHF 600';
 
@@ -20,7 +21,7 @@ describe('place', () => {
       [' mit 5K, ', undefined],
       ['bis CHF 600', 'budget'],
     ]);
-    expect(chips.map((t) => t.key)).toEqual(['nice:RAM']);
+    expect(chips.map((t) => t.key)).toEqual(['nice:RAM', 'must:Display']);
   });
 
   it('never lets two tokens overlap and keeps the original spelling', () => {
@@ -50,17 +51,23 @@ describe('FindSentence', () => {
     expect(tokens.map((b) => b.textContent)).toEqual(['iMac', '2017', 'bis CHF 600']);
     expect(tokens[0].getAttribute('aria-pressed')).toBe('true');
     expect(tokens[0].title).toBe('Model: iMac nicht mehr verlangen');
-    expect(el.querySelector('.extra .zw-chip')!.textContent).toContain('RAM: 16 GB');
+    expect([...el.querySelectorAll('.extra .zw-chip')].map((c) => c.textContent)).toEqual([
+      expect.stringContaining('RAM: 16 GB'),
+      expect.stringContaining('Display: 27"'),
+    ]);
     expect(el.textContent).toContain('Unterstrichen ist, was wir verstanden haben.');
   });
 
   it('shows off tokens struck through and counts them in the hint', () => {
-    const { el } = setup(new Set(['must:Year']));
+    const { el } = setup(new Set(['must:Year', 'nice:RAM']));
     const year = el.querySelectorAll<HTMLButtonElement>('.token')[1];
     expect(year.classList.contains('token--off')).toBe(true);
     expect(year.getAttribute('aria-pressed')).toBe('false');
     expect(year.title).toBe('Year: 2017 wieder verlangen');
-    expect(el.textContent).toContain('1 entfernt.');
+    expect(el.textContent).toContain('2 entfernt.');
+    const chip = el.querySelector<HTMLButtonElement>('.extra .zw-chip')!;
+    expect(chip.getAttribute('aria-pressed')).toBe('false');
+    expect(chip.querySelector('svg')).toBeNull();
   });
 
   it('emits the key of a tapped token or chip', () => {
