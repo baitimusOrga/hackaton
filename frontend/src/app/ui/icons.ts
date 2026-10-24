@@ -9,6 +9,8 @@ export const ICONS = {
   message: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/>',
   camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  chevron: '<path d="M9 6l6 6-6 6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
   electronics: '<rect x="3" y="4" width="18" height="12"/><path d="M8 20h8M12 16v4"/>',
   furniture: '<path d="M4 10v8M20 10v8M4 14h16M7 10V6h10v4"/>',
   bike: '<circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-8h5l3 8M10 8h4l-2 8"/>',

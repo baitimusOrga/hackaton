@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { ListingsService, PlacesService, SellingService } from '../api/services';
 import { DraftEvent, ListingDraft } from '../api/models';
@@ -85,7 +85,7 @@ async function full(draft: ListingDraft, extra: object = {}, place = vi.fn(), pl
 }
 
 /** Opens the sell page with a draft saved before a reload. */
-async function reopen(saved: object) {
+async function reopen(saved: object | undefined) {
   URL.createObjectURL = vi.fn().mockReturnValue('blob:photo');
   store.load.mockResolvedValue(saved);
   TestBed.configureTestingModule({
@@ -112,6 +112,27 @@ describe('Sell', () => {
     };
   });
   afterEach(() => localStorage.clear());
+
+  it('shows every section of the one-page form before the photos are analysed', async () => {
+    const { fixture, element } = await reopen(undefined);
+    button(element, 'Alles auf einer Seite').click();
+    await fixture.whenStable();
+
+    const headings = Array.from(element.querySelectorAll('h2')).map((h) => h.textContent!.trim());
+    expect(headings).toEqual(['Fotos', 'Artikel', 'Zustand', 'Preis', 'Übergabe']);
+    expect(button(element, 'Veröffentlichen').disabled).toBe(true);
+  });
+
+  it('closes the dialog on Escape and unlocks the page behind it', async () => {
+    const { fixture } = await reopen(undefined);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    expect(document.body.style.overflow).toBe('hidden');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(navigate).toHaveBeenCalledWith([{ outlets: { modal: null } }]);
+    fixture.destroy();
+    expect(document.body.style.overflow).toBe('');
+  });
 
   it('keeps the analysed draft with its photos for a reload', async () => {
     await analyse([streams(done(DRAFT))]);

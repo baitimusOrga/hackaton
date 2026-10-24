@@ -1,6 +1,62 @@
 import type { Messages } from '../i18n';
 
 export const SELL_MESSAGES: Messages = {
+  'Das konnten wir nicht erkennen.': {
+    fr: "Ça, on n'a pas pu le reconnaître.",
+    it: 'Questo non siamo riusciti a riconoscerlo.',
+    en: "We couldn't recognise that.",
+  },
+  'Kein Etikett und kein Modellname. Ein, zwei Fotos mehr, und wir füllen den Rest aus.': {
+    fr: "Ni étiquette ni nom de modèle. Une ou deux photos de plus, et on s'occupe du reste.",
+    it: 'Nessuna etichetta e nessun nome del modello. Una o due foto in più e compiliamo noi il resto.',
+    en: 'No label and no model name. One or two more photos and we will fill in the rest.',
+  },
+  'Diese Fotos helfen': {
+    fr: 'Ces photos aident',
+    it: 'Queste foto aiutano',
+    en: 'These photos help',
+  },
+  'Etikett oder Typenschild, scharf': {
+    fr: 'Étiquette ou plaque signalétique, nette',
+    it: 'Etichetta o targhetta, a fuoco',
+    en: 'Label or rating plate, in focus',
+  },
+  'Meist unten, hinten oder im Batteriefach. Modell- und Seriennummer reichen uns.': {
+    fr: 'Souvent dessous, derrière ou dans le compartiment à piles. Le numéro de modèle et de série nous suffisent.',
+    it: 'Di solito sotto, dietro o nel vano batteria. Ci bastano il numero di modello e di serie.',
+    en: 'Usually on the bottom, the back or in the battery compartment. The model and serial number are enough.',
+  },
+  'Der ganze Artikel von vorne': {
+    fr: "L'article entier, de face",
+    it: "L'articolo intero, di fronte",
+    en: 'The whole item from the front',
+  },
+  'Nicht angeschnitten, bei Tageslicht, ohne andere Dinge im Bild.': {
+    fr: 'Pas coupé, à la lumière du jour, sans autres objets sur la photo.',
+    it: "Non tagliato, con luce naturale, senza altri oggetti nell'immagine.",
+    en: 'Not cropped, in daylight, with no other things in the picture.',
+  },
+  'Verpackung, Rechnung oder Anleitung': {
+    fr: "Emballage, facture ou mode d'emploi",
+    it: 'Imballaggio, fattura o istruzioni',
+    en: 'Packaging, invoice or manual',
+  },
+  'Falls vorhanden. Der Produktname darauf genügt.': {
+    fr: 'Si tu les as. Le nom du produit suffit.',
+    it: "Se ce l'hai. Il nome del prodotto basta.",
+    en: 'If you have it. The product name on it is enough.',
+  },
+  'Ohne Erkennung weiter': {
+    fr: 'Continuer sans reconnaissance',
+    it: 'Continua senza riconoscimento',
+    en: 'Continue without detection',
+  },
+  'Fotos hinzufügen': { fr: 'Ajouter des photos', it: 'Aggiungi foto', en: 'Add photos' },
+  'Wenn du es nicht weisst, schreiben wir «nicht bestätigt».': {
+    fr: 'Si tu ne le sais pas, on écrit « non confirmé ».',
+    it: 'Se non lo sai, scriviamo «non confermato».',
+    en: "If you don't know, we'll write “not confirmed”.",
+  },
   'Verkaufen · {step} von {steps}': {
     fr: 'Vendre · {step} sur {steps}',
     it: 'Vendi · {step} di {steps}',
@@ -12,40 +68,7 @@ export const SELL_MESSAGES: Messages = {
     en: 'Everything on one page',
   },
   Schliessen: { fr: 'Fermer', it: 'Chiudi', en: 'Close' },
-  'Das hat nicht geklappt.': {
-    fr: "Ça n'a pas marché.",
-    it: 'Non ha funzionato.',
-    en: "That didn't work.",
-  },
-  'Wir schauen uns das an…': {
-    fr: 'On y jette un œil…',
-    it: "Ci diamo un'occhiata…",
-    en: "We're taking a look…",
-  },
-  'Deine Fotos sind gespeichert. Versuch es nochmals.': {
-    fr: 'Tes photos sont enregistrées. Réessaie.',
-    it: 'Le tue foto sono salvate. Riprova.',
-    en: 'Your photos are saved. Try again.',
-  },
-  '{n} erkannt': { fr: '{n} reconnu(s)', it: '{n} riconosciuti', en: '{n} detected' },
-  'Nochmals auswerten': { fr: 'Analyser à nouveau', it: 'Analizza di nuovo', en: 'Analyse again' },
-  'Frage {n} von {total}': {
-    fr: 'Question {n} sur {total}',
-    it: 'Domanda {n} di {total}',
-    en: 'Question {n} of {total}',
-  },
   Stimmt: { fr: "C'est correct", it: 'Esatto', en: 'Correct' },
-  Ändern: { fr: 'Modifier', it: 'Modifica', en: 'Change' },
-  'Wird hochgeladen…': { fr: 'Envoi en cours…', it: 'Caricamento in corso…', en: 'Uploading…' },
-  'Foto aufnehmen': { fr: 'Prendre une photo', it: 'Scatta una foto', en: 'Take a photo' },
-  'Lieber eintippen': {
-    fr: 'Saisir plutôt à la main',
-    it: 'Preferisco scrivere',
-    en: 'Type it instead',
-  },
-  Speichern: { fr: 'Enregistrer', it: 'Salva', en: 'Save' },
-  Überspringen: { fr: 'Passer', it: 'Salta', en: 'Skip' },
-  'Zur Übersicht': { fr: "Vers l'aperçu", it: 'Alla panoramica', en: 'To the overview' },
   'Was verkaufst du?': { fr: 'Que vends-tu ?', it: 'Cosa vendi?', en: 'What are you selling?' },
   'Mach ein Foto. Den Rest erkennen wir und fragen nur, was fehlt.': {
     fr: 'Prends une photo. On reconnaît le reste et on ne demande que ce qui manque.',
@@ -56,33 +79,6 @@ export const SELL_MESSAGES: Messages = {
     fr: 'Prendre ou importer une photo',
     it: 'Scatta o carica una foto',
     en: 'Take or upload a photo',
-  },
-  'Mein Standort': { fr: 'Ma position', it: 'La mia posizione', en: 'My location' },
-  'Standort wird ermittelt…': {
-    fr: 'Localisation en cours…',
-    it: 'Rilevamento della posizione…',
-    en: 'Finding your location…',
-  },
-  'Standort nicht verfügbar. Gib die PLZ ein oder erlaube den Standortzugriff.': {
-    fr: "Position indisponible. Saisis le NPA ou autorise l'accès à la position.",
-    it: "Posizione non disponibile. Inserisci il NPA o consenti l'accesso alla posizione.",
-    en: 'Location not available. Enter the postcode or allow location access.',
-  },
-  'An deinem Standort finden wir keine Schweizer PLZ.': {
-    fr: 'Aucun NPA suisse trouvé à ta position.',
-    it: 'Nessun NPA svizzero trovato nella tua posizione.',
-    en: 'We found no Swiss postcode at your location.',
-  },
-  'Entwurf wiederhergestellt.': {
-    fr: 'Brouillon restauré.',
-    it: 'Bozza ripristinata.',
-    en: 'Draft restored.',
-  },
-  'Neu beginnen': { fr: 'Recommencer', it: 'Ricomincia', en: 'Start over' },
-  'Du kannst Fotos auch hierher ziehen oder einfügen.': {
-    fr: 'Tu peux aussi glisser ou coller tes photos ici.',
-    it: 'Puoi anche trascinare o incollare le foto qui.',
-    en: 'You can also drag or paste photos here.',
   },
   'Artikel, Typenschild, Mängel. Bis zu {max} Fotos.': {
     fr: "Article, plaque signalétique, défauts. Jusqu'à {max} photos.",
@@ -146,11 +142,6 @@ export const SELL_MESSAGES: Messages = {
     en: 'Detected: {title}. Read from the label:',
   },
   Artikel: { fr: 'Article', it: 'Articolo', en: 'Item' },
-  'Titel und Beschreibung werden angepasst…': {
-    fr: 'Adaptation du titre et de la description…',
-    it: 'Adattamento di titolo e descrizione…',
-    en: 'Adjusting title and description…',
-  },
   Titel: { fr: 'Titre', it: 'Titolo', en: 'Title' },
   Kategorie: { fr: 'Catégorie', it: 'Categoria', en: 'Category' },
   Beschreibung: { fr: 'Description', it: 'Descrizione', en: 'Description' },
@@ -270,34 +261,6 @@ export const SELL_MESSAGES: Messages = {
     it: 'Solo NPA e località sono pubblici.',
     en: 'Only postcode and town are public.',
   },
-  Erkennung: { fr: 'Reconnaissance', it: 'Riconoscimento', en: 'Detection' },
-  'Foto wählen': { fr: 'Choisir la photo', it: 'Scegli la foto', en: 'Choose photo' },
-  'Offene Punkte': { fr: 'Points ouverts', it: 'Punti aperti', en: 'Open points' },
-  'Inserat zu {percent} % vollständig': {
-    fr: 'Annonce complète à {percent} %',
-    it: 'Inserzione completa al {percent} %',
-    en: 'Listing {percent} % complete',
-  },
-  'Noch offen: {names}': {
-    fr: 'Encore ouvert : {names}',
-    it: 'Ancora aperti: {names}',
-    en: 'Still open: {names}',
-  },
-  'Offene Punkte beantworten': {
-    fr: 'Répondre aux points ouverts',
-    it: 'Rispondi ai punti aperti',
-    en: 'Answer open points',
-  },
-  'Der Server ist nicht erreichbar.': {
-    fr: 'Le serveur est injoignable.',
-    it: 'Il server non è raggiungibile.',
-    en: "The server can't be reached.",
-  },
-  'Der Entwurf konnte nicht erstellt werden.': {
-    fr: "Le brouillon n'a pas pu être créé.",
-    it: 'Non è stato possibile creare la bozza.',
-    en: "The draft couldn't be created.",
-  },
   'Unbenutzt, originalverpackt.': {
     fr: "Inutilisé, dans son emballage d'origine.",
     it: 'Mai usato, nella confezione originale.',
@@ -405,4 +368,102 @@ export const SELL_MESSAGES: Messages = {
   },
   'vor 1 Tag': { fr: 'il y a 1 jour', it: '1 giorno fa', en: '1 day ago' },
   'vor {days} Tagen': { fr: 'il y a {days} jours', it: '{days} giorni fa', en: '{days} days ago' },
+  'Entwurf speichern': {
+    fr: 'Enregistrer le brouillon',
+    it: 'Salva bozza',
+    en: 'Save draft',
+  },
+  'Das hat nicht geklappt.': {
+    fr: "Ça n'a pas marché.",
+    it: 'Non ha funzionato.',
+    en: "That didn't work.",
+  },
+  'Wir schauen uns das an…': {
+    fr: 'On y jette un œil…',
+    it: "Ci diamo un'occhiata…",
+    en: "We're taking a look…",
+  },
+  'Deine Fotos sind gespeichert. Versuch es nochmals.': {
+    fr: 'Tes photos sont enregistrées. Réessaie.',
+    it: 'Le tue foto sono salvate. Riprova.',
+    en: 'Your photos are saved. Try again.',
+  },
+  '{n} erkannt': { fr: '{n} reconnu(s)', it: '{n} riconosciuti', en: '{n} detected' },
+  'Nochmals auswerten': { fr: 'Analyser à nouveau', it: 'Analizza di nuovo', en: 'Analyse again' },
+  'Frage {n} von {total}': {
+    fr: 'Question {n} sur {total}',
+    it: 'Domanda {n} di {total}',
+    en: 'Question {n} of {total}',
+  },
+  Ändern: { fr: 'Modifier', it: 'Modifica', en: 'Change' },
+  'Wird hochgeladen…': { fr: 'Envoi en cours…', it: 'Caricamento in corso…', en: 'Uploading…' },
+  'Foto aufnehmen': { fr: 'Prendre une photo', it: 'Scatta una foto', en: 'Take a photo' },
+  'Lieber eintippen': {
+    fr: 'Saisir plutôt à la main',
+    it: 'Preferisco scrivere',
+    en: 'Type it instead',
+  },
+  Speichern: { fr: 'Enregistrer', it: 'Salva', en: 'Save' },
+  Überspringen: { fr: 'Passer', it: 'Salta', en: 'Skip' },
+  'Zur Übersicht': { fr: "Vers l'aperçu", it: 'Alla panoramica', en: 'To the overview' },
+  'Mein Standort': { fr: 'Ma position', it: 'La mia posizione', en: 'My location' },
+  'Standort wird ermittelt…': {
+    fr: 'Localisation en cours…',
+    it: 'Rilevamento della posizione…',
+    en: 'Finding your location…',
+  },
+  'Standort nicht verfügbar. Gib die PLZ ein oder erlaube den Standortzugriff.': {
+    fr: "Position indisponible. Saisis le NPA ou autorise l'accès à la position.",
+    it: "Posizione non disponibile. Inserisci il NPA o consenti l'accesso alla posizione.",
+    en: 'Location not available. Enter the postcode or allow location access.',
+  },
+  'An deinem Standort finden wir keine Schweizer PLZ.': {
+    fr: 'Aucun NPA suisse trouvé à ta position.',
+    it: 'Nessun NPA svizzero trovato nella tua posizione.',
+    en: 'We found no Swiss postcode at your location.',
+  },
+  'Entwurf wiederhergestellt.': {
+    fr: 'Brouillon restauré.',
+    it: 'Bozza ripristinata.',
+    en: 'Draft restored.',
+  },
+  'Neu beginnen': { fr: 'Recommencer', it: 'Ricomincia', en: 'Start over' },
+  'Du kannst Fotos auch hierher ziehen oder einfügen.': {
+    fr: 'Tu peux aussi glisser ou coller tes photos ici.',
+    it: 'Puoi anche trascinare o incollare le foto qui.',
+    en: 'You can also drag or paste photos here.',
+  },
+  'Titel und Beschreibung werden angepasst…': {
+    fr: 'Adaptation du titre et de la description…',
+    it: 'Adattamento di titolo e descrizione…',
+    en: 'Adjusting title and description…',
+  },
+  Erkennung: { fr: 'Reconnaissance', it: 'Riconoscimento', en: 'Detection' },
+  'Foto wählen': { fr: 'Choisir la photo', it: 'Scegli la foto', en: 'Choose photo' },
+  'Offene Punkte': { fr: 'Points ouverts', it: 'Punti aperti', en: 'Open points' },
+  'Inserat zu {percent} % vollständig': {
+    fr: 'Annonce complète à {percent} %',
+    it: 'Inserzione completa al {percent} %',
+    en: 'Listing {percent} % complete',
+  },
+  'Noch offen: {names}': {
+    fr: 'Encore ouvert : {names}',
+    it: 'Ancora aperti: {names}',
+    en: 'Still open: {names}',
+  },
+  'Offene Punkte beantworten': {
+    fr: 'Répondre aux points ouverts',
+    it: 'Rispondi ai punti aperti',
+    en: 'Answer open points',
+  },
+  'Der Server ist nicht erreichbar.': {
+    fr: 'Le serveur est injoignable.',
+    it: 'Il server non è raggiungibile.',
+    en: "The server can't be reached.",
+  },
+  'Der Entwurf konnte nicht erstellt werden.': {
+    fr: "Le brouillon n'a pas pu être créé.",
+    it: 'Non è stato possibile creare la bozza.',
+    en: "The draft couldn't be created.",
+  },
 };
