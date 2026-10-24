@@ -625,13 +625,26 @@ textarea.zw-input {
   padding: 0 14px;
 }
 @media (max-width: 720px) {
-  /* The wrapped header takes a third of a phone screen; let it scroll away. */
+  /* Phones: one row with the wordmark and the location chip; the tab bar carries the nav, /find its own search. */
   .zw-header {
     position: static;
   }
+  .zw-header__bar {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-height: 56px;
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-2);
+  }
+  .zw-wordmark__tagline,
+  .zw-nav,
   .zw-dock {
-    order: 3;
-    flex-basis: 100%;
+    display: none;
+  }
+  .zw-header .zw-chip--location {
+    height: 36px;
+    max-width: 60%;
   }
 }
 
