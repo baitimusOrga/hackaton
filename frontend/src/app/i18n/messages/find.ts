@@ -12,11 +12,6 @@ export const FIND_MESSAGES: Messages = {
     en: 'e.g. iMac 2017 with 5K, up to CHF 600, pickup in Zurich',
   },
   Suchen: { fr: 'Rechercher', it: 'Cerca', en: 'Search' },
-  'Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter': {
-    fr: 'Écris-le avec tes mots. Astuce : ⌘ / Ctrl + Entrée',
-    it: 'Scrivilo con parole tue. Suggerimento: ⌘ / Ctrl + Invio',
-    en: 'Write it in your own words. Tip: ⌘ / Ctrl + Enter',
-  },
   Filter: { fr: 'Filtres', it: 'Filtri', en: 'Filters' },
   Anforderungen: { fr: 'Exigences', it: 'Requisiti', en: 'Requirements' },
   Muss: { fr: 'Obligatoire', it: 'Indispensabile', en: 'Must have' },

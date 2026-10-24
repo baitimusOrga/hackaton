@@ -19,7 +19,11 @@
   </button>
 </form>
 @if (!searched()) {
-  <p class="zw-help">{{ 'Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter' | t }}</p>
+  <p class="zw-help">
+    {{
+      'Schreib es in deinen Worten. Wir suchen nur auf Zweit, in deiner Nähe und schweizweit.' | t
+    }}
+  </p>
 
   @if (auctions(); as list) {
     <section class="find__grp" aria-labelledby="find-auctions">
