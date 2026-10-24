@@ -18,6 +18,7 @@ export interface List$Params {
   lat?: number;
   lon?: number;
   saleMode?: 'FIXED' | 'AUCTION';
+  endsBefore?: string;
 }
 
 export function list(http: HttpClient, rootUrl: string, params?: List$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<ListingSummary>>> {
@@ -31,6 +32,7 @@ export function list(http: HttpClient, rootUrl: string, params?: List$Params, co
     rb.query('lat', params.lat, {});
     rb.query('lon', params.lon, {});
     rb.query('saleMode', params.saleMode, {});
+    rb.query('endsBefore', params.endsBefore, {});
   }
 
   return http.request(

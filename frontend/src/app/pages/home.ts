@@ -24,7 +24,11 @@ import { IconName } from '../ui/icons';
 import { SectionHeading } from '../ui/section-heading';
 import { SummaryCard } from '../ui/summary-card';
 
-const QUICK_FILTERS = ['Nur Auktionen', 'Unter CHF 50', 'Abholung', 'Endet heute', 'Grüne Wahl'];
+const QUICK_FILTERS: [string, Record<string, string>][] = [
+  ['Nur Auktionen', { saleMode: 'AUCTION' }],
+  ['Unter CHF 50', { maxPrice: '50' }],
+  ['Endet heute', { saleMode: 'AUCTION', ends: 'today' }],
+];
 
 const CATEGORY_ICONS: Record<string, IconName> = {
   Computers: 'computer',
@@ -84,10 +88,9 @@ export class Home {
   protected readonly listings = toSignal(this.api.list({}).pipe(catchError(() => of([]))));
   protected readonly nearby = computed(() => this.listings()?.slice(0, 8));
 
-  protected quickFilter(filter: string): void {
-    // shortcut: only "Nur Auktionen" has a backend filter; the other chips do nothing yet
-    if (filter === 'Nur Auktionen')
-      void this.router.navigate(['/find'], { queryParams: { mode: 'auction' } });
+  protected quickFilter(params: Record<string, string>): void {
+    const q = this.query().trim();
+    void this.router.navigate(['/search'], { queryParams: q ? { ...params, q } : params });
   }
 
   constructor() {

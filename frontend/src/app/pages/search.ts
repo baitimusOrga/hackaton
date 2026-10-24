@@ -26,7 +26,20 @@ function filtersOf(params: ParamMap) {
     // a radius needs a full postcode to measure from
     radiusKm: RADII.includes(radiusKm) && /^\d{4}$/.test(postcode ?? '') ? radiusKm : undefined,
     saleMode: params.get('saleMode') === 'AUCTION' ? ('AUCTION' as const) : undefined,
+    endsToday: params.get('ends') === 'today' ? true : undefined,
   };
+}
+
+function nextMidnight(): string {
+  const d = new Date();
+  d.setHours(24, 0, 0, 0);
+  return d.toISOString();
+}
+
+/** The API takes a cut-off instant, the URL only says "today". */
+function requestOf(params: ParamMap) {
+  const { endsToday, ...rest } = filtersOf(params);
+  return { ...rest, endsBefore: endsToday ? nextMidnight() : undefined };
 }
 
 /** Search with filters, a radius around a postcode, and a list or map view (clustered per 5 km). */
@@ -70,7 +83,7 @@ export class Search {
   });
   protected readonly listings = toSignal(
     this.route.queryParamMap.pipe(
-      switchMap((params) => this.api.list(filtersOf(params)).pipe(catchError(() => of([])))),
+      switchMap((params) => this.api.list(requestOf(params)).pipe(catchError(() => of([])))),
     ),
   );
   protected readonly fullPostcode = computed(() => /^\d{4}$/.test(this.filters().postcode ?? ''));
@@ -82,7 +95,8 @@ export class Search {
       f.maxPrice !== undefined ||
       f.postcode ||
       f.radiusKm ||
-      f.saleMode
+      f.saleMode ||
+      f.endsToday
     );
   });
   protected readonly summaries = computed(() => {
@@ -96,13 +110,19 @@ export class Search {
       category: f.category ? t(f.category) : '',
       price: f.maxPrice !== undefined ? `${t('bis')} ${f.maxPrice}` : '',
       region,
-      saleMode: f.saleMode ? t('Auktion') : '',
+      saleMode: [f.saleMode && t('Auktion'), f.endsToday && t('Endet heute')]
+        .filter(Boolean)
+        .join(' · '),
       q: f.q ?? '',
     };
   });
 
   protected set(name: FilterName, value: string) {
     this.go({ [name]: value.trim() || null });
+  }
+
+  protected clearSaleMode() {
+    this.go({ saleMode: null, ends: null });
   }
 
   protected setPostcode(value: string) {

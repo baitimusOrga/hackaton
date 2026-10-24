@@ -18,6 +18,15 @@ function chip(el: HTMLElement, text: string): HTMLButtonElement {
 }
 
 describe('Search', () => {
+  it('turns ends=today into a cut-off at the next local midnight', async () => {
+    const { list } = await setup('/search?saleMode=AUCTION&ends=today', []);
+    const { endsBefore } = list.mock.lastCall![0];
+    const cutoff = new Date(endsBefore);
+    expect(cutoff.getTime()).toBeGreaterThan(Date.now());
+    expect(cutoff.getTime() - Date.now()).toBeLessThanOrEqual(25 * 3_600_000);
+    expect(cutoff.getHours()).toBe(0);
+  });
+
   async function setup(url: string, items: unknown[]) {
     const list = vi.fn().mockReturnValue(of(items));
     TestBed.configureTestingModule({

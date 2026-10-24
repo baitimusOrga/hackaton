@@ -23,12 +23,13 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
               and (:maxPrice is null or l.priceChf <= :maxPrice)
               and (:postcode is null or l.postcode like :postcode)
               and (:saleMode is null or l.saleMode = :saleMode)
+              and (:endsBefore is null or l.endsAt < :endsBefore)
               and (:minLat is null or (l.latitude between :minLat and :maxLat
                                        and l.longitude between :minLon and :maxLon))
             order by l.createdAt desc, l.id desc
             """)
     List<Listing> search(String q, String category, BigDecimal maxPrice, String postcode, SaleMode saleMode,
-                           Double minLat, Double maxLat, Double minLon, Double maxLon);
+                           Instant endsBefore, Double minLat, Double maxLat, Double minLon, Double maxLon);
 
     List<Listing> findBySellerIdAndStatusOrderByCreatedAtDesc(String sellerId, ListingStatus status);
 

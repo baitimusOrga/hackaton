@@ -111,7 +111,7 @@
         [summary]="summaries().saleMode"
         [open]="openFacet() === 'mode'"
         (openChange)="openFacet.set($event ? 'mode' : null)"
-        (cleared)="set('saleMode', '')"
+        (cleared)="clearSaleMode()"
       >
         <label class="zw-facet-option">
           <input
