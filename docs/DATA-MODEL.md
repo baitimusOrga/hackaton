@@ -37,6 +37,7 @@ Rules:
 | V14 | nullable `unit_price_chf` on `clearance_item` (the company's price per piece, used when publishing) |
 | V15 | 90 fictional demo listings for the buying assistant (ids 1201–1290, with attributes and postcode centroids) |
 | V16 | 300 messy fictional demo listings for search evaluation (ids 1301–1600, with attributes and postcode centroids) |
+| V17 | `image_url` for the V16 demo listings that have an AI-generated photo in `frontend/public/demo/<id>.jpg` |
 
 ## Backups
 
