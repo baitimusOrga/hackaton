@@ -43,6 +43,7 @@ const CATEGORIES: { label: string; icon: IconName }[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
+    TranslatePipe,
     RouterLink,
     Button,
     Chip,

@@ -38,5 +38,6 @@ export type { SearchRequest } from './models/search-request';
 export type { SearchRequirements } from './models/search-requirements';
 export type { SearchResults } from './models/search-results';
 export type { Totals } from './models/totals';
+export type { Trades } from './models/trades';
 export type { UpdateItemRequest } from './models/update-item-request';
 export type { WebFactsRequest } from './models/web-facts-request';

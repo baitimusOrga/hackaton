@@ -7,4 +7,5 @@ export { SellingService } from './services/selling.service';
 export { ListingsService } from './services/listings.service';
 export { AuctionsService } from './services/auctions.service';
 export { PlacesService } from './services/places.service';
+export { TradesService } from './services/trades.service';
 export { InfoService } from './services/info.service';

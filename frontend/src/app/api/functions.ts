@@ -51,5 +51,7 @@ export type { Place$Params as Place$Params } from './fn/places/place';
 export { place as place } from './fn/places/place';
 export type { Near$Params as Near$Params } from './fn/places/near';
 export { near as near } from './fn/places/near';
+export type { Trades$Params as Trades$Params } from './fn/trades/trades';
+export { trades as trades } from './fn/trades/trades';
 export type { Info$Params as Info$Params } from './fn/info/info';
 export { info as info } from './fn/info/info';

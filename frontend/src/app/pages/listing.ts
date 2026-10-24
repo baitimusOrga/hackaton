@@ -42,6 +42,7 @@ interface BidNote {
   selector: 'app-listing',
   imports: [
     DatePipe,
+    TranslatePipe,
     KeyValuePipe,
     NgTemplateOutlet,
     AuctionTimer,

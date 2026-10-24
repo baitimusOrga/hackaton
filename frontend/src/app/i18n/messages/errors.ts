@@ -248,6 +248,24 @@ export const ERROR_MESSAGES: Messages = {
     it: 'Impossibile creare il tuo account.',
     en: 'Unable to create your account.',
   },
+  'Invalid password': {
+    de: 'Das aktuelle Passwort ist falsch.',
+    fr: 'Le mot de passe actuel est incorrect.',
+    it: 'La password attuale non è corretta.',
+    en: 'Your current password is incorrect.',
+  },
+  'Unable to update your account.': {
+    de: 'Das Konto konnte nicht gespeichert werden.',
+    fr: 'Impossible d’enregistrer ton compte.',
+    it: 'Impossibile salvare il tuo account.',
+    en: 'Unable to update your account.',
+  },
+  'Unable to change your password.': {
+    de: 'Das Passwort konnte nicht geändert werden.',
+    fr: 'Impossible de changer ton mot de passe.',
+    it: 'Impossibile cambiare la password.',
+    en: 'Unable to change your password.',
+  },
   'Unable to sign out.': {
     de: 'Abmelden hat nicht geklappt.',
     fr: 'La déconnexion a échoué.',
