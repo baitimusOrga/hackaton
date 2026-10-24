@@ -11,6 +11,7 @@ export const ICONS = {
   chevron: '<path d="M9 6l6 6-6 6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   home: '<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   electronics: '<rect x="3" y="4" width="18" height="12"/><path d="M8 20h8M12 16v4"/>',
   furniture: '<path d="M4 10v8M20 10v8M4 14h16M7 10V6h10v4"/>',
   bike: '<circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-8h5l3 8M10 8h4l-2 8"/>',

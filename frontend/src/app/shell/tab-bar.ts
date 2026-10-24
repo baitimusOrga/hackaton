@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Auth } from '../auth/auth';
 import { TranslatePipe } from '../i18n/i18n';
 import { Icon } from '../ui/icon';
 
@@ -10,25 +11,27 @@ import { Icon } from '../ui/icon';
   selector: 'app-tab-bar',
   host: { class: 'zw-tabs' },
   template: `<nav class="zw-tabs__bar" [attr.aria-label]="'Hauptnavigation' | t">
-    <a
-      routerLink="/"
-      routerLinkActive="zw-tabs__item--active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      ariaCurrentWhenActive="page"
-      class="zw-tabs__item"
-    >
-      <app-icon name="home" [size]="24" />
-      <span>{{ 'Start' | t }}</span>
-    </a>
-    <a
-      routerLink="/find"
-      routerLinkActive="zw-tabs__item--active"
-      ariaCurrentWhenActive="page"
-      class="zw-tabs__item"
-    >
-      <app-icon name="search" [size]="24" />
-      <span>{{ 'Suchen' | t }}</span>
-    </a>
+    <div class="zw-tabs__group">
+      <a
+        routerLink="/"
+        routerLinkActive="zw-tabs__item--active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        ariaCurrentWhenActive="page"
+        class="zw-tabs__item"
+      >
+        <app-icon name="home" [size]="24" />
+        <span>{{ 'Start' | t }}</span>
+      </a>
+      <a
+        routerLink="/find"
+        routerLinkActive="zw-tabs__item--active"
+        ariaCurrentWhenActive="page"
+        class="zw-tabs__item"
+      >
+        <app-icon name="search" [size]="24" />
+        <span>{{ 'Suchen' | t }}</span>
+      </a>
+    </div>
     <a
       [routerLink]="[{ outlets: { modal: ['sell'] } }]"
       class="zw-tabs__item zw-tabs__sell"
@@ -37,24 +40,19 @@ import { Icon } from '../ui/icon';
       <span class="zw-tabs__plus"><app-icon name="plus" [size]="28" /></span>
       <span>{{ 'Verkaufen' | t }}</span>
     </a>
-    <a
-      routerLink="/messages"
-      routerLinkActive="zw-tabs__item--active"
-      ariaCurrentWhenActive="page"
-      class="zw-tabs__item"
-    >
-      <app-icon name="message" [size]="24" />
-      <span>{{ 'Nachrichten' | t }}</span>
-    </a>
-    <a
-      routerLink="/saved"
-      routerLinkActive="zw-tabs__item--active"
-      ariaCurrentWhenActive="page"
-      class="zw-tabs__item"
-    >
-      <app-icon name="bookmark" [size]="24" />
-      <span>{{ 'Meine Suchen' | t }}</span>
-    </a>
+    <div class="zw-tabs__group">
+      <a
+        [routerLink]="auth.user() ? '/profile' : '/login'"
+        routerLinkActive="zw-tabs__item--active"
+        ariaCurrentWhenActive="page"
+        class="zw-tabs__item"
+      >
+        <app-icon name="user" [size]="24" />
+        <span>{{ 'Konto' | t }}</span>
+      </a>
+    </div>
   </nav>`,
 })
-export class TabBar {}
+export class TabBar {
+  protected readonly auth = inject(Auth);
+}

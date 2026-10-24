@@ -757,10 +757,18 @@ textarea.zw-input {
 .zw-tabs {
   display: none;
 }
+/* Two groups of equal width around the sell button keep it centred whatever each group holds. */
 .zw-tabs__bar {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) 80px minmax(0, 1fr);
   height: 56px;
+}
+.zw-tabs__group {
+  display: flex;
+}
+.zw-tabs__group .zw-tabs__item {
+  flex: 1 1 0;
+  min-width: 0;
 }
 .zw-tabs__item {
   position: relative;
