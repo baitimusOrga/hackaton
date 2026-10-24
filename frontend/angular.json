@@ -3,7 +3,8 @@
   "version": 1,
   "cli": {
     "packageManager": "pnpm",
-    "schematicCollections": ["angular-eslint"]
+    "schematicCollections": ["angular-eslint"],
+    "analytics": false
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -36,6 +37,7 @@
               "@fontsource/inter/600.css",
               "@fontsource/inter/700.css",
               "@fontsource/inter/800.css",
+              "leaflet/dist/leaflet.css",
               "src/tailwind.css",
               "src/tokens.css",
               "src/components.css"

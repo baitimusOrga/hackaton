@@ -51,7 +51,14 @@
       <a appButton [routerLink]="[{ outlets: { modal: ['sell'] } }]"
         ><app-icon name="camera" /><span>{{ 'Verkaufen' | t }}</span></a
       >
-      @if (auth.user()) {
+      @if (auth.user(); as user) {
+        <a
+          routerLink="/profile"
+          class="zw-avatar"
+          [attr.aria-label]="'Mein Konto' | t"
+          [attr.title]="user.name"
+          >{{ user.name.trim().charAt(0).toUpperCase() }}</a
+        >
         <button type="button" class="zw-link" [disabled]="signingOut()" (click)="logout()">
           {{ 'Abmelden' | t }}
         </button>

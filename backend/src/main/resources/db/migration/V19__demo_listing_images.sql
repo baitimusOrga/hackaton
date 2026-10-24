@@ -1,0 +1,3 @@
+-- AI-generated photos for some V18 demo listings, served by the frontend from public/demo/<id>.jpg; fictional, no real items
+update listing set image_url = '/demo/' || cast(id as varchar(10)) || '.jpg'
+where id in (2301,2302,2303,2305,2312,2314,2317,2318,2319,2320,2321,2324,2325,2326,2327,2339,2342,2343,2344,2345,2346,2351,2355,2356,2358,2363,2368,2371,2372,2373,2379,2381,2382,2383,2389,2391,2399,2400,2402,2405,2406,2410,2412,2413,2419,2420,2477,2541,2542,2543,2544,2546,2571,2574,2575,2576);

@@ -66,6 +66,14 @@ class ListingControllerTest {
     }
 
     @Test
+    void saleModeFiltersAndAuctionsEndSoonestFirst() throws Exception {
+        mvc.perform(get("/api/listings").param("saleMode", "AUCTION"))
+                .andExpect(jsonPath("$[*].id").value(contains(1301, 1302, 1303, 1304)));
+        mvc.perform(get("/api/listings").param("saleMode", "FIXED"))
+                .andExpect(jsonPath("$[*].id").value(not(hasItem(1301))));
+    }
+
+    @Test
     void maxPriceIsInclusive() throws Exception {
         mvc.perform(get("/api/listings").param("maxPrice", "70"))
                 .andExpect(jsonPath("$[*].priceChf").value(everyItem(lessThanOrEqualTo(70.0))))
@@ -128,5 +136,14 @@ class ListingControllerTest {
         mvc.perform(get("/api/listings").param("postcode", "9999").param("radiusKm", "10"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Postcode 9999 not found."));
+    }
+
+    @Test
+    void radiusAroundThePositionNeedsNoPostcode() throws Exception {
+        mvc.perform(get("/api/listings").param("lat", "47.378").param("lon", "8.5234").param("radiusKm", "30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].locality").value(hasItem("Zug")))
+                .andExpect(jsonPath("$[*].locality").value(not(hasItem("Lausanne"))))
+                .andExpect(jsonPath("$[0].locality").value("Zürich"));
     }
 }

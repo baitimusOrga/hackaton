@@ -225,7 +225,12 @@
               <img [src]="url" alt="" />
             }
             <div class="preview__text">
-              <span class="zw-caption">{{ 'Festpreis · so erscheint es' | t }}</span>
+              <span class="zw-caption">{{
+                (auctionDays() === null
+                  ? 'Festpreis · so erscheint es'
+                  : 'Auktion · so erscheint es'
+                ) | t
+              }}</span>
               <span class="ellipsis">{{ fields().title }}</span>
               @if (price(); as amount) {
                 <span class="zw-price">{{ amount | chf }}</span>
@@ -374,6 +379,7 @@
           [estimate]="draft()?.price"
           [condition]="fields().condition"
           [(price)]="price"
+          [(auctionDays)]="auctionDays"
         />
       </section>
 
@@ -584,7 +590,12 @@
 </ng-template>
 
 <ng-template #priceTpl>
-  <app-price-panel [estimate]="draft()?.price" [condition]="fields().condition" [(price)]="price" />
+  <app-price-panel
+    [estimate]="draft()?.price"
+    [condition]="fields().condition"
+    [(price)]="price"
+    [(auctionDays)]="auctionDays"
+  />
 </ng-template>
 
 <ng-template #placeTpl>
