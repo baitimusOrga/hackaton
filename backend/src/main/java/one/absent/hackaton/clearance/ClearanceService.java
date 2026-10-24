@@ -50,7 +50,9 @@ public class ClearanceService {
             Map.entry("Audio", 80),
             Map.entry("Cameras", 300),
             Map.entry("Household", 40),
-            Map.entry("Bikes", 150));
+            Map.entry("Bikes", 150),
+            Map.entry("Gaming", 100),
+            Map.entry("TV & home cinema", 150));
     private static final int OTHER_FALLBACK_CHF = 50;
 
     static final String SYSTEM = """
