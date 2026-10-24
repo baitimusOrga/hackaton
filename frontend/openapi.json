@@ -391,6 +391,34 @@
         }
       }
     },
+    "/api/listing-drafts/identity" : {
+      "post" : {
+        "tags" : [ "Selling" ],
+        "operationId" : "checkIdentity",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/IdentityRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IdentityCheck"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/places/{postcode}" : {
       "get" : {
         "tags" : [ "Places" ],
@@ -1429,6 +1457,75 @@
           }
         },
         "required" : [ "confirmedFacts", "photoIds" ]
+      },
+      "IdentityRequest" : {
+        "type" : "object",
+        "properties" : {
+          "photoIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "maxItems" : 5,
+            "minItems" : 1
+          },
+          "category" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "brand" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          },
+          "model" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 100,
+            "minLength" : 0
+          },
+          "language" : {
+            "type" : [ "string", "null" ],
+            "pattern" : "de|fr|it|en"
+          }
+        },
+        "required" : [ "brand", "category", "photoIds" ]
+      },
+      "Candidate" : {
+        "type" : "object",
+        "properties" : {
+          "brand" : {
+            "type" : "string"
+          },
+          "model" : {
+            "type" : [ "string", "null" ]
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "url" : {
+            "type" : "string"
+          }
+        }
+      },
+      "IdentityCheck" : {
+        "type" : "object",
+        "properties" : {
+          "verdict" : {
+            "type" : "string",
+            "enum" : [ "CONFIRMED", "DOUBTFUL", "UNKNOWN" ]
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "candidates" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Candidate"
+            }
+          }
+        }
       },
       "Place" : {
         "type" : "object",

@@ -20,7 +20,9 @@ import {
   CreateListingRequest,
   Detection,
   DraftEvent,
+  Candidate,
   Gap,
+  IdentityCheck,
   ListingDetail,
   ListingDraft,
   PriceEstimate,
@@ -764,6 +766,14 @@ export class Sell {
     description: '',
   });
   protected readonly facts = signal<Fact[]>([]);
+  /** The web check of the read brand; while it runs, and when it doubts the reading, the brand question says so. */
+  protected readonly identity = signal<IdentityCheck | null>(null);
+  protected readonly checkingIdentity = signal(false);
+  protected readonly doubt = computed(() => {
+    const check = this.identity();
+    return check?.verdict === 'DOUBTFUL' ? check : null;
+  });
+  private checkedBrand: string | null = null;
   protected readonly labelFacts = computed(() =>
     this.facts().filter((f) => f.source === 'LABEL' && f.value.trim()),
   );
@@ -1303,8 +1313,71 @@ export class Sell {
         // the photo did not show it: same question again, with a hint why
         this.missed.set(photoGap.fact);
       } else if (this.step() === 2 && !this.cards().length) this.finishGaps();
+      if (drafted) this.checkIdentity();
     } else {
       this.streamFailed.set(true);
+    }
+  }
+
+  /**
+   * Checks a brand read from the photos against the web, once per reading. When the web doubts it, brand and
+   * model become suggestions, so the seller is asked, with the web's candidates as answers.
+   */
+  private checkIdentity(): void {
+    const brand = this.facts().find((f) => f.name === 'Brand' && f.value.trim());
+    if (!brand || brand.source === 'SELLER' || brand.value === this.checkedBrand) return;
+    this.checkedBrand = brand.value;
+    this.checkingIdentity.set(true);
+    this.api
+      .checkIdentity(
+        {
+          body: {
+            photoIds: this.photos().map((p) => p.id!),
+            category: this.fields().category,
+            brand: brand.value,
+            model: this.facts().find((f) => f.name === 'Model' && f.value.trim())?.value ?? null,
+            language: this.i18n.lang(),
+          },
+        },
+        // a failed check changes nothing; the reading stays as it is
+        new HttpContext().set(HANDLES_ERRORS, true),
+      )
+      .subscribe({
+        next: (check) => {
+          this.checkingIdentity.set(false);
+          const now = this.facts().find((f) => f.name === 'Brand');
+          // the seller answered, or a new photo changed the brand, in the meantime
+          if (now?.source === 'SELLER' || now?.value !== brand.value) return;
+          this.identity.set(check);
+          if (check.verdict === 'DOUBTFUL')
+            this.facts.update((facts) =>
+              facts.map((f) =>
+                (f.name === 'Brand' || f.name === 'Model') && f.source === 'LABEL'
+                  ? { ...f, source: 'SUGGESTION' }
+                  : f,
+              ),
+            );
+        },
+        error: () => this.checkingIdentity.set(false),
+      });
+  }
+
+  /** A web candidate as the brand answer; its model, if any, is then asked as a suggestion. */
+  protected pickCandidate(card: GapCard, candidate: Candidate): void {
+    const model = candidate.model;
+    if (model && this.facts().find((f) => f.name === 'Model')?.source !== 'SELLER')
+      this.facts.update((facts) => [
+        ...facts.filter((f) => f.name !== 'Model'),
+        { name: 'Model', value: model, source: 'SUGGESTION' },
+      ]);
+    this.answer(card, candidate.brand ?? '');
+  }
+
+  protected host(url: string | undefined): string {
+    try {
+      return new URL(url ?? '').hostname.replace(/^www\./, '');
+    } catch {
+      return '';
     }
   }
 

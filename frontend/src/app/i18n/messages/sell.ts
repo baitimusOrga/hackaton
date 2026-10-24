@@ -137,6 +137,16 @@ export const SELL_MESSAGES: Messages = {
   Bieten: { fr: 'Enchérir', it: "Fai un'offerta", en: 'Bid' },
   'Vorschau ansehen': { fr: "Voir l'aperçu", it: "Vedi l'anteprima", en: 'See preview' },
   Bearbeiten: { fr: 'Modifier', it: 'Modifica', en: 'Edit' },
+  'Im Web geprüft:': {
+    fr: 'Vérifié sur le web :',
+    it: 'Verificato sul web:',
+    en: 'Checked on the web:',
+  },
+  'Marke wird im Web geprüft': {
+    fr: 'Marque en cours de vérification sur le web',
+    it: 'Verifica della marca sul web',
+    en: 'Checking the brand on the web',
+  },
   'So sehen andere Mitglieder dein Inserat.': {
     fr: 'Voici comment les autres membres verront ton annonce.',
     it: 'Così gli altri membri vedranno il tuo annuncio.',

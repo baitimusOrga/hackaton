@@ -190,6 +190,34 @@
                         {{ 'Ändern' | t }}
                       </button>
                     </div>
+                    @if (card.fact === 'Brand') {
+                      @if (doubt(); as check) {
+                        <div class="stack" data-testid="identity">
+                          <p class="zw-muted">{{ check.note }}</p>
+                          <div class="chips">
+                            @for (c of check.candidates; track $index) {
+                              <button type="button" class="choice" (click)="pickCandidate(card, c)">
+                                {{ c.brand }}{{ c.model ? ' ' + c.model : '' }}
+                              </button>
+                            }
+                          </div>
+                          <p class="zw-muted zw-small">
+                            {{ 'Im Web geprüft:' | t }}
+                            @for (c of check.candidates; track $index; let last = $last) {
+                              <a [href]="c.url" target="_blank" rel="noopener">{{ host(c.url) }}</a
+                              >{{ last ? '' : ' · ' }}
+                            }
+                          </p>
+                        </div>
+                      } @else if (checkingIdentity()) {
+                        <span class="zw-busy" role="status">
+                          {{ 'Marke wird im Web geprüft' | t }}
+                          <span class="zw-busy__dots" aria-hidden="true"
+                            ><span></span><span></span><span></span
+                          ></span>
+                        </span>
+                      }
+                    }
                   } @else if (card.fact === conditionGap) {
                     <ng-container *ngTemplateOutlet="stageTpl" />
                     <div class="chips">

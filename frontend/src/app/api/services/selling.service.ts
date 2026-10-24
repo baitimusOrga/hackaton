@@ -10,6 +10,8 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { checkIdentity } from '../fn/selling/check-identity';
+import { CheckIdentity$Params } from '../fn/selling/check-identity';
 import { completeFacts } from '../fn/selling/complete-facts';
 import { CompleteFacts$Params } from '../fn/selling/complete-facts';
 import { DraftEvent } from '../models/draft-event';
@@ -17,6 +19,7 @@ import { DraftFact } from '../models/draft-fact';
 import { DraftText } from '../models/draft-text';
 import { getPhoto } from '../fn/selling/get-photo';
 import { GetPhoto$Params } from '../fn/selling/get-photo';
+import { IdentityCheck } from '../models/identity-check';
 import { ListingDetail } from '../models/listing-detail';
 import { publish } from '../fn/selling/publish';
 import { Publish$Params } from '../fn/selling/publish';
@@ -165,6 +168,33 @@ export class SellingService extends BaseService {
     const resp = this.streamDraft$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<DraftEvent>): DraftEvent => r.body)
+    );
+  }
+
+  /** Path part for operation `checkIdentity()` */
+  static readonly CheckIdentityPath = '/api/listing-drafts/identity';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `checkIdentity()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  checkIdentity$Response(params: CheckIdentity$Params, context?: HttpContext): Observable<StrictHttpResponse<IdentityCheck>> {
+    const obs = checkIdentity(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `checkIdentity$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  checkIdentity(params: CheckIdentity$Params, context?: HttpContext): Observable<IdentityCheck> {
+    const resp = this.checkIdentity$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<IdentityCheck>): IdentityCheck => r.body)
     );
   }
 

@@ -61,7 +61,7 @@ public class IdentityController {
 
     // login is enforced by SecurityConfig (POST /api/listing-drafts/**)
     @PostMapping("/api/listing-drafts/identity")
-    public IdentityCheck check(@Valid @RequestBody IdentityRequest request, @AuthenticationPrincipal Jwt seller) {
+    public IdentityCheck checkIdentity(@Valid @RequestBody IdentityRequest request, @AuthenticationPrincipal Jwt seller) {
         List<AiPhoto> images = photos.forAi(request.photoIds(), seller.getSubject());
         String text = "Category: %s\nRead from the photos: brand %s%s".formatted(request.category(),
                 request.brand(), request.model() == null ? "" : ", model " + request.model())

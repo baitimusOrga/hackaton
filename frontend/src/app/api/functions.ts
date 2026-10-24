@@ -17,6 +17,8 @@ export type { RewriteText$Params as RewriteText$Params } from './fn/selling/rewr
 export { rewriteText as rewriteText } from './fn/selling/rewrite-text';
 export type { StreamDraft$Params as StreamDraft$Params } from './fn/selling/stream-draft';
 export { streamDraft as streamDraft } from './fn/selling/stream-draft';
+export type { CheckIdentity$Params as CheckIdentity$Params } from './fn/selling/check-identity';
+export { checkIdentity as checkIdentity } from './fn/selling/check-identity';
 export type { GetPhoto$Params as GetPhoto$Params } from './fn/selling/get-photo';
 export { getPhoto as getPhoto } from './fn/selling/get-photo';
 export type { List$Params as List$Params } from './fn/listings/list';
