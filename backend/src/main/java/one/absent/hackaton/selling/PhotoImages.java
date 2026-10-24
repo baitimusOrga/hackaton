@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 
 import javax.imageio.ImageIO;
 
@@ -22,7 +23,7 @@ final class PhotoImages {
     static final int AI_MAX_EDGE = 2576;
     static final long AI_MAX_PIXELS = 3_750_000;
 
-    /** A photo as sent to the AI, with its size in pixels; no size when it cannot be decoded (WebP). */
+    /** A photo as sent to the AI, with its size in pixels as the AI reads it; no size when it is unreadable. */
     record AiPhoto(AiClient.Image image, Integer width, Integer height) {}
 
     private PhotoImages() {}
@@ -32,18 +33,18 @@ final class PhotoImages {
         try {
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(data));
             if (image == null) {
-                // shortcut: no ImageIO reader for WebP, so no size and no boxes on it; decode WebP if sellers use it
-                return new AiPhoto(new AiClient.Image(data, type), null, null);
+                // no ImageIO reader for WebP: it goes as uploaded, with the size the API scales it to
+                int[] size = webpSize(data);
+                return size == null ? new AiPhoto(new AiClient.Image(data, type), null, null)
+                        : new AiPhoto(new AiClient.Image(data, type), scaled(size[0], size[1]), scaled(size[1], size[0]));
             }
             int w = image.getWidth();
             int h = image.getHeight();
-            double scale = Math.min(1, Math.min((double) AI_MAX_EDGE / Math.max(w, h),
-                    Math.sqrt((double) AI_MAX_PIXELS / ((long) w * h))));
-            if (scale >= 1) {
+            int sw = scaled(w, h);
+            int sh = scaled(h, w);
+            if (sw == w) {
                 return new AiPhoto(new AiClient.Image(data, type), w, h);
             }
-            int sw = (int) Math.floor(w * scale);
-            int sh = (int) Math.floor(h * scale);
             var small = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_RGB);
             Graphics2D g = small.createGraphics();
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
@@ -56,6 +57,35 @@ final class PhotoImages {
         } catch (IOException e) {
             return new AiPhoto(new AiClient.Image(data, type), null, null);
         }
+    }
+
+    /** {@code side} of a {@code side} x {@code other} photo once scaled to what the AI reads at full detail. */
+    private static int scaled(int side, int other) {
+        double scale = Math.min(1, Math.min((double) AI_MAX_EDGE / Math.max(side, other),
+                Math.sqrt((double) AI_MAX_PIXELS / ((long) side * other))));
+        return scale >= 1 ? side : (int) Math.floor(side * scale);
+    }
+
+    /** Width and height from a WebP header (lossy VP8, lossless VP8L or extended VP8X); null when it is none. */
+    static int[] webpSize(byte[] d) {
+        if (d.length < 30 || !"RIFF".equals(ascii(d, 0)) || !"WEBP".equals(ascii(d, 8))) {
+            return null;
+        }
+        return switch (ascii(d, 12)) {
+            case "VP8 " -> new int[] {u16(d, 26) & 0x3FFF, u16(d, 28) & 0x3FFF};
+            case "VP8L" -> new int[] {1 + (((d[22] & 0x3F) << 8) | (d[21] & 0xFF)),
+                    1 + (((d[24] & 0x0F) << 10) | ((d[23] & 0xFF) << 2) | ((d[22] & 0xC0) >> 6))};
+            case "VP8X" -> new int[] {1 + (u16(d, 24) | (d[26] & 0xFF) << 16), 1 + (u16(d, 27) | (d[29] & 0xFF) << 16)};
+            default -> null;
+        };
+    }
+
+    private static String ascii(byte[] d, int at) {
+        return new String(d, at, 4, StandardCharsets.US_ASCII);
+    }
+
+    private static int u16(byte[] d, int at) {
+        return (d[at] & 0xFF) | (d[at + 1] & 0xFF) << 8;
     }
 
     static byte[] stripMetadata(byte[] data, String type) {
