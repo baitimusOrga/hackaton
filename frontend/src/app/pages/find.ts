@@ -18,6 +18,7 @@ import {
   SearchRequirements,
   SearchResults,
 } from '../api/models';
+import { Position, SessionLocation } from '../device-location';
 import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
 import { chf } from '../ui/chf';
@@ -32,10 +33,6 @@ function sameQuery(params: ParamMap, query: Record<string, string | null>): bool
 }
 
 type Row = 'mustHave' | 'niceToHave';
-interface Position {
-  latitude: number;
-  longitude: number;
-}
 
 const FITS: Record<string, string> = {
   MATCH: 'Passt',
@@ -214,6 +211,7 @@ export class Find {
   });
   protected readonly progress = signal('');
   private readonly router = inject(Router);
+  private readonly location = inject(SessionLocation);
   /** The text the filters were read from; it stays in the URL next to the filters. */
   private readonly asked = signal('');
   /** The filters as URL query params (null = not in the URL); the position never goes in. */
@@ -240,6 +238,16 @@ export class Find {
   private debounce: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
+    // The header's location chip applies to a shown search that has no postcode of its own.
+    effect(() => {
+      const here = this.location.position();
+      untracked(() => {
+        if (!this.searched() || this.postcode().trim()) return;
+        if (here && !this.position()) void this.useMyPosition();
+        else if (!here && this.position()) this.clearRegion();
+      });
+    });
+
     // Keep the filters in the URL so a reload or a shared link shows the same search.
     effect(() => {
       const queryParams = this.query();
@@ -292,7 +300,7 @@ export class Find {
       postcode: params.get('plz') ?? undefined,
       maxDistanceKm: km === null ? undefined : Number(km),
     });
-    this.showMatches();
+    this.afterParse({ postcode: params.get('plz') ?? undefined });
   }
 
   find(): void {
@@ -363,8 +371,9 @@ export class Find {
     this.nearMe = !!req.nearMe;
   }
 
-  private afterParse(req: SearchRequirements): void {
-    if (req.nearMe) this.useMyPosition();
+  /** Searches around the position if asked for, or if the user shared it this session and gave no postcode. */
+  private afterParse(req: Pick<SearchRequirements, 'nearMe' | 'postcode'>): void {
+    if (req.nearMe || (!req.postcode && this.location.position())) void this.useMyPosition();
     else this.showMatches();
   }
 
@@ -388,23 +397,20 @@ export class Find {
     this.changed();
   }
 
-  /** "Mein Standort": asks the browser once, then searches around the position instead of a postcode. */
-  protected useMyPosition(): void {
-    const failed = () => {
+  /** "Mein Standort": asks the browser once per session, then searches around the position instead of a postcode. */
+  protected async useMyPosition(): Promise<void> {
+    const position = await this.location.locate();
+    if (!position) {
       this.position.set(null);
       this.radius.set(null);
       this.nearMe = false;
-      this.showMatches(this.i18n.t(NO_POSITION));
-    };
-    if (!navigator.geolocation) return failed();
-    navigator.geolocation.getCurrentPosition(({ coords }) => {
-      const round = (n: number) => Math.round(n * 1000) / 1000;
-      this.position.set({ latitude: round(coords.latitude), longitude: round(coords.longitude) });
-      this.postcode.set('');
-      if (this.radius() === null) this.radius.set(NEAR_ME_KM);
-      this.nearMe = true;
-      this.showMatches();
-    }, failed);
+      return this.showMatches(this.i18n.t(NO_POSITION));
+    }
+    this.position.set(position);
+    this.postcode.set('');
+    if (this.radius() === null) this.radius.set(NEAR_ME_KM);
+    this.nearMe = true;
+    this.showMatches();
   }
 
   /** Matches again after a filter change; typing waits for a 400 ms pause. */
