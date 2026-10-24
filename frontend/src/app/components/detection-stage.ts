@@ -55,6 +55,8 @@ export interface StageMark {
                   <span class="pill__icon" aria-hidden="true">
                     @if (mark.kind === 'hint') {
                       <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /></svg>
+                    } @else if (mark.kind === 'privacy') {
+                      <svg viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.5" /></svg>
                     } @else {
                       <svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" /></svg>
                     }

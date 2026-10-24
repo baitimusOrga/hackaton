@@ -103,6 +103,14 @@ describe('PricePanel', () => {
     expect(element.querySelector<HTMLInputElement>('input[name="price"]')!.required).toBe(true);
   });
 
+  it('shows one option when all suggestions are the same price', () => {
+    const { fixture, strategies } = setup({ ...ESTIMATE, lowChf: 650, midChf: 650, highChf: 650 });
+    expect(strategies().length).toBe(1);
+    expect(strategies()[0].closest('label')!.textContent).toContain('Ausgewogen');
+    expect(strategies()[0].checked).toBe(true);
+    expect(fixture.componentInstance.price()).toBe(650);
+  });
+
   it('rescales when the condition changes', () => {
     const { fixture, strategies } = setup({ ...ESTIMATE, midChf: 100 });
     fixture.componentRef.setInput('condition', 'USED');

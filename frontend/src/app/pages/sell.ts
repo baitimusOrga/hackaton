@@ -316,6 +316,9 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       gap: var(--space-3);
       margin-bottom: var(--space-8);
     }
+    .aside__in > * {
+      flex-shrink: 0;
+    }
     .aside__head {
       display: flex;
       align-items: center;
@@ -1089,6 +1092,12 @@ export class Sell {
 
   /** After the "read" moment of a photo question: on to the next question, or the price. */
   protected continueAfterRead(): void {
+    // the seller saw the value read from their photo and went on: it counts as confirmed
+    const read = this.readFact();
+    if (read)
+      this.facts.update((facts) =>
+        facts.map((f) => (f.name === read.fact ? { ...f, source: 'SELLER' } : f)),
+      );
     this.readFact.set(null);
     if (!this.cards().length) this.finishGaps();
   }
@@ -1173,6 +1182,9 @@ export class Sell {
   protected async runStream(): Promise<void> {
     const hadDraft = !!this.draft();
     const photoGap = this.currentCard();
+    // what the seller is answering with this photo, and what was known about it before
+    this.asked = photoGap?.fact ?? null;
+    const before = this.facts().find((f) => f.name === this.asked);
     this.analyzing.set(true);
     this.streamFailed.set(false);
     this.detections.set([]);
@@ -1205,14 +1217,15 @@ export class Sell {
     if (drafted || hadDraft) {
       // a failed re-run keeps the previous draft; the photo card counts as skipped
       if (!drafted && photoGap) this.skip(photoGap);
+      // any new value the answer photo gave for the asked fact counts as read, also as a guess
+      const now = photoGap && this.facts().find((f) => f.name === photoGap.fact && f.value.trim());
       const read =
-        photoGap &&
-        this.facts().find(
-          (f) =>
-            f.name === photoGap.fact &&
-            f.value.trim() &&
-            (f.source === 'LABEL' || f.source === 'SELLER'),
-        );
+        now &&
+        (!before ||
+          before.value !== now.value ||
+          (now.source === 'LABEL' && before.source !== 'LABEL'))
+          ? now
+          : undefined;
       if (drafted && read && this.step() === 2) {
         this.readFact.set({ fact: read.name, value: read.value });
         this.answered.update((n) => n + 1);
@@ -1281,6 +1294,8 @@ export class Sell {
    * A later run (after a photo answer) only adds: new facts, a label reading that replaces a guess, a
    * condition if none was known, the new photo ids. Title and description stay; the AI rewrites them.
    */
+  private asked: string | null = null;
+
   private mergeDraft(raw: ListingDraft): void {
     const next = this.swissDraft(raw);
     this.draft.update((old) => ({
@@ -1296,11 +1311,12 @@ export class Sell {
         if (!f.name || !f.value?.trim()) continue;
         const i = merged.findIndex((m) => m.name === f.name);
         const fact: Fact = { name: f.name, value: f.value, source: f.source ?? 'SUGGESTION' };
+        const mine = i >= 0 && merged[i].source === 'SELLER';
         if (i < 0) merged.push(fact);
+        // the fact the seller just photographed takes the new reading; elsewhere only a label beats a guess
         else if (
-          fact.source === 'LABEL' &&
-          merged[i].source !== 'SELLER' &&
-          merged[i].source !== 'LABEL'
+          !mine &&
+          (f.name === this.asked || (fact.source === 'LABEL' && merged[i].source !== 'LABEL'))
         )
           merged[i] = fact;
       }
@@ -1348,14 +1364,16 @@ export class Sell {
       this.setField('condition', value);
     } else {
       const fact: Fact = { name: card.fact, value: value.trim(), source: 'SELLER' };
-      const changed = this.facts().find((f) => f.name === card.fact)?.value !== fact.value;
+      const before = this.facts().find((f) => f.name === card.fact);
+      const changed = before?.value !== fact.value;
       this.facts.update((facts) =>
         facts.some((f) => f.name === card.fact)
           ? facts.map((f) => (f.name === card.fact ? fact : f))
           : [fact, ...facts],
       );
-      // brand and model change what the item is: title and price follow right away, the rest at the end
-      if (changed && (card.fact === 'Brand' || card.fact === 'Model')) this.rewriteText();
+      // brand and model change what the item is: title and price follow right away (also a confirmed guess), the rest at the end
+      const identity = card.fact === 'Brand' || card.fact === 'Model';
+      if (identity && (changed || before?.source !== 'SELLER')) this.rewriteText();
       else this.textStale ||= changed;
     }
     this.nextCard();

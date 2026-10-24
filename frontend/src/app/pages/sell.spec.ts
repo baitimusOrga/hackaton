@@ -373,6 +373,38 @@ describe('Sell', () => {
     expect(button(element, 'Weiter').disabled).toBe(false);
   });
 
+  it('a value the answer photo gives is the read moment, even as a guess', async () => {
+    const photoGap: DraftEvent = {
+      type: 'GAP',
+      gap: { fact: 'Model', kind: 'PHOTO', prompt: 'Fotografiere den Modellnamen', options: [] },
+    };
+    const guessed = {
+      ...DRAFT,
+      photoIds: [7, 8],
+      facts: [{ name: 'Model', value: 'U2719D', source: 'SUGGESTION' as const }],
+    };
+    const { fixture, element, uploadPhotos } = await questions([
+      streams(photoGap, done(DRAFT)),
+      streams(done(guessed)),
+    ]);
+    uploadPhotos.mockReturnValue(of([8]));
+    const input = element.querySelector<HTMLInputElement>('.foot2 input[type="file"]')!;
+    Object.defineProperty(input, 'files', {
+      value: [new File(['y'], 'label.png', { type: 'image/png' })],
+    });
+    input.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+
+    expect(element.textContent).toContain('Vom Foto gelesen');
+    expect(element.textContent).not.toContain('nicht lesen');
+    button(element, 'Weiter').click();
+    await fixture.whenStable();
+    const model = fixture.componentInstance['facts']().find(
+      (f: { name: string }) => f.name === 'Model',
+    );
+    expect(model).toMatchObject({ value: 'U2719D', source: 'SELLER' });
+  });
+
   it('points at where to photograph and shows what the new photo read', async () => {
     const photoGap: DraftEvent = {
       type: 'GAP',
@@ -516,6 +548,21 @@ describe('Sell', () => {
       title: 'My own title',
       description: 'AI description.',
     });
+  });
+
+  it('rewrites the text when a guessed model is confirmed as it is', async () => {
+    const rewriteText = vi.fn().mockReturnValue(of({ title: 'Dell U2719D', description: 'x' }));
+    const guessed = {
+      ...DRAFT,
+      facts: [...DRAFT.facts!, { name: 'Model', value: 'U2719D', source: 'SUGGESTION' as const }],
+    };
+    const { fixture, element } = await questions([streams(done(guessed))], { rewriteText });
+
+    expect(element.querySelector('[data-testid="gap"]')!.textContent).toContain('U2719D');
+    button(element, 'Stimmt').click();
+    await fixture.whenStable();
+
+    expect(rewriteText).toHaveBeenCalledOnce();
   });
 
   it('marks facts by source and confirms a suggestion', async () => {
