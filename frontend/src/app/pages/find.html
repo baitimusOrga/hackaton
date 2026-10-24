@@ -13,12 +13,19 @@
     [placeholder]="'z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich' | t"
     aria-describedby="find-tip"
   ></textarea>
-  <button appButton type="submit" [disabled]="loading() || !text().trim()">
+  <button
+    appButton
+    type="submit"
+    [disabled]="loading() || !text().trim()"
+    [attr.aria-label]="(loading() ? 'Suche läuft…' : 'Suchen') | t"
+  >
     <app-icon name="search" />
     <span>{{ (loading() ? 'Suche läuft…' : 'Suchen') | t }}</span>
   </button>
 </form>
-<p id="find-tip" class="zw-help">{{ 'Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter' | t }}</p>
+<p id="find-tip" class="zw-help find__web">
+  {{ 'Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter' | t }}
+</p>
 @if (refinements().length) {
   <ul class="find__history zw-help" [attr.aria-label]="'Deine Anpassungen' | t">
     @for (r of refinements(); track $index) {
@@ -31,7 +38,18 @@
 
 @if (searched()) {
   <div class="find__strip">
-    <span class="zw-help">{{ 'Aus deinem Satz übernommen:' | t }}</span>
+    <button
+      #filterBtn
+      type="button"
+      class="zw-btn zw-btn--sm find__filter"
+      aria-controls="find-filters"
+      [attr.aria-expanded]="filterOpen()"
+      (click)="openFilter()"
+    >
+      <app-icon name="menu" [size]="16" />
+      <span>{{ 'Filter' | t }}</span>
+    </button>
+    <span class="zw-help find__web">{{ 'Aus deinem Satz übernommen:' | t }}</span>
     @for (row of rows; track row.key) {
       @for (r of list(row.key); track r.attribute + r.value) {
         <button
@@ -65,8 +83,13 @@
         >
       </button>
     }
-    <span class="zw-help">{{ 'Antippen zum Entfernen, links alles im Detail.' | t }}</span>
+    <span class="zw-help find__web">{{
+      'Antippen zum Entfernen, links alles im Detail.' | t
+    }}</span>
   </div>
+  <p class="zw-help find__phone find__hint">
+    {{ 'Aus deinem Satz übernommen. Antippen zum Entfernen.' | t }}
+  </p>
 
   <form
     class="find__adjust"
@@ -83,133 +106,172 @@
       [placeholder]="'Suche anpassen, z.B. „doch etwas neuere Modelle“' | t"
       [(ngModel)]="adjust"
     />
-    <button appButton type="submit" [disabled]="loading() || !adjust().trim()">
-      {{ 'Anpassen' | t }}
+    <button
+      appButton
+      type="submit"
+      [disabled]="loading() || !adjust().trim()"
+      [attr.aria-label]="'Anpassen' | t"
+    >
+      <span class="find__phone"><app-icon name="chevron" /></span>
+      <span class="find__web">{{ 'Anpassen' | t }}</span>
     </button>
   </form>
 
   <div class="find__cols">
-    <form class="find__filters" [attr.aria-label]="'Filter' | t" (ngSubmit)="showMatches()">
-      <div class="find__f">
-        <span class="zw-label">{{ 'Anforderungen' | t }}</span>
-        @for (row of rows; track row.key) {
-          <span class="zw-help">{{ row.label | t }}</span>
-          <ul class="zw-list find__reqs" [attr.data-testid]="row.key">
-            @for (r of list(row.key); track r.attribute + r.value) {
-              <li class="zw-row">
-                <span>{{ label(r) }}</span>
-                <button
-                  appButton
-                  variant="ghost"
-                  size="sm"
-                  type="button"
-                  (click)="move(r, row.key)"
-                  [attr.aria-label]="
-                    '{attribute} zu {other} verschieben'
-                      | t: { attribute: r.attribute, other: row.other | t }
-                  "
-                >
-                  → {{ row.other | t }}
-                </button>
-              </li>
-            } @empty {
-              <li class="zw-help">{{ 'Keine.' | t }}</li>
-            }
-          </ul>
-        }
-      </div>
-      <div class="find__f">
-        <label class="zw-label" for="find-cat">{{ 'Kategorie' | t }}</label>
-        <input
-          id="find-cat"
-          name="category"
-          class="zw-input"
-          [ngModel]="category()"
-          (ngModelChange)="category.set($event); changed(400)"
-        />
-      </div>
-      <div class="find__f">
-        <label class="zw-label" for="find-keywords">{{ 'Modell, Stichwort' | t }}</label>
-        <input
-          id="find-keywords"
-          name="keywords"
-          class="zw-input"
-          [ngModel]="keywords()"
-          (ngModelChange)="keywords.set($event); changed(400)"
-        />
-        <span class="zw-help">{{ 'Mehrere mit Komma trennen' | t }}</span>
-      </div>
-      <fieldset class="zw-fieldset find__f">
-        <legend class="zw-label">{{ 'Preis' | t }}</legend>
-        <div class="find__pair">
-          <input
-            class="zw-input zw-input--price"
-            type="number"
-            min="0"
-            name="budget"
-            [placeholder]="'bis' | t"
-            [attr.aria-label]="'Preis bis' | t"
-            [ngModel]="budget()"
-            (ngModelChange)="budget.set($event); changed(400)"
-          />
-        </div>
-      </fieldset>
-      <fieldset class="zw-fieldset find__f">
-        <legend class="zw-label">{{ 'Region' | t }}</legend>
-        <div class="find__pair">
-          <input
-            class="zw-input"
-            name="postcode"
-            inputmode="numeric"
-            maxlength="4"
-            [attr.aria-label]="'PLZ' | t"
-            [ngModel]="postcode()"
-            (ngModelChange)="postcode.set($event); position.set(null); changed(400)"
-          />
-          <select
-            id="find-radius"
-            class="zw-input"
-            name="radius"
-            [disabled]="!postcode().trim() && !position()"
-            [attr.aria-label]="'Umkreis' | t"
-            [ngModel]="radius()"
-            (ngModelChange)="radius.set($event); changed()"
-          >
-            <option [ngValue]="null">{{ 'Ganze Schweiz' | t }}</option>
-            @for (km of radii; track km) {
-              <option [ngValue]="km">{{ km }} km</option>
-            }
-          </select>
-        </div>
-        <button appButton variant="ghost" size="sm" type="button" (click)="useMyPosition()">
-          <app-icon name="pin" [size]="16" />
-          <span>{{ (position() ? 'Standort aktualisieren' : 'Mein Standort') | t }}</span>
+    @if (filterOpen()) {
+      <!-- a pointer shortcut only; keyboard and screen readers close with Escape or the close button -->
+      <div class="find__scrim" aria-hidden="true" (click)="closeFilter()"></div>
+    }
+    <form
+      id="find-filters"
+      class="find__filters"
+      [class.find__filters--open]="filterOpen()"
+      [attr.role]="filterOpen() ? 'dialog' : null"
+      [attr.aria-modal]="filterOpen() ? 'true' : null"
+      [attr.aria-label]="'Filter' | t"
+      (ngSubmit)="submitFilters()"
+      (keydown.escape)="closeFilter()"
+    >
+      <div class="find__sheet-head">
+        <h3>{{ 'Filter' | t }}</h3>
+        <button
+          #closeBtn
+          appButton
+          variant="ghost"
+          type="button"
+          [attr.aria-label]="'Schliessen' | t"
+          (click)="closeFilter()"
+        >
+          <app-icon name="x" />
         </button>
-      </fieldset>
-      <fieldset class="zw-fieldset find__f">
-        <legend class="zw-label">{{ 'Verkaufsart' | t }}</legend>
-        <label class="zw-check">
-          <input type="checkbox" name="auctionsOnly" [(ngModel)]="auctionsOnly" />
-          {{ 'Auktion' | t }}
-        </label>
-      </fieldset>
-      <button appButton type="submit" [disabled]="matching()">
-        {{ (matching() ? 'Suche läuft…' : 'Treffer aktualisieren') | t }}
-      </button>
-      <button appButton variant="ghost" size="sm" type="button" (click)="reset()">
-        {{ 'Filter zurücksetzen' | t }}
-      </button>
+      </div>
+      <div class="find__sheet-body">
+        <div class="find__f">
+          <span class="zw-label">{{ 'Anforderungen' | t }}</span>
+          @for (row of rows; track row.key) {
+            <span class="zw-help">{{ row.label | t }}</span>
+            <ul class="zw-list find__reqs" [attr.data-testid]="row.key">
+              @for (r of list(row.key); track r.attribute + r.value) {
+                <li class="zw-row">
+                  <span>{{ label(r) }}</span>
+                  <button
+                    appButton
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    (click)="move(r, row.key)"
+                    [attr.aria-label]="
+                      '{attribute} zu {other} verschieben'
+                        | t: { attribute: r.attribute, other: row.other | t }
+                    "
+                  >
+                    → {{ row.other | t }}
+                  </button>
+                </li>
+              } @empty {
+                <li class="zw-help">{{ 'Keine.' | t }}</li>
+              }
+            </ul>
+          }
+        </div>
+        <div class="find__f">
+          <label class="zw-label" for="find-cat">{{ 'Kategorie' | t }}</label>
+          <input
+            id="find-cat"
+            name="category"
+            class="zw-input"
+            [ngModel]="category()"
+            (ngModelChange)="category.set($event); changed(400)"
+          />
+        </div>
+        <div class="find__f">
+          <label class="zw-label" for="find-keywords">{{ 'Modell, Stichwort' | t }}</label>
+          <input
+            id="find-keywords"
+            name="keywords"
+            class="zw-input"
+            [ngModel]="keywords()"
+            (ngModelChange)="keywords.set($event); changed(400)"
+          />
+          <span class="zw-help">{{ 'Mehrere mit Komma trennen' | t }}</span>
+        </div>
+        <fieldset class="zw-fieldset find__f">
+          <legend class="zw-label">{{ 'Preis' | t }}</legend>
+          <div class="find__pair">
+            <input
+              class="zw-input zw-input--price"
+              type="number"
+              min="0"
+              name="budget"
+              [placeholder]="'bis' | t"
+              [attr.aria-label]="'Preis bis' | t"
+              [ngModel]="budget()"
+              (ngModelChange)="budget.set($event); changed(400)"
+            />
+          </div>
+        </fieldset>
+        <fieldset class="zw-fieldset find__f">
+          <legend class="zw-label">{{ 'Region' | t }}</legend>
+          <div class="find__pair">
+            <input
+              class="zw-input"
+              name="postcode"
+              inputmode="numeric"
+              maxlength="4"
+              [attr.aria-label]="'PLZ' | t"
+              [ngModel]="postcode()"
+              (ngModelChange)="postcode.set($event); position.set(null); changed(400)"
+            />
+            <select
+              id="find-radius"
+              class="zw-input"
+              name="radius"
+              [disabled]="!postcode().trim() && !position()"
+              [attr.aria-label]="'Umkreis' | t"
+              [ngModel]="radius()"
+              (ngModelChange)="radius.set($event); changed()"
+            >
+              <option [ngValue]="null">{{ 'Ganze Schweiz' | t }}</option>
+              @for (km of radii; track km) {
+                <option [ngValue]="km">{{ km }} km</option>
+              }
+            </select>
+          </div>
+          <button appButton variant="ghost" size="sm" type="button" (click)="useMyPosition()">
+            <app-icon name="pin" [size]="16" />
+            <span>{{ (position() ? 'Standort aktualisieren' : 'Mein Standort') | t }}</span>
+          </button>
+        </fieldset>
+        <fieldset class="zw-fieldset find__f">
+          <legend class="zw-label">{{ 'Verkaufsart' | t }}</legend>
+          <label class="zw-check">
+            <input type="checkbox" name="auctionsOnly" [(ngModel)]="auctionsOnly" />
+            {{ 'Auktion' | t }}
+          </label>
+        </fieldset>
+      </div>
+      <div class="find__sheet-foot">
+        <button appButton type="submit" [disabled]="matching()">
+          <span class="find__web">{{
+            (matching() ? 'Suche läuft…' : 'Treffer aktualisieren') | t
+          }}</span>
+          <span class="find__phone">{{ showLabel() }}</span>
+        </button>
+        <button appButton variant="ghost" size="sm" type="button" (click)="reset()">
+          {{ 'Filter zurücksetzen' | t }}
+        </button>
+      </div>
     </form>
 
     <div class="find__results" [class.find__busy]="matching()" [attr.aria-busy]="matching()">
       @if (shown(); as res) {
         @let found = res.matches ?? [];
         <div class="find__bar">
-          <span>{{ '{count} Inserate' | t: { count: found.length } }}</span>
+          <span class="find__count">{{ '{count} Inserate' | t: { count: found.length } }}</span>
           <span class="zw-help">{{ '{count} verglichen' | t: { count: res.compared ?? 0 } }}</span>
           <!-- TODO: other sort orders; the backend returns the list by score. -->
-          <label for="find-sort">{{ 'Sortieren' | t }}</label>
-          <select id="find-sort" class="zw-input" disabled>
+          <label for="find-sort" class="find__web">{{ 'Sortieren' | t }}</label>
+          <select id="find-sort" class="zw-input find__web" disabled>
             <option>{{ 'Beste Passung' | t }}</option>
           </select>
         </div>

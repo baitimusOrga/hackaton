@@ -15,7 +15,7 @@
       [ngModel]="query()"
       (ngModelChange)="query.set($event)"
     />
-    <button appButton variant="primary" type="submit">
+    <button appButton variant="primary" type="submit" [attr.aria-label]="'Suchen' | t">
       <app-icon name="search" />
       <span>{{ 'Suchen' | t }}</span>
     </button>
@@ -87,37 +87,3 @@
     <app-listing-map [items]="listings()!" label="Karte der Inserate" />
   </section>
 }
-
-<section class="zw-biz" aria-labelledby="h-biz">
-  <div class="zw-container zw-biz__inner">
-    <div class="zw-biz__intro">
-      <span class="zw-caption">{{ 'Für Firmen' | t }}</span>
-      <h2 id="h-biz">{{ 'Büro, Lager oder Werkstatt räumen?' | t }}</h2>
-      <p>
-        {{
-          'Zeig uns, was weg muss, nenn uns den Termin und wähl, wie viel Arbeit wir übernehmen. Ein Projekt, eine Abrechnung.'
-            | t
-        }}
-      </p>
-      <div>
-        <a appButton routerLink="/business">{{ 'Projekt starten' | t }}</a>
-      </div>
-    </div>
-    <div>
-      <div class="zw-row zw-biz__row">
-        <span>{{ 'Selbst verkaufen' | t }}</span>
-        <span>{{ 'Du behältst die Kontrolle. Keine Gebühren, keine Provision.' | t }}</span>
-      </div>
-      <div class="zw-row zw-biz__row">
-        <span>{{ 'Wir verkaufen' | t }}</span>
-        <span>{{
-          'Bewertung, Inserate und Abholung durch uns. Pauschale vorab vereinbart.' | t
-        }}</span>
-      </div>
-      <div class="zw-row zw-biz__row">
-        <span>{{ 'Wir kaufen' | t }}</span>
-        <span>{{ 'Festes Angebot nach Besichtigung. Wir holen ab, du bist fertig.' | t }}</span>
-      </div>
-    </div>
-  </div>
-</section>

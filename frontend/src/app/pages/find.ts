@@ -1,11 +1,16 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
+  ElementRef,
   inject,
+  Injector,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -170,6 +175,131 @@ const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube de
     .find__busy {
       opacity: 0.5;
     }
+    .find__filter,
+    .find__phone,
+    .find__scrim {
+      display: none;
+    }
+    /* Web: head and foot dissolve into the plain filter column. */
+    .find__sheet-head {
+      display: none;
+    }
+    .find__sheet-body,
+    .find__sheet-foot {
+      display: contents;
+    }
+    @media (max-width: 720px) {
+      .find__web {
+        display: none;
+      }
+      .find__phone {
+        display: revert;
+      }
+      .find__filter {
+        display: inline-flex;
+      }
+      .find__query .zw-btn,
+      .find__adjust .zw-btn {
+        width: 44px;
+        padding: 0;
+      }
+      .find__query .zw-btn span {
+        display: none;
+      }
+      .find__adjust {
+        max-width: none;
+      }
+      .find__strip {
+        /* positioned, so the chips' absolutely placed sr-only text is clipped with the strip instead of widening the page */
+        position: relative;
+        flex-wrap: nowrap;
+        gap: var(--space-2);
+        overflow-x: auto;
+        scrollbar-width: none;
+        margin: 0 calc(-1 * var(--space-4));
+        padding: var(--space-4) var(--space-4) 0;
+      }
+      .find__strip::-webkit-scrollbar {
+        display: none;
+      }
+      .find__strip .zw-chip,
+      .find__filter {
+        flex: none;
+      }
+      .find__hint {
+        padding-top: var(--space-2);
+      }
+      .find__count {
+        font-weight: 600;
+      }
+      .find__filter:hover {
+        background: var(--bg-000);
+        color: var(--blue-text);
+      }
+      .find__filter {
+        padding-left: 0;
+        padding-right: var(--space-3);
+        margin-right: var(--space-1);
+        border-right: var(--border-1) solid var(--line-soft);
+        border-radius: 0;
+        border-top: 0;
+        border-bottom: 0;
+        border-left: 0;
+      }
+      .find__cols {
+        gap: 0;
+        padding-top: var(--space-6);
+      }
+      .find__filters {
+        display: none;
+      }
+      .find__scrim {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 25;
+        background: var(--overlay);
+      }
+      .find__filters--open {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 26;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        max-height: 88dvh;
+        background: var(--bg-000);
+        border-top: var(--border-1) solid var(--line);
+      }
+      .find__sheet-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+        border-bottom: var(--border-1) solid var(--line-soft);
+      }
+      .find__sheet-body {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: var(--space-4);
+      }
+      .find__sheet-foot {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+        padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));
+        border-top: var(--border-1) solid var(--line-soft);
+      }
+      .find__sheet-foot .zw-btn[type='submit'] {
+        width: 100%;
+        min-height: 48px;
+      }
+    }
   `,
 })
 export class Find {
@@ -210,6 +340,18 @@ export class Find {
     return { ...res, matches: (res.matches ?? []).filter(auction) };
   });
   protected readonly progress = signal('');
+  /** Phones: the filter column is a sheet; on the web the button that opens it is hidden and this stays false. */
+  protected readonly filterOpen = signal(false);
+  protected readonly showLabel = computed(() => {
+    if (this.matching()) return this.i18n.t('Suche läuft…');
+    const res = this.shown();
+    return res
+      ? this.i18n.t('{count} Treffer anzeigen', { count: res.matches?.length ?? 0 })
+      : this.i18n.t('Treffer anzeigen');
+  });
+  private readonly filterBtn = viewChild<ElementRef<HTMLButtonElement>>('filterBtn');
+  private readonly closeBtn = viewChild<ElementRef<HTMLButtonElement>>('closeBtn');
+  private readonly injector = inject(Injector);
   private readonly router = inject(Router);
   private readonly location = inject(SessionLocation);
   /** The text the filters were read from; it stays in the URL next to the filters. */
@@ -274,6 +416,16 @@ export class Find {
         this.text.set(q);
         this.find();
       });
+
+    // The sheet is phone only: leaving the phone range (e.g. rotating to landscape) closes it. jsdom has no matchMedia.
+    if (typeof matchMedia === 'function') {
+      const mq = matchMedia('(max-width: 720px)');
+      const onChange = () => {
+        if (!mq.matches) this.closeFilter();
+      };
+      mq.addEventListener('change', onChange);
+      inject(DestroyRef).onDestroy(() => mq.removeEventListener('change', onChange));
+    }
   }
 
   /** A link with filters shows that search directly, without asking the assistant again. */
@@ -358,6 +510,23 @@ export class Find {
     if (!this.initial) return;
     this.apply(this.initial);
     this.afterParse(this.initial);
+  }
+
+  protected openFilter(): void {
+    this.filterOpen.set(true);
+    afterNextRender(() => this.closeBtn()?.nativeElement.focus(), { injector: this.injector });
+  }
+
+  protected closeFilter(): void {
+    if (!this.filterOpen()) return;
+    this.filterOpen.set(false);
+    this.filterBtn()?.nativeElement.focus();
+  }
+
+  /** Filters apply as they change; the sheet's button only closes it, the web button matches again. */
+  protected submitFilters(): void {
+    if (this.filterOpen()) this.closeFilter();
+    else this.showMatches();
   }
 
   private apply(req: SearchRequirements): void {

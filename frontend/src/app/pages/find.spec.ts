@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of, Subject } from 'rxjs';
+import { onTestFinished } from 'vitest';
 import { SearchService } from '../api/services';
 import { Find } from './find';
 
@@ -242,5 +243,72 @@ describe('Find', () => {
       postcode: '7000',
       maxDistanceKm: 25,
     });
+  });
+
+  it('the Filter button opens the filters as a sheet; submit closes it without matching again', async () => {
+    const create = vi.fn().mockReturnValue(of(REQ));
+    const matches = vi.fn().mockReturnValue(of({ matches: [IMAC], compared: 12 }));
+    const { fixture, el } = setup({ create, matches });
+    await fixture.whenStable();
+    await search(fixture, el, 'working iMac');
+
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
+    const open = el.querySelector<HTMLButtonElement>('.find__filter')!;
+    expect(open.getAttribute('aria-expanded')).toBe('false');
+    // jsdom applies no media queries, so the phone-only buttons stay unrendered and cannot take real focus
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    onTestFinished(() => focus.mockRestore());
+    open.click();
+    await fixture.whenStable();
+
+    const sheet = el.querySelector<HTMLFormElement>('form[role="dialog"]')!;
+    expect(sheet.getAttribute('aria-modal')).toBe('true');
+    expect(open.getAttribute('aria-expanded')).toBe('true');
+    expect(focus.mock.contexts.at(-1)).toBe(sheet.querySelector('button[aria-label="Schliessen"]'));
+    expect(sheet.querySelector('button[type="submit"]')!.textContent).toContain(
+      '1 Treffer anzeigen',
+    );
+
+    sheet.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await fixture.whenStable();
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
+    expect(matches).toHaveBeenCalledTimes(1);
+    expect(focus.mock.contexts.at(-1)).toBe(open);
+  });
+
+  it('on the web (sheet closed) the filter submit matches again', async () => {
+    const create = vi.fn().mockReturnValue(of(REQ));
+    const matches = vi.fn().mockReturnValue(of({ matches: [IMAC], compared: 12 }));
+    const { fixture, el } = setup({ create, matches });
+    await fixture.whenStable();
+    await search(fixture, el, 'working iMac');
+
+    el.querySelector<HTMLButtonElement>('form#find-filters button[type="submit"]')!.click();
+    await fixture.whenStable();
+    expect(matches).toHaveBeenCalledTimes(2);
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('Escape and the scrim close the filter sheet', async () => {
+    const create = vi.fn().mockReturnValue(of(REQ));
+    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
+    const { fixture, el } = setup({ create, matches });
+    await fixture.whenStable();
+    await search(fixture, el, 'working iMac');
+
+    const open = el.querySelector<HTMLButtonElement>('.find__filter')!;
+    open.click();
+    await fixture.whenStable();
+    el.querySelector('form[role="dialog"]')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    await fixture.whenStable();
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
+
+    open.click();
+    await fixture.whenStable();
+    el.querySelector<HTMLElement>('.find__scrim')!.click();
+    await fixture.whenStable();
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
   });
 });

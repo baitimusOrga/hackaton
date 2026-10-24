@@ -1,16 +1,27 @@
-import { Gap } from './api/models';
+import { CategoryField, Gap } from './api/models';
 import { CONDITION, completeness, openGaps } from './gaps';
 
 const BIKE = ['Brand', 'Model', 'Frame size', 'Wheel size', 'Gears', 'Brakes'];
+const BIKE_FIELDS: CategoryField[] = BIKE.map((name) => ({
+  name,
+  options: name === 'Brakes' ? ['Rim', 'Disc'] : [],
+}));
 const AI: Gap[] = [
-  { fact: 'Model', kind: 'PHOTO', prompt: 'Photograph the model lettering', options: [] },
+  {
+    fact: 'Model',
+    kind: 'PHOTO',
+    prompt: 'Photograph the model lettering',
+    options: [],
+    photo: 1,
+    box: [0.38, 0.38, 0.3, 0.16],
+  },
   { fact: 'Frame size', kind: 'ASK', prompt: 'What frame size?', options: ['M', 'L'] },
 ];
 
 describe('openGaps', () => {
-  it('asks identity first, then condition, then the rest, at most five', () => {
+  it('asks identity first, then condition, then the rest, up to the limit', () => {
     const cards = openGaps(
-      BIKE,
+      BIKE_FIELDS,
       [{ name: 'Brand', value: 'Trek', source: 'LABEL' }],
       '',
       AI,
@@ -24,15 +35,25 @@ describe('openGaps', () => {
       'Wheel size',
       'Gears',
     ]);
-    expect(cards[0]).toMatchObject({ kind: 'PHOTO', prompt: 'Photograph the model lettering' });
-    expect(cards[1].kind).toBe('PHOTO');
+    expect(cards[0]).toMatchObject({
+      kind: 'PHOTO',
+      prompt: 'Photograph the model lettering',
+      hint: { photo: 1, box: [0.38, 0.38, 0.3, 0.16] },
+    });
+    expect(cards[1].hint).toBeUndefined();
+    // the condition is picked from chips; a title without AI text is left to the page (translated)
+    expect(cards[1]).toMatchObject({ kind: 'ASK', prompt: '' });
     expect(cards[2].options).toEqual(['M', 'L']);
-    expect(cards[3]).toMatchObject({ kind: 'ASK', prompt: 'Wheel size?', options: [] });
+    expect(cards[3]).toMatchObject({ kind: 'ASK', prompt: '', options: [] });
+    expect(openGaps(BIKE_FIELDS, [], '', AI, new Set(), 2).map((c) => c.fact)).toEqual([
+      'Brand',
+      'Model',
+    ]);
   });
 
   it('turns a suggestion into a confirm card and drops confirmed and skipped facts', () => {
     const cards = openGaps(
-      BIKE,
+      BIKE_FIELDS,
       [
         { name: 'Brand', value: 'Trek', source: 'SELLER' },
         { name: 'Model', value: 'Marlin 7', source: 'SUGGESTION' },
@@ -46,23 +67,28 @@ describe('openGaps', () => {
       {
         fact: 'Model',
         kind: 'CONFIRM',
-        prompt: 'Model: Marlin 7?',
+        prompt: '',
         options: [],
         value: 'Marlin 7',
+        // the AI's photo hint stays: a close-up settles an unclear reading
+        hint: { photo: 1, box: [0.38, 0.38, 0.3, 0.16] },
       },
-      { fact: 'Brakes', kind: 'ASK', prompt: 'Brakes?', options: [] },
+      // the AI gave no options, so the card offers the field's own
+      { fact: 'Brakes', kind: 'ASK', prompt: '', options: ['Rim', 'Disc'] },
     ]);
   });
 });
 
 describe('completeness', () => {
-  it('counts confirmed key facts', () => {
+  it('counts confirmed key facts among the first five fields', () => {
     expect(
       completeness(BIKE, [
         { name: 'Brand', value: 'Trek', source: 'LABEL' },
         { name: 'Model', value: 'x', source: 'SUGGESTION' },
         { name: 'Gears', value: '12', source: 'SELLER' },
+        // the sixth field does not count
+        { name: 'Brakes', value: 'Disc', source: 'SELLER' },
       ]),
-    ).toBe(2 / 6);
+    ).toBe(2 / 5);
   });
 });

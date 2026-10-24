@@ -31,6 +31,25 @@ class PhotoImagesTest {
         assertThat(image.getHeight()).isEqualTo(4);
     }
 
+    @Test void aBigPhotoIsScaledToWhatTheAiReadsAndASmallOneStays() throws Exception {
+        var out = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(4000, 3000,
+                java.awt.image.BufferedImage.TYPE_INT_RGB), "jpg", out);
+
+        var big = PhotoImages.forAi(out.toByteArray(), "image/jpeg");
+        // 12 MP is over the pixel limit before the edge limit: 3.75 MP at 4:3
+        assertThat(big.width()).isEqualTo(2236);
+        assertThat(big.height()).isEqualTo(1677);
+        var decoded = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(big.image().data()));
+        assertThat(decoded.getWidth()).isEqualTo(2236);
+
+        byte[] small = DraftControllerTest.image("png");
+        var kept = PhotoImages.forAi(small, "image/png");
+        assertThat(kept.image().data()).isSameAs(small);
+        assertThat(kept.width()).isEqualTo(4);
+        assertThat(kept.height()).isEqualTo(2);
+    }
+
     @Test void gifIsStoredAsUploaded() {
         byte[] gif = DraftControllerTest.image("gif");
         assertThat(Arrays.equals(PhotoImages.stripMetadata(gif, "image/gif"), gif)).isTrue();

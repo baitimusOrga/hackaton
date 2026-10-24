@@ -30,6 +30,21 @@ export const FIND_MESSAGES: Messages = {
     en: 'Tap to remove, all details on the left.',
   },
   Filter: { fr: 'Filtres', it: 'Filtri', en: 'Filters' },
+  '{count} Treffer anzeigen': {
+    fr: 'Afficher {count} résultats',
+    it: 'Mostra {count} risultati',
+    en: 'Show {count} results',
+  },
+  'Treffer anzeigen': {
+    fr: 'Afficher les résultats',
+    it: 'Mostra i risultati',
+    en: 'Show results',
+  },
+  'Aus deinem Satz übernommen. Antippen zum Entfernen.': {
+    fr: 'Repris de ta phrase. Touche pour retirer.',
+    it: 'Ripreso dalla tua frase. Tocca per rimuovere.',
+    en: 'Taken from your sentence. Tap to remove.',
+  },
   Anforderungen: { fr: 'Exigences', it: 'Requisiti', en: 'Requirements' },
   Muss: { fr: 'Obligatoire', it: 'Indispensabile', en: 'Must have' },
   'Wäre schön': { fr: 'Souhaitable', it: 'Sarebbe bello', en: 'Nice to have' },

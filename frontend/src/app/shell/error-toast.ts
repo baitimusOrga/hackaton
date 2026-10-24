@@ -42,7 +42,7 @@ import { Icon } from '../ui/icon';
     @media (max-width: 720px) {
       .toast {
         right: var(--space-4);
-        bottom: var(--space-4);
+        bottom: calc(72px + var(--space-4) + env(safe-area-inset-bottom));
       }
     }
     .toast__text {

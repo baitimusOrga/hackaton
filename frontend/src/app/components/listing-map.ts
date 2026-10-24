@@ -8,10 +8,12 @@ import {
   inject,
   Injector,
   input,
+  signal,
   viewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import * as L from 'leaflet';
+import { ChfPipe } from '../ui/chf';
 
 export interface MapItem {
   id?: number;
@@ -33,16 +35,29 @@ const PIN = L.icon({
   shadowSize: [41, 41],
 });
 
-/** OpenStreetMap with one area circle per cluster of listings within `areaKm` of each other, labelled with its listing count; a click lists them. With `pin`, a plain marker per listing instead. The exact spot stays private. */
+/** OpenStreetMap with one area circle per cluster of listings within `areaKm` of each other, labelled with its listing count; a click lists them under the map and scrolls there. With `pin`, a plain marker per listing instead. The exact spot stays private. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing-map',
+  imports: [ChfPipe, RouterLink],
   template: `<div
-    #map
-    role="region"
-    [attr.aria-label]="label()"
-    class="isolate h-80 w-full zw-map"
-  ></div>`,
+      #map
+      role="region"
+      [attr.aria-label]="label()"
+      class="isolate h-80 w-full zw-map"
+    ></div>
+    @if (selected().length) {
+      <ul #list class="zw-map-list" aria-label="Inserate in diesem Gebiet">
+        @for (item of selected(); track item.id) {
+          <li>
+            <a [routerLink]="['/listings', item.id]">{{ item.title ?? 'Listing' }}</a>
+            @if (item.priceChf !== undefined) {
+              <span>{{ item.priceChf | chf }}</span>
+            }
+          </li>
+        }
+      </ul>
+    }`,
 })
 export class ListingMap {
   readonly items = input.required<MapItem[]>();
@@ -51,11 +66,16 @@ export class ListingMap {
   readonly pin = input(false);
 
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('map');
-  private readonly router = inject(Router);
+  private readonly list = viewChild<ElementRef<HTMLElement>>('list');
+  protected readonly selected = signal<MapItem[]>([]);
 
   constructor() {
     const injector = inject(Injector);
     const destroyRef = inject(DestroyRef);
+    // the list only exists after the render that follows the click
+    effect(() =>
+      this.list()?.nativeElement.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }),
+    );
     afterNextRender(() => {
       const map = L.map(this.host().nativeElement).setView(SWITZERLAND, 7);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -68,6 +88,7 @@ export class ListingMap {
       effect(
         () => {
           shapes.clearLayers();
+          this.selected.set([]);
           // shortcut: greedy, joins the first cluster within range of its start; fine while listings are few
           const radius = this.areaKm() * 1000;
           const areas: { at: L.LatLng; group: MapItem[] }[] = [];
@@ -84,7 +105,7 @@ export class ListingMap {
               continue;
             }
             L.circle(at, { radius, className: 'zw-map-area' })
-              .bindPopup(this.popup(group), { maxHeight: 240 })
+              .on('click', () => this.selected.set(group))
               .bindTooltip(String(group.length), {
                 permanent: true,
                 direction: 'center',
@@ -98,22 +119,5 @@ export class ListingMap {
         { injector },
       );
     });
-  }
-
-  // real elements, not an HTML string: titles are user input
-  private popup(group: MapItem[]) {
-    const list = document.createElement('ul');
-    for (const item of group) {
-      const link = document.createElement('a');
-      link.href = `/listings/${item.id}`;
-      link.textContent = item.title ?? 'Listing';
-      link.addEventListener('click', (event) => {
-        event.preventDefault();
-        void this.router.navigate(['/listings', item.id]);
-      });
-      const row = list.appendChild(document.createElement('li'));
-      row.append(link);
-    }
-    return list;
   }
 }

@@ -108,7 +108,8 @@ class DraftControllerTest {
         assertThat(body).contains("\"type\":\"GAP\"", "\"type\":\"DRAFT\"", "\"photoIds\":[" + id + "]");
         ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
         verify(ai).streamLines(anyString(), text.capture(), anyList(), any());
-        assertThat(text.getValue()).contains("Size: 27\"");
+        assertThat(text.getValue()).contains("Size: 27\"", "in standard German as written in Switzerland", // German unless the UI asks otherwise
+                "Photo sizes in pixels (width x height): photo 1 is 4x2.");
     }
 
     @Test void aiFailureBecomesAnErrorEvent() throws Exception {
@@ -148,7 +149,7 @@ class DraftControllerTest {
 
         mvc.perform(post("/api/listing-drafts/text").with(jwt().jwt(j -> j.subject("seller")))
                         .contentType(MediaType.APPLICATION_JSON).content("""
-                                {"category":"Monitors","title":"Dell monitor","description":"My monitor.","condition":"GOOD",
+                                {"category":"Monitors","title":"Dell monitor","description":"My monitor.","condition":"GOOD","language":"fr",
                                  "facts":[{"name":"Model","value":"U2719D","source":"SELLER"}]}"""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Dell U2719D 27\" monitor"))
@@ -158,7 +159,7 @@ class DraftControllerTest {
                 .andExpect(jsonPath("$.price.explanation").isNotEmpty());
         ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
         verify(ai).ask(anyString(), anyString(), text.capture(), anyList(), anyString(), eq(DraftController.AiText.class));
-        assertThat(text.getValue()).contains("Model: U2719D (SELLER)", "Dell monitor");
+        assertThat(text.getValue()).contains("Model: U2719D (SELLER)", "Dell monitor", "in French");
     }
 
     @Test void cleanupDeletesOnlyOldUnpublishedPhotos() {

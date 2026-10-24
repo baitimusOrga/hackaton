@@ -2,6 +2,26 @@ import type { Messages } from '../i18n';
 
 export const PROFILE_MESSAGES: Messages = {
   'Mein Konto': { fr: 'Mon compte', it: 'Il mio account', en: 'My account' },
+  'Meine Inserate': { fr: 'Mes annonces', it: 'I miei annunci', en: 'My listings' },
+  Aktiv: { fr: 'Active', it: 'Attivo', en: 'Active' },
+  Zurückgezogen: { fr: 'Retirée', it: 'Ritirato', en: 'Withdrawn' },
+  Zurückziehen: { fr: 'Retirer', it: 'Ritira', en: 'Withdraw' },
+  'Wirklich zurückziehen? Das lässt sich nicht rückgängig machen.': {
+    fr: 'Vraiment retirer ? Cette action est définitive.',
+    it: 'Ritirare davvero? Non si può annullare.',
+    en: 'Really withdraw? This cannot be undone.',
+  },
+  'Ja, zurückziehen': { fr: 'Oui, retirer', it: 'Sì, ritira', en: 'Yes, withdraw' },
+  'Noch keine Inserate.': {
+    fr: 'Pas encore d’annonces.',
+    it: 'Ancora nessun annuncio.',
+    en: 'No listings yet.',
+  },
+  'Jetzt inserieren': {
+    fr: 'Publier une annonce',
+    it: 'Pubblica un annuncio',
+    en: 'Sell something',
+  },
   'Käufe und Verkäufe': {
     fr: 'Achats et ventes',
     it: 'Acquisti e vendite',
@@ -9,9 +29,9 @@ export const PROFILE_MESSAGES: Messages = {
   },
   Gekauft: { fr: 'Acheté', it: 'Acquistato', en: 'Bought' },
   'Noch nichts gekauft. Gewonnene Auktionen erscheinen hier.': {
-    fr: 'Rien acheté pour l’instant. Les enchères remportées apparaissent ici.',
-    it: 'Ancora nessun acquisto. Le aste vinte appaiono qui.',
-    en: 'Nothing bought yet. Auctions you win show up here.',
+    fr: 'Rien acheté pour l’instant. Les achats et les enchères remportées apparaissent ici.',
+    it: 'Ancora nessun acquisto. Acquisti e aste vinte appaiono qui.',
+    en: 'Nothing bought yet. Purchases and auctions you win show up here.',
   },
   'Noch nichts verkauft.': {
     fr: 'Rien vendu pour l’instant.',

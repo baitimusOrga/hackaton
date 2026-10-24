@@ -17,6 +17,10 @@ export const routes: Routes = [
     children: [
       { path: '', loadComponent: () => import('./pages/profile').then((m) => m.Profile) },
       {
+        path: 'listings',
+        loadComponent: () => import('./pages/profile-listings').then((m) => m.ProfileListings),
+      },
+      {
         path: 'trades',
         loadComponent: () => import('./pages/profile-trades').then((m) => m.ProfileTrades),
       },
@@ -36,16 +40,6 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/sell').then((m) => m.Sell),
   },
   { path: 'sell', redirectTo: () => inject(Router).parseUrl('/(modal:sell)') },
-  {
-    path: 'business',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/business').then((m) => m.Business),
-  },
-  {
-    path: 'business/:id',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/business-project').then((m) => m.BusinessProject),
-  },
   { path: 'about', loadComponent: () => import('./pages/about').then((m) => m.About) },
   { path: 'info', loadComponent: () => import('./pages/info').then((m) => m.Info) },
   { path: '**', redirectTo: '' },

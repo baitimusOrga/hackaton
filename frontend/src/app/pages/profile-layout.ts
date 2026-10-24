@@ -75,6 +75,12 @@ import { I18n, TranslatePipe } from '../i18n/i18n';
           </div>
           <nav [attr.aria-label]="'Mein Konto' | t">
             <a
+              routerLink="/profile/listings"
+              routerLinkActive="active"
+              ariaCurrentWhenActive="page"
+              >{{ 'Meine Inserate' | t }}</a
+            >
+            <a
               routerLink="/profile/trades"
               routerLinkActive="active"
               ariaCurrentWhenActive="page"

@@ -16,7 +16,7 @@ import {
   timer,
 } from 'rxjs';
 import { AuctionState, ListingDetail } from '../api/models';
-import { AuctionsService, ListingsService } from '../api/services';
+import { AuctionsService, ListingsService, PurchasesService } from '../api/services';
 import { Auth } from '../auth/auth';
 import { conditionLabel, metaLine } from '../conditions';
 import { HANDLES_ERRORS, messageOf } from '../errors';
@@ -249,11 +249,21 @@ interface BidStatus {
       justify-content: space-between;
       margin-bottom: var(--space-4);
     }
+    @media (max-width: 720px) {
+      .cols {
+        padding-top: var(--space-4);
+      }
+      .fact {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2px;
+      }
+    }
   `,
 })
 export class ListingPage {
   private readonly api = inject(ListingsService);
   private readonly auctions = inject(AuctionsService);
+  private readonly purchases = inject(PurchasesService);
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
   private readonly i18n = inject(I18n);
@@ -319,6 +329,30 @@ export class ListingPage {
   /** The bid count right after the own bid; the status explains that bid until a poll shows newer bids. */
   private readonly ownBidCount = signal<number | null>(null);
   protected readonly bidding = signal(false);
+  protected readonly buying = linkedSignal({ source: this.listing, computation: () => false });
+  protected readonly bought = linkedSignal({ source: this.listing, computation: () => false });
+  protected readonly buyError = linkedSignal({ source: this.listing, computation: () => '' });
+
+  protected buy(id: number): void {
+    if (this.buying()) return;
+    if (!this.auth.user()) return this.signIn();
+    const item = this.listing();
+    this.buying.set(true);
+    this.buyError.set('');
+    this.purchases.buy({ id }, new HttpContext().set(HANDLES_ERRORS, true)).subscribe({
+      next: () => {
+        if (this.listing() !== item) return;
+        this.bought.set(true);
+        this.buying.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        if (this.listing() !== item) return;
+        this.buying.set(false);
+        if (err.status === 401) return this.signIn();
+        this.buyError.set(messageOf(err, this.i18n));
+      },
+    });
+  }
 
   /** The minimum (above the own maximum while leading) and the next two steps, so a bid needs no typing. */
   protected suggestions(a: AuctionState): number[] {

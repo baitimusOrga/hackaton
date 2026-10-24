@@ -1,5 +1,5 @@
 package one.absent.hackaton.listing;
 
 public enum ListingStatus {
-    AVAILABLE, SOLD, ENDED
+    AVAILABLE, SOLD, ENDED, WITHDRAWN
 }

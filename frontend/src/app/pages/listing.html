@@ -38,10 +38,25 @@
         </div>
 
         <div class="group tight">
-          <!-- TODO: backend has no purchase endpoint; wire Kaufen to it (then the Bought flow). -->
-          <button appButton variant="primary" [block]="true" type="button" disabled>
-            {{ 'Kaufen' | t }}
-          </button>
+          @if (bought()) {
+            <p role="status">
+              {{ 'Gekauft! Du findest den Kauf unter «Käufe und Verkäufe».' | t }}
+            </p>
+          } @else {
+            <button
+              appButton
+              variant="primary"
+              [block]="true"
+              type="button"
+              [disabled]="buying()"
+              (click)="buy(item.id!)"
+            >
+              {{ buying() ? ('Wird gesendet…' | t) : ('Kaufen' | t) }}
+            </button>
+            @if (buyError()) {
+              <p class="zw-help zw-help--error" role="alert">{{ buyError() }}</p>
+            }
+          }
         </div>
       }
 

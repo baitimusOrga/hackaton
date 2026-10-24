@@ -67,6 +67,18 @@ class SearchServiceTest {
     }
 
     @Test
+    void shortValuesMatchWholeWordsOnly() {
+        ListingDetail bike = new ListingDetail(5, "E-Bike Stromer ST1", new BigDecimal("900"), Condition.GOOD,
+                "Bikes", "8004", "Zürich", null, "Rides well.", Map.of(), Instant.now(), null, null, null,
+                SaleMode.FIXED, null, null, 0);
+        assertThat(SearchService.check(bike, req("Frame size", "M"))).isEqualTo(MISSING);
+        assertThat(SearchService.check(withAttributes(bike, Map.of("Frame size", "L")), req("Frame size", "M")))
+                .isEqualTo(DIFFERENT);
+        assertThat(SearchService.check(withAttributes(bike, Map.of("Frame size", "M")), req("Frame size", "M")))
+                .isEqualTo(STATED);
+    }
+
+    @Test
     void differentValueIsDifferenceAbsentAttributeIsMissing() {
         assertThat(SearchService.check(IMAC_2019, req("Year", "2017"))).isEqualTo(DIFFERENT);
         assertThat(SearchService.check(IMAC, req("Storage", "1 TB"))).isEqualTo(MISSING);

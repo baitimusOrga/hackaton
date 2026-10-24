@@ -14,6 +14,7 @@ import one.absent.hackaton.selling.DraftEvent.PrivacyMark;
 import one.absent.hackaton.selling.ListingDraft.DraftFact;
 import one.absent.hackaton.selling.ListingDraft.FactSource;
 import one.absent.hackaton.selling.ListingDraft.PrivacyWarning;
+import one.absent.hackaton.selling.PhotoImages.AiPhoto;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.core.JacksonException;
@@ -33,15 +34,15 @@ class DraftLines implements Consumer<String> {
                   String description, Condition condition, List<DraftFact> facts) {}
 
     private final JsonMapper json;
-    private final int photoCount;
+    private final List<AiPhoto> photos;
     private final Consumer<DraftEvent> emit;
     private final List<Gap> gaps = new ArrayList<>();
     private final List<PrivacyWarning> privacy = new ArrayList<>();
     private AiLine draft;
 
-    DraftLines(JsonMapper json, int photoCount, Consumer<DraftEvent> emit) {
+    DraftLines(JsonMapper json, List<AiPhoto> photos, Consumer<DraftEvent> emit) {
         this.json = json;
-        this.photoCount = photoCount;
+        this.photos = photos;
         this.emit = emit;
     }
 
@@ -56,17 +57,19 @@ class DraftLines implements Consumer<String> {
         }
         boolean valid = switch (String.valueOf(l.type())) {
             case "detection" -> {
-                boolean ok = onImage(l) && l.label() != null && (l.fact() == null || factOk(l.fact()));
+                List<Double> box = fractions(l);
+                boolean ok = box != null && l.label() != null && (l.fact() == null || factOk(l.fact()));
                 if (ok) {
-                    emit.accept(DraftEvent.of(new Detection(l.photo(), l.box(), l.label(), l.fact())));
+                    emit.accept(DraftEvent.of(new Detection(l.photo(), box, l.label(), l.fact())));
                 }
                 yield ok;
             }
             case "privacy" -> {
-                boolean ok = onImage(l) && l.text() != null;
+                List<Double> box = fractions(l);
+                boolean ok = box != null && l.text() != null;
                 if (ok) {
                     privacy.add(new PrivacyWarning(l.photo(), l.text()));
-                    emit.accept(DraftEvent.of(new PrivacyMark(l.photo(), l.box(), l.text())));
+                    emit.accept(DraftEvent.of(new PrivacyMark(l.photo(), box, l.text())));
                 }
                 yield ok;
             }
@@ -74,7 +77,10 @@ class DraftLines implements Consumer<String> {
                 boolean ok = l.name() != null && l.kind() != null && l.prompt() != null
                         && (CONDITION.equals(l.name()) || Categories.FACT_NAMES.contains(l.name()));
                 if (ok) {
-                    gaps.add(new Gap(l.name(), l.kind(), l.prompt(), l.options() == null ? List.of() : l.options()));
+                    // a hint box that is not on one of the photos is dropped, the question stays
+                    List<Double> hint = fractions(l);
+                    gaps.add(new Gap(l.name(), l.kind(), l.prompt(), l.options() == null ? List.of() : l.options(),
+                            hint != null ? l.photo() : null, hint));
                 }
                 yield ok;
             }
@@ -109,11 +115,30 @@ class DraftLines implements Consumer<String> {
                 List.copyOf(privacy))));
     }
 
-    private boolean onImage(AiLine l) {
+    /**
+     * The line's box (pixels of its photo) as fractions x, y, width, height of that photo; null when the photo
+     * does not exist, its size is unknown or the box is not on it. A box a few pixels over the edge is cut.
+     */
+    private List<Double> fractions(AiLine l) {
         List<Double> b = l.box();
-        return l.photo() != null && l.photo() >= 1 && l.photo() <= photoCount
-                && b != null && b.size() == 4 && b.stream().allMatch(v -> v != null && v >= 0 && v <= 1)
-                && b.get(0) + b.get(2) <= 1.0001 && b.get(1) + b.get(3) <= 1.0001;
+        if (l.photo() == null || l.photo() < 1 || l.photo() > photos.size() || b == null || b.size() != 4
+                || b.stream().anyMatch(v -> v == null || v < 0)) {
+            return null;
+        }
+        AiPhoto photo = photos.get(l.photo() - 1);
+        if (photo.width() == null) {
+            return null;
+        }
+        double w = photo.width();
+        double h = photo.height();
+        double x = b.get(0) / w;
+        double y = b.get(1) / h;
+        double width = b.get(2) / w;
+        double height = b.get(3) / h;
+        if (width <= 0 || height <= 0 || x >= 1 || y >= 1 || x + width > 1.02 || y + height > 1.02) {
+            return null;
+        }
+        return List.of(x, y, Math.min(width, 1 - x), Math.min(height, 1 - y));
     }
 
     private static boolean factOk(DraftFact f) {

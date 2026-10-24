@@ -19,6 +19,9 @@ Where new code goes and the recipe for a feature end to end:
 Linear issues: work one with [`.claude/skills/work-issue/SKILL.md`](.claude/skills/work-issue/SKILL.md)
 (`/work-issue <ISSUE-ID>` in Claude Code); flow and issue template in [`docs/LINEAR.md`](docs/LINEAR.md).
 
+New feature without an issue: [`.claude/skills/new-feature/SKILL.md`](.claude/skills/new-feature/SKILL.md)
+(`/new-feature <description>`); it works in its own git worktree and ends at a green PR.
+
 **How to write code and spend context:** [`docs/LEAN-CODE.md`](docs/LEAN-CODE.md) — read it before
 every task; it applies to all agents.
 
