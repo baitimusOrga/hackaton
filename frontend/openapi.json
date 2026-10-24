@@ -355,6 +355,33 @@
         }
       }
     },
+    "/api/listings/{id}/purchase" : {
+      "post" : {
+        "tags" : [ "Purchases" ],
+        "operationId" : "buy",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ListingDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/listings/{id}/auction/bids" : {
       "post" : {
         "tags" : [ "Auctions" ],

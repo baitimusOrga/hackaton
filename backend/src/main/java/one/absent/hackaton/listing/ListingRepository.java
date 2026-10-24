@@ -32,6 +32,8 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
 
     List<Listing> findBySellerIdAndStatusOrderByCreatedAtDesc(String sellerId, ListingStatus status);
 
+    List<Listing> findByBuyerIdOrderByCreatedAtDesc(String buyerId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select l from Listing l where l.id = :id")
     Optional<Listing> findForUpdate(long id);

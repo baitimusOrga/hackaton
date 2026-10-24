@@ -1,6 +1,11 @@
 import type { Messages } from '../i18n';
 
 export const AUCTION_MESSAGES: Messages = {
+  'Gekauft! Du findest den Kauf unter «Käufe und Verkäufe».': {
+    fr: 'Acheté ! Tu retrouves l’achat sous « Achats et ventes ».',
+    it: 'Acquistato! Trovi l’acquisto sotto «Acquisti e vendite».',
+    en: 'Bought! You can find the purchase under “Purchases and sales”.',
+  },
   'Verkauft für {price}': {
     fr: 'Vendu pour {price}',
     it: 'Venduto per {price}',

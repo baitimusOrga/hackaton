@@ -1,6 +1,7 @@
 package one.absent.hackaton.auction;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import one.absent.hackaton.listing.Listing;
@@ -14,7 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** The signed-in user's finished deals. Only auctions record a buyer, so "bought" means auctions won. */
+/** The signed-in user's finished deals. Bought = fixed-price purchases plus auctions won. */
 @Tag(name = "Trades")
 @RestController
 @RequestMapping("/api/me/trades")
@@ -36,8 +37,9 @@ public class TradesController {
         String me = user.getSubject();
         List<ListingSummary> sold = listings.findBySellerIdAndStatusOrderByCreatedAtDesc(me, ListingStatus.SOLD)
                 .stream().map(l -> l.detail().summary()).toList();
-        List<ListingSummary> bought = bids.findSoldAuctionsBidOnBy(me).stream()
-                .filter(l -> me.equals(winner(l)))
+        List<ListingSummary> bought = Stream.concat(
+                        listings.findByBuyerIdOrderByCreatedAtDesc(me).stream(),
+                        bids.findSoldAuctionsBidOnBy(me).stream().filter(l -> me.equals(winner(l))))
                 .map(l -> l.detail().summary()).toList();
         return new Trades(sold, bought);
     }
