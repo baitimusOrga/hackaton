@@ -127,7 +127,7 @@ RefineRequest(@NotBlank @Size(max = 500) String originalText,
 - The parse and refine schema get `nearMe` (boolean): true when the buyer means their own position
   ("in meiner Nähe", "near me", "bei mir", "hier in der Umgebung"), false otherwise. With `nearMe`
   and no stated distance, `maxDistanceKm` defaults to 25 km (the header's default range).
-- `SearchRequirements` gets `nearMe` (boolean, output of the parse) and nullable `latitude` /
+- `SearchRequirements` gets `nearMe` (nullable boolean, output of the parse; clients need not send it) and nullable `latitude` /
   `longitude` (input to `/matches`, range-checked, -90..90 / -180..180). The AI never sees or sets
   coordinates: create and refine return them null, and the refine prompt's copy of `current` drops
   them.
