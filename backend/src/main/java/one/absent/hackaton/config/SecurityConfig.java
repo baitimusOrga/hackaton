@@ -36,7 +36,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // deny by default: everything not listed here needs a JWT
                 .requestMatchers(HttpMethod.GET, "/api/info", "/api/listings", "/api/listings/*", "/api/listings/*/auction", "/api/photos/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/searches", "/api/searches/matches").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/searches", "/api/searches/refine", "/api/searches/matches").permitAll()
                 .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/api/openapi.json", "/api/docs", "/api/docs/**", "/swagger-ui/**", "/webjars/**").permitAll()
                 .anyRequest().authenticated())

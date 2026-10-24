@@ -29,12 +29,16 @@
     {{ 'Oder speichere die Suche und wir melden uns, sobald etwas passt.' | t }}
   </p>
   <nav class="zw-cats" [attr.aria-label]="'Kategorien' | t">
-    @for (category of categories; track category.label) {
-      <a class="zw-cat" routerLink="/find">
+    @for (category of categories; track category.name) {
+      <a class="zw-cat" routerLink="/search" [queryParams]="{ category: category.name }">
         <app-icon [name]="category.icon" [size]="28" />
-        <span>{{ category.label | t }}</span>
+        <span>{{ category.name | t }}</span>
       </a>
     }
+    <a class="zw-cat" routerLink="/search">
+      <app-icon name="menu" [size]="28" />
+      <span>{{ 'Alle Kategorien' | t }}</span>
+    </a>
   </nav>
 </section>
 

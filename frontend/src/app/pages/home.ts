@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { ListingsService } from '../api/services';
+import { CATEGORIES } from '../categories';
 import { TranslatePipe } from '../i18n/i18n';
 import { HeroSearch } from '../shell/hero-search';
 import { ListingMap } from '../components/listing-map';
@@ -25,17 +26,21 @@ import { SummaryCard } from '../ui/summary-card';
 
 const QUICK_FILTERS = ['Nur Auktionen', 'Unter CHF 50', 'Abholung', 'Endet heute', 'Grüne Wahl'];
 
-const CATEGORIES: { label: string; icon: IconName }[] = [
-  { label: 'Elektronik', icon: 'electronics' },
-  { label: 'Büro & Möbel', icon: 'furniture' },
-  { label: 'Velo & E-Bike', icon: 'bike' },
-  { label: 'Haushalt', icon: 'household' },
-  { label: 'Kleidung', icon: 'clothing' },
-  { label: 'Kinder', icon: 'kids' },
-  { label: 'Garten', icon: 'garden' },
-  { label: 'Maschinen', icon: 'machines' },
-  { label: 'Alle Kategorien', icon: 'menu' },
-];
+const CATEGORY_ICONS: Record<string, IconName> = {
+  Computers: 'computer',
+  Laptops: 'laptop',
+  Monitors: 'electronics',
+  Phones: 'phone',
+  Tablets: 'tablet',
+  'Office furniture': 'furniture',
+  'Office equipment': 'printer',
+  Audio: 'audio',
+  Cameras: 'camera',
+  Household: 'household',
+  Bikes: 'bike',
+  Gaming: 'gaming',
+  'TV & home cinema': 'tv',
+};
 
 /** Landing page: hero search, quick filters, categories, ending auctions, new listings, business band. */
 @Component({
@@ -60,7 +65,11 @@ export class Home {
   protected readonly hero = inject(HeroSearch);
   private readonly heroForm = viewChild.required<ElementRef<HTMLElement>>('heroForm');
   protected readonly quickFilters = QUICK_FILTERS;
-  protected readonly categories = CATEGORIES;
+  /** One tile per listing category; a click browses that category's listings on /search. */
+  protected readonly categories = CATEGORIES.map((name) => ({
+    name,
+    icon: CATEGORY_ICONS[name] ?? 'menu',
+  }));
   protected readonly placeholders = Array.from({ length: 8 }, (_, i) => i);
   protected readonly query = this.hero.query;
   private readonly router = inject(Router);
