@@ -88,7 +88,7 @@ Below 720px:
 - Results: existing 2-column `.zw-grid`.
 - Filter sheet: `filterOpen = signal(false)` in `Find`. Below 720px the filter `form` is hidden
   unless open; open, it is a bottom sheet: overlay `--overlay` over the page, the form fixed at
-  the bottom with `max-height: 88dvh`, 16px/16px top radius is NOT used (design system: 2px),
+  the bottom with `max-height: 88dvh` and the design system's 2px radius (no rounded sheet top),
   header row "Filter" (h3) with a close button (`x` icon, 44px), scrollable body with the existing
   fieldsets, sticky footer with the primary button "{n} Treffer anzeigen" (n = current result
   count; "Treffer anzeigen" while there are no results yet) and the ghost "Filter zurücksetzen".
