@@ -2,6 +2,7 @@ package one.absent.hackaton.selling;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.hamcrest.Matchers.contains;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -34,6 +35,7 @@ class SellingControllerTest {
         """;
     @Autowired WebApplicationContext context;
     @Autowired ListingRepository listings;
+    @Autowired PhotoRepository photos;
     MockMvc mvc;
 
     @BeforeEach void setup() {
@@ -73,6 +75,29 @@ class SellingControllerTest {
         assertThat(listings.findById(2301L).orElseThrow().getSellerId()).isNull();
         mvc.perform(get("/api/listings/2301")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.sellerName").doesNotExist());
+    }
+
+    @Test void theListingShowsEveryPhotoInUploadOrder() throws Exception {
+        long first = photoOf("seller"), second = photoOf("seller");
+        var seller = jwt().jwt(j -> j.subject("seller").claim("name", "Seller").claim("email", "s@example.com"));
+        String location = mvc.perform(post("/api/listings").with(seller).contentType(MediaType.APPLICATION_JSON)
+                        .content(REQUEST.replace("\"photoIds\":[]", "\"photoIds\":[" + first + "," + second + "]")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.imageUrls.length()").value(2))
+                .andReturn().getResponse().getHeader("Location");
+        mvc.perform(get(location))
+                .andExpect(jsonPath("$.imageUrl").value("/api/photos/" + first))
+                .andExpect(jsonPath("$.imageUrls").value(contains("/api/photos/" + first, "/api/photos/" + second)));
+        mvc.perform(get("/api/listings/2301")).andExpect(jsonPath("$.imageUrls").value(contains("/demo/2301.jpg")));
+    }
+
+    long photoOf(String seller) {
+        var photo = new Photo();
+        photo.setContentType("image/png");
+        photo.setData(new byte[] {1});
+        photo.setSellerId(seller);
+        photo.setCreatedAt(Instant.now());
+        return photos.save(photo).getId();
     }
 
     @Test void publishingRequiresAuthentication() throws Exception {

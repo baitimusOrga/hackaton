@@ -36,6 +36,9 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
 
     List<Listing> findByBuyerIdOrderByCreatedAtDesc(String buyerId);
 
+    @Query("select p.id from Photo p where p.listingId = :listingId order by p.id")
+    List<Long> findPhotoIds(long listingId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select l from Listing l where l.id = :id")
     Optional<Listing> findForUpdate(long id);

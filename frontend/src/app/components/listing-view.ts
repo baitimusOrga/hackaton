@@ -6,6 +6,7 @@ import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
+import { PhotoGallery } from '../ui/photo-gallery';
 import { ListingMap } from './listing-map';
 
 /**
@@ -15,7 +16,16 @@ import { ListingMap } from './listing-map';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing-view',
-  imports: [DatePipe, KeyValuePipe, Badge, Button, ChfPipe, ListingMap, TranslatePipe],
+  imports: [
+    DatePipe,
+    KeyValuePipe,
+    Badge,
+    Button,
+    ChfPipe,
+    ListingMap,
+    PhotoGallery,
+    TranslatePipe,
+  ],
   templateUrl: './listing-view.html',
   styles: `
     .cols {
@@ -29,16 +39,6 @@ import { ListingMap } from './listing-map';
         grid-template-columns: 1fr;
         gap: var(--space-8);
       }
-    }
-    .photo {
-      aspect-ratio: 4 / 3;
-      background: var(--bg-100);
-    }
-    .photo img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
     }
     .stack {
       display: flex;

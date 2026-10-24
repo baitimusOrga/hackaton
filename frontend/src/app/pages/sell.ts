@@ -821,9 +821,12 @@ export class Sell {
   protected readonly photoIdsToPublish = computed(() =>
     (this.draft()?.photoIds ?? []).filter((_, i) => !this.excluded().has(i)),
   );
-  protected readonly previewPhoto = computed(
-    () => this.photos().find((_, i) => !this.excluded().has(i))?.url,
+  private readonly previewPhotos = computed(() =>
+    this.photos()
+      .filter((_, i) => !this.excluded().has(i))
+      .map((photo) => photo.url),
   );
+  protected readonly previewPhoto = computed(() => this.previewPhotos()[0]);
   private readonly auth = inject(Auth);
   /** The listing as buyers will see it, from what would be published now. */
   protected readonly previewListing = computed((): ListingDetail => {
@@ -838,6 +841,7 @@ export class Sell {
       locality: this.locality().trim(),
       attributes: this.publishedFacts(),
       imageUrl: this.previewPhoto(),
+      imageUrls: this.previewPhotos(),
       sellerName: this.auth.user()?.name ?? null,
       createdAt: new Date().toISOString(),
     };

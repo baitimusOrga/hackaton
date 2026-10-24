@@ -79,6 +79,6 @@ public class SellingController {
         listing.setSellerName(seller.getClaimAsString("name"));
         listings.saveAndFlush(listing);
         photos.forEach(p -> p.setListingId(listing.getId()));
-        return ResponseEntity.created(URI.create("/api/listings/" + listing.getId())).body(listing.detail());
+        return ResponseEntity.created(URI.create("/api/listings/" + listing.getId())).body(listing.detail(request.photoIds()));
     }
 }

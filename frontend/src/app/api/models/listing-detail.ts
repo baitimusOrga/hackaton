@@ -14,6 +14,7 @@ export interface ListingDetail {
   endsAt?: (string | null);
   id?: number;
   imageUrl?: string;
+  imageUrls?: Array<string>;
   latitude?: (number | null);
   locality?: string;
   longitude?: (number | null);
