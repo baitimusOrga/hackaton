@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  DOCUMENT,
+  inject,
+  signal,
+} from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { SellingService } from '../api/services';
@@ -8,6 +16,7 @@ import { CATEGORIES } from '../categories';
 import { Condition, CONDITION_LABELS } from '../conditions';
 import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
+import { Chip } from '../ui/chip';
 import { Icon } from '../ui/icon';
 
 type Source = 'LABEL' | 'SELLER' | 'SUGGESTION' | 'WEB';
@@ -45,12 +54,32 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-sell',
-  imports: [NgTemplateOutlet, RouterLink, PricePanel, Button, ChfPipe, Icon],
+  imports: [NgTemplateOutlet, RouterLink, PricePanel, Button, ChfPipe, Chip, Icon],
   templateUrl: './sell.html',
+  host: {
+    '[class.sell--full]': "view() === 'full'",
+    '(document:keydown.escape)': 'close()',
+  },
   styles: `
+    /* Steps: a dialog on the overlay scrim over the page it was opened from. Full: a page of its own. */
+    :host {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: flex;
+      overflow-y: auto;
+      padding: var(--space-12) var(--space-4);
+      background: var(--overlay);
+    }
+    :host(.sell--full) {
+      display: block;
+      padding: 0;
+      background: var(--bg-000);
+    }
     .dlg {
+      width: 100%;
       max-width: 600px;
-      margin: 0 auto;
+      margin: auto;
       padding: var(--space-8) var(--space-6) var(--space-8);
       display: flex;
       flex-direction: column;
@@ -59,14 +88,38 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       border: var(--border-1) solid var(--line-soft);
       border-radius: var(--radius-1);
     }
-    .dlg--full {
-      max-width: 760px;
-      gap: 0;
-    }
     @media (min-width: 720px) {
       .dlg {
         padding: var(--space-8) 40px 40px;
       }
+    }
+    .page-head {
+      border-bottom: var(--border-1) solid var(--line-soft);
+    }
+    .page-head > div,
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding-left: var(--space-6);
+      padding-right: var(--space-6);
+    }
+    .page-head > div {
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      min-height: 72px;
+    }
+    .page-head .zw-link {
+      margin-left: auto;
+    }
+    .page {
+      padding-top: var(--space-4);
+      padding-bottom: var(--space-12);
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
     }
     .top {
       display: flex;
@@ -237,6 +290,17 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
 export class Sell {
   private readonly api = inject(SellingService);
   private readonly router = inject(Router);
+  constructor() {
+    // The page behind the dialog must not scroll.
+    const body = inject(DOCUMENT).body;
+    body.style.overflow = 'hidden';
+    inject(DestroyRef).onDestroy(() => (body.style.overflow = ''));
+  }
+
+  protected close(): void {
+    void this.router.navigate([{ outlets: { modal: null } }]);
+  }
+
   protected readonly maxPhotos = MAX_PHOTOS;
   protected readonly steps = STEPS;
   protected readonly markers = MARKERS;
@@ -442,7 +506,10 @@ export class Sell {
     };
     this.busy.set(true);
     this.api.publish({ body }).subscribe({
-      next: (listing) => void this.router.navigate(['/listings', listing.id]),
+      next: (listing) =>
+        void this.router.navigate([
+          { outlets: { primary: ['listings', listing.id], modal: null } },
+        ]),
       error: () => this.busy.set(false),
     });
   }

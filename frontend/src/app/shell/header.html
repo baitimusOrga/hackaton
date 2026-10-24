@@ -44,7 +44,9 @@
         <a routerLink="/find"><app-icon name="bookmark" />Meine Suchen</a>
         <a routerLink="/messages"><app-icon name="message" />Nachrichten</a>
       }
-      <a appButton routerLink="/sell"><app-icon name="camera" /><span>Verkaufen</span></a>
+      <a appButton [routerLink]="[{ outlets: { modal: ['sell'] } }]"
+        ><app-icon name="camera" /><span>Verkaufen</span></a
+      >
       @if (auth.user()) {
         <button type="button" class="zw-link" [disabled]="signingOut()" (click)="logout()">
           Abmelden

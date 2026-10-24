@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { SellingService } from '../api/services';
 import { ListingDraft } from '../api/models';
@@ -52,6 +52,21 @@ async function draftFrom(draft: ListingDraft, extra: object = {}) {
 }
 
 describe('Sell', () => {
+  it('closes the dialog on Escape and unlocks the page behind it', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: SellingService, useValue: {} }],
+    });
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(Sell);
+    await fixture.whenStable();
+    expect(document.body.style.overflow).toBe('hidden');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(navigate).toHaveBeenCalledWith([{ outlets: { modal: null } }]);
+    fixture.destroy();
+    expect(document.body.style.overflow).toBe('');
+  });
+
   it('drafts from a photo, marks facts by source and confirms a suggestion', async () => {
     const { fixture, element, createDraft, stepAfterDraft } = await draftFrom(DRAFT);
 

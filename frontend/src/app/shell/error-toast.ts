@@ -28,7 +28,7 @@ import { Icon } from '../ui/icon';
       position: fixed;
       right: var(--space-6);
       bottom: var(--space-6);
-      z-index: 20;
+      z-index: 40;
       display: flex;
       align-items: flex-start;
       gap: var(--space-3);
