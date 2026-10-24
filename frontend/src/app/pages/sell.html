@@ -774,7 +774,7 @@
         [scanning]="st.scanning"
       />
       <div class="status">
-        <span class="zw-caption">{{ analyzeStatus() }}</span>
+        <span class="zw-caption">{{ step() === 1 ? analyzeStatus() : '' }}</span>
         @if (photos().length > 1 && step() === 1) {
           <span class="chips push" [attr.aria-label]="'Foto wählen' | t">
             @for (p of photos(); track p.url; let i = $index) {

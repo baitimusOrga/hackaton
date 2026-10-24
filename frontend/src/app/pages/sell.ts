@@ -5,6 +5,7 @@ import {
   DestroyRef,
   DOCUMENT,
   effect,
+  ElementRef,
   inject,
   signal,
   untracked,
@@ -873,6 +874,14 @@ export class Sell {
       if (snapshot) void this.store.save({ ...snapshot, savedAt: Date.now() });
     });
     effect(() => this.moveEstimate(this.draft()?.price ?? null));
+    // every step and the success screen start at the top
+    const host = inject(ElementRef<HTMLElement>).nativeElement;
+    effect(() => {
+      this.step();
+      this.published();
+      this.readFact();
+      host.scrollTop = 0;
+    });
   }
 
   private frame = 0;

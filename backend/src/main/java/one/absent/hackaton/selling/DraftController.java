@@ -71,7 +71,8 @@ public class DraftController {
             1. One "detection" line per thing you recognise, most telling first, e.g.
                {"type":"detection","photo":1,"box":[0.12,0.40,0.30,0.08],"label":"Brand: Trek","fact":{"name":"Brand","value":"Trek","source":"LABEL"}}
                photo is the 1-based photo position. box is x, y (top-left corner), width, height as fractions
-               from 0 to 1 of the image. fact only when the detection gives one.
+               from 0 to 1 of the image. fact only when the detection gives one. At most 5 detections; label
+               2 to 4 words in Swiss German (ss, never ß), e.g. "Marke: Trek", "Federgabel", "Zustand: gut".
             2. One "privacy" line per area that shows a serial number, IMEI, MAC address, a person's name, address,
                phone number, a document, an employee or asset tag, or a screen with personal content, e.g.
                {"type":"privacy","photo":2,"box":[0.5,0.6,0.2,0.05],"text":"Shows a serial number. Leave this photo out or cover it."}
@@ -82,8 +83,10 @@ public class DraftController {
                kind: PHOTO when a photo would show it (the prompt says exactly what to photograph, e.g.
                "Please photograph the type plate on the back"), CONFIRM when you suggested a value, otherwise ASK.
                options: 2 to 6 short typical answers for this very item, or [] when free text fits better.
-               A PHOTO gap may add "photo" and "box" (as for detections) marking where on an existing photo the
-               missing detail most likely is, e.g. the spot on the frame where the model name is printed.
+               For Brand and Model prefer PHOTO when the item usually carries its name (frame lettering, type
+               plate, label). A PHOTO gap may add "photo" and "box" (as for detections) marking where on an
+               existing photo the missing detail most likely is, e.g. the spot on the frame where the model name
+               is printed.
                Identity first: Brand and Model, then Condition, then the rest. Write prompt and options in Swiss
                German (ss, never ß); they are shown to the seller as is.
             4. Last, exactly one "draft" line:
