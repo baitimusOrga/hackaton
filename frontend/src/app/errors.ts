@@ -36,11 +36,15 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   );
 };
 
+// TODO: translate backend Problem Details too once i18n (DE/FR/IT/EN) exists.
+const UNREACHABLE = 'Der Server ist gerade nicht erreichbar. Versuch es in einem Moment nochmals.';
+
+/** The user-facing text for a failed request; never the raw "Http failure response …" message. */
 export function messageOf(err: HttpErrorResponse): string {
-  if (err.status === 0) {
-    // TODO: translate backend Problem Details too once i18n (DE/FR/IT/EN) exists.
-    return 'Der Server ist gerade nicht erreichbar.';
-  }
-  const problem = (err.error ?? {}) as Problem;
-  return problem.detail ?? problem.title ?? err.message;
+  // 0: no connection; 502–504: the proxy is up but the backend is not.
+  if (err.status === 0 || (err.status >= 502 && err.status <= 504)) return UNREACHABLE;
+  const problem = typeof err.error === 'object' && err.error ? (err.error as Problem) : {};
+  if (problem.detail) return problem.detail;
+  if (err.status === 404) return 'Das haben wir nicht gefunden.';
+  return 'Etwas ist schiefgelaufen. Versuch es nochmals.';
 }
