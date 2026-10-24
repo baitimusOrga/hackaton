@@ -181,7 +181,9 @@ describe('Find', () => {
     expect(matches).toHaveBeenCalledTimes(2);
     expect(matches.mock.calls[1][0].body.maxBudgetChf).toBe(500);
     expect(trigger(el, 'Preis').textContent).toContain('bis 500');
-    expect(el.querySelector('.token[title="Bis CHF 500.– nicht mehr verlangen"]')).not.toBeNull();
+    // edited by hand: no underline anymore, a chip instead
+    expect(el.querySelector('.token[title="Bis CHF 500.– nicht mehr verlangen"]')).toBeNull();
+    expect(el.querySelector('.extra .zw-chip')!.textContent).toContain('Bis CHF 500.–');
 
     trigger(el, 'Preis').click();
     await fixture.whenStable();
@@ -432,6 +434,7 @@ describe('Find', () => {
 
     trigger(el, 'Region').click();
     await fixture.whenStable();
+    await type(fixture, el.querySelector<HTMLInputElement>('#find-postcode')!, '3000');
     [...el.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')]
       .find((b) => b.textContent!.includes('Mein Standort'))!
       .click();
@@ -448,5 +451,61 @@ describe('Find', () => {
     });
     expect(matches.mock.calls[1][0].body.postcode).toBeUndefined();
     expect(trigger(el, 'Region').textContent).toContain('25 km um deinen Standort');
+    expect(el.querySelector('.extra .zw-chip')!.textContent).toContain('25 km um deinen Standort');
+  });
+
+  it('ignores malformed URL filters instead of breaking', async () => {
+    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: SearchService, useValue: { create: vi.fn(), matches } },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParamMap: of(
+              convertToParamMap({
+                q: 'iMac',
+                must:
+                  '[null, {"attribute":"Model","value":"iMac","phrase":"' +
+                  'x'.repeat(100) +
+                  '"}, 7]',
+                nice: '{}',
+                cond: 'toString,GOOD,GOOD',
+              }),
+            ),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(Find);
+    await fixture.whenStable();
+
+    const body = matches.mock.calls[0][0].body;
+    expect(body.mustHave).toEqual([{ attribute: 'Model', value: 'iMac', phrase: 'x'.repeat(80) }]);
+    expect(body.niceToHave).toEqual([]);
+    expect(body.conditions).toEqual(['GOOD']);
+  });
+
+  it('"Alle entfernen" clears the filters but keeps the requirements', async () => {
+    const create = vi.fn().mockReturnValue(of(REQ));
+    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
+    const { fixture, el } = setup({ create, matches });
+    await fixture.whenStable();
+    await search(fixture, el, TEXT);
+
+    [...el.querySelectorAll<HTMLButtonElement>('button')]
+      .find((b) => b.textContent!.includes('Alle entfernen'))!
+      .click();
+    await fixture.whenStable();
+
+    expect(matches).toHaveBeenCalledTimes(2);
+    const body = matches.mock.calls[1][0].body;
+    expect(body.mustHave).toEqual(REQ.mustHave);
+    expect(body.maxBudgetChf).toBeUndefined();
+    expect(body.postcode).toBeUndefined();
+    expect(body.category).toBeNull();
+    expect(el.textContent).not.toContain('Alle entfernen');
+    expect(el.textContent).toContain('2 entfernt.');
   });
 });

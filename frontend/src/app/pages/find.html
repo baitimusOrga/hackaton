@@ -14,7 +14,12 @@
       [placeholder]="'z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich' | t"
       aria-describedby="find-tip"
     ></textarea>
-    <button appButton type="submit" [disabled]="loading() || !text().trim()">
+    <button
+      appButton
+      type="submit"
+      [disabled]="loading() || !text().trim()"
+      [attr.aria-label]="(loading() ? 'Suche läuft…' : 'Suchen') | t"
+    >
       <app-icon name="search" />
       <span>{{ (loading() ? 'Suche läuft…' : 'Suchen') | t }}</span>
     </button>
@@ -39,6 +44,26 @@
     </section>
   }
 } @else {
+  <form class="find__query find__phone" role="search" (ngSubmit)="find()">
+    <label for="find-again" class="zw-sr-only">{{ 'Was suchst du?' | t }}</label>
+    <input
+      id="find-again"
+      name="text"
+      class="zw-input"
+      type="search"
+      maxlength="500"
+      [(ngModel)]="text"
+      [placeholder]="'z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich' | t"
+    />
+    <button
+      appButton
+      type="submit"
+      [disabled]="loading() || !text().trim()"
+      [attr.aria-label]="'Suchen' | t"
+    >
+      <app-icon name="search" />
+    </button>
+  </form>
   <section class="find__head" [attr.aria-label]="'Deine Suche' | t">
     <app-find-sentence
       [text]="asked()"
@@ -197,7 +222,7 @@
             {{ 'Ganze Schweiz' | t }}
           </button>
         </div>
-        <button appButton variant="ghost" size="sm" type="button" (click)="useMyPosition()">
+        <button appButton variant="ghost" size="sm" type="button" (click)="useMyPosition(true)">
           <app-icon name="pin" [size]="16" />
           <span>{{ (position() ? 'Standort aktualisieren' : 'Mein Standort') | t }}</span>
         </button>

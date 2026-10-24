@@ -845,7 +845,7 @@ describe('FindSentence', () => {
   it('emits the key of a tapped token or chip', () => {
     const { fixture, el } = setup();
     const keys: string[] = [];
-    fixture.componentInstance.toggle.subscribe((key) => keys.push(key));
+    fixture.componentInstance.toggled.subscribe((key) => keys.push(key));
     el.querySelectorAll<HTMLButtonElement>('.token')[1].click();
     el.querySelector<HTMLButtonElement>('.extra .zw-chip')!.click();
     expect(keys).toEqual(['must:Year', 'nice:RAM']);
@@ -934,7 +934,7 @@ export function place(text: string, tokens: Token[]): { segments: Segment[]; chi
               (off().has(tok.key) ? '{label} wieder verlangen' : '{label} nicht mehr verlangen')
                 | t: { label: tok.label }
             "
-            (click)="toggle.emit(tok.key)"
+            (click)="toggled.emit(tok.key)"
           >
             {{ s.text }}
           </button>
@@ -952,7 +952,7 @@ export function place(text: string, tokens: Token[]): { segments: Segment[]; chi
             type="button"
             class="zw-chip"
             [attr.aria-pressed]="!off().has(tok.key)"
-            (click)="toggle.emit(tok.key)"
+            (click)="toggled.emit(tok.key)"
           >
             @if (!off().has(tok.key)) {
               <app-icon name="check" [size]="16" />
@@ -1026,7 +1026,7 @@ export class FindSentence {
   readonly tokens = input.required<Token[]>();
   /** Keys of the tokens the buyer tapped off. */
   readonly off = input.required<ReadonlySet<string>>();
-  readonly toggle = output<string>();
+  readonly toggled = output<string>();
   private readonly i18n = inject(I18n);
   protected readonly placed = computed(() => place(this.text(), this.tokens()));
   protected readonly hint = computed(() => {

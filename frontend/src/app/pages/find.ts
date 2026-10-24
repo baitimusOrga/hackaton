@@ -66,6 +66,22 @@ const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube de
       padding-bottom: var(--space-2);
       resize: vertical;
     }
+    .find__phone {
+      display: none;
+    }
+    @media (max-width: 720px) {
+      .find__phone {
+        display: flex;
+        margin-bottom: var(--space-4);
+      }
+      .find__query .zw-btn {
+        width: 44px;
+        padding: 0;
+      }
+      .find__query .zw-btn span {
+        display: none;
+      }
+    }
     .find__head {
       display: flex;
       flex-direction: column;
@@ -117,6 +133,14 @@ const NO_POSITION = 'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube de
       flex-wrap: wrap;
       gap: var(--space-2);
       padding: var(--space-2) 0 var(--space-3);
+    }
+    @media (max-width: 639px) {
+      /* one scrolling row; the panels are fixed on phones, so nothing is clipped */
+      .find__facets {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
     }
     .find__opt {
       display: flex;
@@ -427,19 +451,30 @@ export class Find {
   private restore(params: ParamMap): void {
     const list = (key: string): Requirement[] => {
       try {
-        return JSON.parse(params.get(key) ?? '[]');
+        const parsed = JSON.parse(params.get(key) ?? '[]');
+        return Array.isArray(parsed)
+          ? parsed
+              .filter((r) => r && typeof r.attribute === 'string' && typeof r.value === 'string')
+              .map((r) => ({
+                ...r,
+                phrase: typeof r.phrase === 'string' ? r.phrase.slice(0, 80) : null,
+              }))
+          : [];
       } catch {
         return [];
       }
     };
     const max = params.get('max');
     const km = params.get('km');
-    this.text.set(params.get('q') ?? '');
-    this.asked.set(params.get('q') ?? '');
-    this.original = params.get('q') ?? '';
+    const q = (params.get('q') ?? '').slice(0, 500);
+    this.text.set(q);
+    this.asked.set(q);
+    this.original = q;
     this.searched.set(true);
     this.conditions.set(
-      (params.get('cond') ?? '').split(',').filter((c): c is Condition => c in CONDITION_LABELS),
+      [...new Set((params.get('cond') ?? '').split(','))]
+        .filter((c): c is Condition => Object.hasOwn(CONDITION_LABELS, c))
+        .slice(0, 5),
     );
     this.apply({
       mustHave: list('must'),
@@ -447,9 +482,9 @@ export class Find {
       category: params.get('cat'),
       keywords: (params.get('kw') ?? '').split(',').filter((k) => k.trim()),
       maxBudgetChf: max === null ? undefined : Number(max),
-      budgetPhrase: params.get('maxp'),
+      budgetPhrase: params.get('maxp')?.slice(0, 80) ?? null,
       postcode: params.get('plz') ?? undefined,
-      regionPhrase: params.get('plzp'),
+      regionPhrase: params.get('plzp')?.slice(0, 80) ?? null,
       maxDistanceKm: km === null ? undefined : Number(km),
     });
     this.afterParse({ postcode: params.get('plz') ?? undefined });
@@ -562,6 +597,7 @@ export class Find {
   protected setBudget(value: string): void {
     const n = Number(value);
     this.budget.set(value.trim() && Number.isFinite(n) ? n : null);
+    this.budgetPhrase.set(null);
     this.turnOn('budget');
     this.dirty = true;
   }
@@ -580,6 +616,7 @@ export class Find {
 
   protected setPostcode(value: string): void {
     this.postcode.set(value);
+    this.regionPhrase.set(null);
     this.position.set(null);
     this.nearMe = false;
     this.turnOn('region');
@@ -588,6 +625,7 @@ export class Find {
 
   protected setRadius(km: number | null): void {
     this.radius.set(km);
+    this.regionPhrase.set(null);
     this.turnOn('region');
     this.dirty = true;
   }
@@ -636,7 +674,7 @@ export class Find {
   }
 
   /** "Mein Standort": asks the browser once per session, then searches around the position instead of a postcode. */
-  protected async useMyPosition(): Promise<void> {
+  protected async useMyPosition(byHand = false): Promise<void> {
     const position = await this.location.locate();
     if (!position) {
       this.position.set(null);
@@ -646,6 +684,8 @@ export class Find {
       return this.showMatches(this.i18n.t(NO_POSITION));
     }
     this.position.set(position);
+    // set in the facet → a chip; the sentence's own "in meiner Nähe" stays underlined
+    if (byHand) this.regionPhrase.set(null);
     this.postcode.set('');
     if (this.radius() === null) this.radius.set(NEAR_ME_KM);
     this.nearMe = true;
@@ -732,11 +772,11 @@ export class Find {
     return `${r.attribute}: ${prefix}${r.value}`;
   }
 
-  protected budgetLabel(): string {
+  private budgetLabel(): string {
     return this.i18n.t('Bis {price}', { price: chf(this.budget() ?? 0) });
   }
 
-  protected regionLabel(): string {
+  private regionLabel(): string {
     if (this.position())
       return this.i18n.t('{km} km um deinen Standort', { km: this.radius() ?? NEAR_ME_KM });
     const pc = this.postcode().trim();
