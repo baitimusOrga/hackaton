@@ -21,6 +21,15 @@ export const ICONS = {
   garden: '<path d="M12 21V11M12 11c-4 0-7-3-7-7 4 0 7 3 7 7zM12 11c4 0 7-3 7-7-4 0-7 3-7 7z"/>',
   machines:
     '<path d="M4 6h10v6H4zM14 9h4l2 3v4h-6M4 12v4h2"/><circle cx="8" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+  computer: '<rect x="6" y="3" width="12" height="18" rx="1"/><path d="M9 7h6M12 17h.01"/>',
+  laptop: '<path d="M5 6h14v10H5zM2 20h20"/>',
+  phone: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
+  tablet: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M11 18h2"/>',
+  printer: '<path d="M7 9V3h10v6M7 17H4v-8h16v8h-3M7 14h10v7H7z"/>',
+  audio: '<path d="M4 15v-3a8 8 0 0 1 16 0v3M4 15h4v5H4zM16 15h4v5h-4z"/>',
+  gaming:
+    '<path d="M6 8h12a3 3 0 0 1 3 3v4a3 3 0 0 1-5 2l-1-2H9l-1 2a3 3 0 0 1-5-2v-4a3 3 0 0 1 3-3zM8 11v3M6.5 12.5h3M15 12h.01M17 14h.01"/>',
+  tv: '<rect x="3" y="5" width="18" height="12" rx="1"/><path d="M8 21h8M12 17v4"/>',
 } as const;
 
 export type IconName = keyof typeof ICONS;

@@ -27,16 +27,24 @@ import { SummaryCard } from '../ui/summary-card';
 const QUICK_FILTERS = ['Nur Auktionen', 'Unter CHF 50', 'Abholung', 'Endet heute', 'Grüne Wahl'];
 
 const CATEGORY_ICONS: Record<string, IconName> = {
+  Computers: 'computer',
+  Laptops: 'laptop',
+  Monitors: 'electronics',
+  Phones: 'phone',
+  Tablets: 'tablet',
   'Office furniture': 'furniture',
-  'Office equipment': 'machines',
+  'Office equipment': 'printer',
+  Audio: 'audio',
   Cameras: 'camera',
   Household: 'household',
   Bikes: 'bike',
+  Gaming: 'gaming',
+  'TV & home cinema': 'tv',
 };
 
 const CATEGORY_TILES = CATEGORIES.map((name) => ({
   name,
-  icon: CATEGORY_ICONS[name] ?? 'electronics',
+  icon: CATEGORY_ICONS[name],
 }));
 
 /** Landing page: hero search, quick filters, categories, ending auctions, new listings, business band. */
