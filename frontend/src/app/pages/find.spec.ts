@@ -61,7 +61,7 @@ async function type(
 }
 
 async function search(fixture: Fixture, el: HTMLElement, text: string) {
-  await type(fixture, el.querySelector('textarea')!, text);
+  await type(fixture, el.querySelector<HTMLInputElement>('input[name="text"]')!, text);
   el.querySelector<HTMLButtonElement>('.find__query button[type="submit"]')!.click();
   await fixture.whenStable();
 }
@@ -93,7 +93,6 @@ describe('Find', () => {
     expect(body.keywords).toEqual(['imac']);
     expect(body.conditions).toEqual([]);
 
-    expect(el.querySelector('textarea')).toBeNull();
     const tokens = [...el.querySelectorAll<HTMLButtonElement>('.token')].map((b) => b.textContent);
     expect(tokens).toEqual(['iMac', '2017', 'bis CHF 600', 'in Zürich']);
 
@@ -264,6 +263,31 @@ describe('Find', () => {
     expect(el.textContent).not.toContain('Alte Antwort');
   });
 
+  it('shows the new layout while the assistant still reads the sentence', async () => {
+    const pending = new Subject();
+    const create = vi.fn().mockReturnValue(pending);
+    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
+    const { fixture, el } = setup({ create, matches });
+    await fixture.whenStable();
+
+    await search(fixture, el, TEXT);
+
+    expect(el.querySelector('textarea')).toBeNull();
+    expect(el.querySelector('h1.sentence')!.textContent).toContain(TEXT);
+    expect(el.querySelectorAll('.token').length).toBe(0);
+    expect(el.textContent).not.toContain('Unterstrichen ist');
+    expect(el.textContent).toContain('Lese deinen Wunsch…');
+    expect(el.querySelector('.find__skeleton')).not.toBeNull();
+    expect(el.querySelector('.zw-facetbar')!.hasAttribute('inert')).toBe(true);
+    expect(matches).not.toHaveBeenCalled();
+
+    pending.next(REQ);
+    await fixture.whenStable();
+    expect(el.querySelectorAll('.token').length).toBe(4);
+    expect(el.querySelector('.zw-facetbar')!.hasAttribute('inert')).toBe(false);
+    expect(matches).toHaveBeenCalledTimes(1);
+  });
+
   it('shows a skeleton while the listings are compared', async () => {
     const pending = new Subject();
     const create = vi.fn().mockReturnValue(of(REQ));
@@ -357,7 +381,7 @@ describe('Find', () => {
     expect(list).toHaveBeenCalledWith({ saleMode: 'AUCTION' });
     expect(el.textContent).toContain('Alle Auktionen');
     expect(el.querySelector('a[href="/listings/3"]')).not.toBeNull();
-    expect(el.querySelector('textarea')).not.toBeNull();
+    expect(el.querySelector('input[name="text"]')).not.toBeNull();
   });
 
   it('ignores malformed URL filters instead of breaking', async () => {

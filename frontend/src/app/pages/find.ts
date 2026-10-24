@@ -56,13 +56,6 @@ const GROUPS = [
       gap: var(--space-2);
       align-items: flex-start;
     }
-    .find__query textarea {
-      flex: 1 1 auto;
-      min-width: 0;
-      padding-top: var(--space-2);
-      padding-bottom: var(--space-2);
-      resize: vertical;
-    }
     .find__phone {
       display: none;
     }
@@ -74,9 +67,6 @@ const GROUPS = [
       .find__query .zw-btn {
         width: 44px;
         padding: 0;
-      }
-      .find__query .zw-btn span {
-        display: none;
       }
     }
     .find__head {
@@ -386,17 +376,19 @@ export class Find {
   find(): void {
     if (this.loading() || !this.text().trim()) return;
     const text = this.text();
+    // the results layout shows the new sentence at once; no tokens of the old search linger
+    this.original = text;
+    this.asked.set(text.trim());
+    this.refinements.set([]);
+    this.conditions.set([]);
+    this.results.set(null);
+    this.apply({ mustHave: [], niceToHave: [], keywords: [] });
+    this.searched.set(true);
     this.loading.set(true);
     this.status(this.i18n.t('Lese deinen Wunsch…'), this.i18n.t('Mache Anforderungen daraus…'));
     this.search.create({ body: { text } }).subscribe({
       next: (req) => {
-        this.original = text;
-        this.asked.set(text.trim());
-        this.refinements.set([]);
-        this.conditions.set([]);
         this.apply(req);
-        this.results.set(null);
-        this.searched.set(true);
         this.loading.set(false);
         this.showMatches();
       },
