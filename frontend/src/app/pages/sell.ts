@@ -168,6 +168,21 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
       background: var(--ink);
       transition: width 480ms cubic-bezier(0.2, 0.8, 0.2, 1);
     }
+    .restored {
+      background: var(--bg-100);
+      border-bottom: var(--border-1) solid var(--line-soft);
+    }
+    .restored__in {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-3) var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+      font-size: 14px;
+      line-height: 20px;
+    }
     .main {
       flex: 1;
       width: 100%;

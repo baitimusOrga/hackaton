@@ -154,7 +154,7 @@ describe('Sell', () => {
   });
 
   it('restores a saved draft at its step', async () => {
-    const { element } = await reopen({
+    const { fixture, element } = await reopen({
       savedAt: Date.now(),
       photos: [{ file: new File(['x'], 'item.png', { type: 'image/png' }), id: 7 }],
       draft: DRAFT,
@@ -182,7 +182,13 @@ describe('Sell', () => {
 
     expect(element.textContent).toContain('3 von 4');
     expect(element.textContent).toContain('Zu welchem Preis?');
-    expect(element.textContent).toContain('Entwurf wiederhergestellt.');
+    // a bar right under the header, not inside the step
+    expect(element.querySelector('header + .restored')!.textContent).toContain(
+      'Dein Entwurf von vorhin ist wieder da.',
+    );
+    button(element, 'Weitermachen').click();
+    await fixture.whenStable();
+    expect(element.querySelector('.restored')).toBeNull();
   });
 
   it('drops a saved draft older than its photos on the server', async () => {
@@ -190,7 +196,7 @@ describe('Sell', () => {
 
     expect(store.clear).toHaveBeenCalled();
     expect(element.textContent).toContain('1 von 4');
-    expect(element.textContent).not.toContain('Entwurf wiederhergestellt.');
+    expect(element.textContent).not.toContain('Dein Entwurf von vorhin ist wieder da.');
   });
 
   it('takes photos dropped on the dialog or pasted, and ignores pasted text', async () => {

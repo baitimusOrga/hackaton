@@ -42,10 +42,10 @@
           </button>
         </div>
       </header>
+      <ng-container *ngTemplateOutlet="restoredTpl" />
 
       <main class="main">
         <div class="col" [class.col--center]="published()">
-          <ng-container *ngTemplateOutlet="restoredTpl" />
           @if (published(); as done) {
             <div class="done">
               <div class="check" aria-hidden="true">
@@ -410,8 +410,8 @@
         </button>
       </div>
     </header>
+    <ng-container *ngTemplateOutlet="restoredTpl" />
     <div class="page" role="region" aria-labelledby="sell-full">
-      <ng-container *ngTemplateOutlet="restoredTpl" />
       <section class="sec" aria-labelledby="sec-photos">
         <h2 id="sec-photos">{{ 'Fotos' | t }}</h2>
         <ng-container *ngTemplateOutlet="photosTpl" />
@@ -818,10 +818,17 @@
 
 <ng-template #restoredTpl>
   @if (restored()) {
-    <p class="zw-muted zw-small" aria-live="polite">
-      {{ 'Entwurf wiederhergestellt.' | t }}
-      <button type="button" class="zw-link" (click)="startOver()">{{ 'Neu beginnen' | t }}</button>
-    </p>
+    <div class="restored" role="status">
+      <div class="restored__in">
+        <span>{{ 'Dein Entwurf von vorhin ist wieder da.' | t }}</span>
+        <button type="button" class="zw-link push" (click)="restored.set(false)">
+          {{ 'Weitermachen' | t }}
+        </button>
+        <button appButton size="sm" type="button" (click)="startOver()">
+          {{ 'Neu beginnen' | t }}
+        </button>
+      </div>
+    </div>
   }
 </ng-template>
 

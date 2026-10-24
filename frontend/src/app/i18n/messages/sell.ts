@@ -421,11 +421,6 @@ export const SELL_MESSAGES: Messages = {
     it: 'Nessun NPA svizzero trovato nella tua posizione.',
     en: 'We found no Swiss postcode at your location.',
   },
-  'Entwurf wiederhergestellt.': {
-    fr: 'Brouillon restauré.',
-    it: 'Bozza ripristinata.',
-    en: 'Draft restored.',
-  },
   'Neu beginnen': { fr: 'Recommencer', it: 'Ricomincia', en: 'Start over' },
   'Du kannst Fotos auch hierher ziehen oder einfügen.': {
     fr: 'Tu peux aussi glisser ou coller tes photos ici.',
@@ -550,4 +545,11 @@ export const SELL_MESSAGES: Messages = {
   },
   Übernehmen: { fr: 'Appliquer', it: 'Applica', en: 'Apply' },
   'Wird angepasst': { fr: 'Mise à jour', it: 'Aggiornamento', en: 'Updating' },
+  'Dein Entwurf von vorhin ist wieder da.': {
+    fr: 'Ton brouillon de tout à l’heure est de retour.',
+    it: 'La tua bozza di prima è di nuovo qui.',
+    en: 'Your draft from earlier is back.',
+  },
+  Weitermachen: { fr: 'Continuer', it: 'Continua', en: 'Continue' },
+  'nicht bestätigt': { fr: 'non confirmé', it: 'non confermato', en: 'not confirmed' },
 };
