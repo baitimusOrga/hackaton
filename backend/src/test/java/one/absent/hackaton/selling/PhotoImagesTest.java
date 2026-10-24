@@ -50,6 +50,41 @@ class PhotoImagesTest {
         assertThat(kept.height()).isEqualTo(2);
     }
 
+    /** A WebP header of the given chunk type with {@code payload} from byte 20 on. */
+    static byte[] webp(String chunk, int... payload) {
+        byte[] d = new byte[40];
+        System.arraycopy("RIFF".getBytes(), 0, d, 0, 4);
+        System.arraycopy("WEBP".getBytes(), 0, d, 8, 4);
+        System.arraycopy(chunk.getBytes(), 0, d, 12, 4);
+        for (int i = 0; i < payload.length; i++) {
+            d[20 + i] = (byte) payload[i];
+        }
+        return d;
+    }
+
+    @Test void webpGetsItsSizeFromTheHeaderAndTheScaleTheApiApplies() {
+        // lossy: 613x460 at bytes 26-29 after frame tag and start code
+        byte[] lossy = webp("VP8 ", 0, 0, 0, 0x9D, 0x01, 0x2A, 613 & 0xFF, 613 >> 8, 460 & 0xFF, 460 >> 8);
+        // lossless: signature 0x2F, then 14 bits width - 1 and 14 bits height - 1
+        int bits = 799 | (599 << 14);
+        byte[] lossless = webp("VP8L", 0x2F, bits & 0xFF, bits >> 8 & 0xFF, bits >> 16 & 0xFF, bits >> 24 & 0xFF);
+        // extended: 24 bits canvas width - 1 and height - 1 at bytes 24-29
+        byte[] extended = webp("VP8X", 0, 0, 0, 0, 3999 & 0xFF, 3999 >> 8, 0, 2999 & 0xFF, 2999 >> 8, 0);
+
+        assertThat(PhotoImages.webpSize(lossy)).containsExactly(613, 460);
+        assertThat(PhotoImages.webpSize(lossless)).containsExactly(800, 600);
+        assertThat(PhotoImages.webpSize(extended)).containsExactly(4000, 3000);
+        assertThat(PhotoImages.webpSize(new byte[40])).isNull();
+
+        var small = PhotoImages.forAi(lossy, "image/webp");
+        assertThat(small.image().data()).isSameAs(lossy);
+        assertThat(small.width()).isEqualTo(613);
+        // too big for full detail: sent as is, with the size the API scales it to
+        var big = PhotoImages.forAi(extended, "image/webp");
+        assertThat(big.width()).isEqualTo(2236);
+        assertThat(big.height()).isEqualTo(1677);
+    }
+
     @Test void gifIsStoredAsUploaded() {
         byte[] gif = DraftControllerTest.image("gif");
         assertThat(Arrays.equals(PhotoImages.stripMetadata(gif, "image/gif"), gif)).isTrue();

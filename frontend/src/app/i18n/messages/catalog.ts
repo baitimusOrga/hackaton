@@ -23,6 +23,13 @@ export const CATALOG_MESSAGES: Messages = {
   Cameras: { de: 'Kameras', fr: 'Appareils photo', it: 'Fotocamere', en: 'Cameras' },
   Household: { de: 'Haushalt', fr: 'Ménage', it: 'Casa', en: 'Household' },
   Bikes: { de: 'Velos', fr: 'Vélos', it: 'Bici', en: 'Bikes' },
+  Gaming: { de: 'Gaming', fr: 'Jeux vidéo', it: 'Videogiochi', en: 'Gaming' },
+  'TV & home cinema': {
+    de: 'TV & Heimkino',
+    fr: 'TV et home cinéma',
+    it: 'TV e home cinema',
+    en: 'TV & home cinema',
+  },
   Brand: { de: 'Marke', fr: 'Marque', it: 'Marca', en: 'Brand' },
   Model: { de: 'Modell', fr: 'Modèle', it: 'Modello', en: 'Model' },
   Year: { de: 'Jahrgang', fr: 'Année', it: 'Anno', en: 'Year' },

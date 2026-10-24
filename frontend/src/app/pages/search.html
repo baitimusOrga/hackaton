@@ -90,7 +90,8 @@
               type="button"
               class="zw-chip"
               [attr.aria-pressed]="filters().radiusKm === km"
-              (click)="nearMe(km)"
+              [disabled]="!fullPostcode()"
+              (click)="setRadius(km)"
             >
               {{ km }} km
             </button>
@@ -99,21 +100,11 @@
             type="button"
             class="zw-chip"
             [attr.aria-pressed]="!filters().radiusKm"
-            (click)="nearMe(null)"
+            (click)="setRadius(null)"
           >
             {{ 'Ganze Schweiz' | t }}
           </button>
         </div>
-        <button
-          appButton
-          variant="ghost"
-          size="sm"
-          type="button"
-          (click)="nearMe(filters().radiusKm ?? 25, true)"
-        >
-          <app-icon name="pin" [size]="16" />
-          <span>{{ 'Mein Standort' | t }}</span>
-        </button>
       </app-facet>
       <app-facet
         [label]="'Verkaufsart' | t"
@@ -177,9 +168,6 @@
   </div>
 
   <div class="search__results">
-    @if (locationError()) {
-      <p class="zw-error" role="alert">{{ locationError() | t }}</p>
-    }
     @if (listings(); as items) {
       @if (!items.length) {
         <p class="zw-muted">{{ 'Keine Inserate gefunden.' | t }}</p>

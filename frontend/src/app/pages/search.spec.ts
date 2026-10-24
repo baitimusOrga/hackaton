@@ -17,17 +17,6 @@ function chip(el: HTMLElement, text: string): HTMLButtonElement {
   )!;
 }
 
-function geolocation(position: GeolocationPosition | null) {
-  const getCurrentPosition = vi.fn((ok: PositionCallback, fail: PositionErrorCallback) =>
-    position ? ok(position) : fail({ code: 1 } as GeolocationPositionError),
-  );
-  Object.defineProperty(navigator, 'geolocation', {
-    value: { getCurrentPosition },
-    configurable: true,
-  });
-  return getCurrentPosition;
-}
-
 describe('Search', () => {
   async function setup(url: string, items: unknown[]) {
     const list = vi.fn().mockReturnValue(of(items));
@@ -90,70 +79,27 @@ describe('Search', () => {
     expect(element.querySelector('[role="group"][aria-label="Ansicht"]')).toBeNull();
   });
 
-  it('keeps the radius only with an origin: a full postcode or the position', async () => {
+  it('keeps the radius only with a full postcode', async () => {
     const full = await setup('/search?postcode=8004&radiusKm=25', []);
     expect(full.list).toHaveBeenCalledWith({ postcode: '8004', radiusKm: 25 });
     TestBed.resetTestingModule();
     const partial = await setup('/search?postcode=80&radiusKm=25', []);
     expect(partial.list).toHaveBeenCalledWith({ postcode: '80' });
-    TestBed.resetTestingModule();
-    const here = await setup('/search?radiusKm=5&lat=47.378&lon=8.523', []);
-    expect(here.list).toHaveBeenCalledWith({ radiusKm: 5, lat: 47.378, lon: 8.523 });
   });
 
-  it('a radius chip measures from a full postcode without asking for the position', async () => {
-    const asked = geolocation(null);
+  it('a radius chip measures from a full postcode and is disabled without one', async () => {
     const { list, harness, element } = await setup('/search?postcode=8004', []);
     trigger(element, 'Region').click();
     await harness.fixture.whenStable();
     chip(element, '10 km').click();
     await harness.fixture.whenStable();
     expect(list).toHaveBeenLastCalledWith({ postcode: '8004', radiusKm: 10 });
-    expect(asked).not.toHaveBeenCalled();
-  });
+    expect(trigger(element, 'Region').textContent).toContain('10 km um 8004');
 
-  it('"Mein Standort" switches from the postcode to the position', async () => {
-    const asked = geolocation({
-      coords: { latitude: 47.37812, longitude: 8.52345 },
-    } as GeolocationPosition);
-    const { list, harness, element } = await setup('/search?postcode=8004&radiusKm=10', []);
-    trigger(element, 'Region').click();
-    await harness.fixture.whenStable();
-    [...element.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')]
-      .find((b) => b.textContent!.includes('Mein Standort'))!
-      .click();
-    await harness.fixture.whenStable();
-    expect(asked).toHaveBeenCalledTimes(1);
-    expect(list).toHaveBeenLastCalledWith({ radiusKm: 10, lat: 47.378, lon: 8.523 });
-    expect(trigger(element, 'Region').textContent).toContain('10 km um deinen Standort');
-  });
-
-  it('without a postcode a chip uses the rounded position, and a known position is not asked again', async () => {
-    geolocation({ coords: { latitude: 47.37812, longitude: 8.52345 } } as GeolocationPosition);
-    const { list, harness, element } = await setup('/search', []);
-    trigger(element, 'Region').click();
-    await harness.fixture.whenStable();
-    chip(element, '25 km').click();
-    await harness.fixture.whenStable();
-    expect(list).toHaveBeenLastCalledWith({ radiusKm: 25, lat: 47.378, lon: 8.523 });
-
-    const askedAgain = geolocation(null);
-    chip(element, '10 km').click();
-    await harness.fixture.whenStable();
-    expect(askedAgain).not.toHaveBeenCalled();
-    expect(list).toHaveBeenLastCalledWith({ radiusKm: 10, lat: 47.378, lon: 8.523 });
-  });
-
-  it('a refused position shows the error and drops the radius', async () => {
-    geolocation(null);
-    const { harness, element } = await setup('/search', []);
-    trigger(element, 'Region').click();
-    await harness.fixture.whenStable();
-    chip(element, '10 km').click();
-    await harness.fixture.whenStable();
-    expect(TestBed.inject(Router).url).toBe('/search');
-    expect(element.querySelector('[role="alert"]')!.textContent).toContain(
-      'Standort nicht verfügbar.',
-    );
+    TestBed.resetTestingModule();
+    const bare = await setup('/search', []);
+    trigger(bare.element, 'Region').click();
+    await bare.harness.fixture.whenStable();
+    expect(chip(bare.element, '10 km').disabled).toBe(true);
   });
 });

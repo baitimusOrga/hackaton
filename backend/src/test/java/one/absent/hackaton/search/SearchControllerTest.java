@@ -190,7 +190,8 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.matches[?(@.listing.title == 'Dual turntable')].differences[0]")
                         .value("In Somewhere (3011), outside the 80xx area"))
                 .andExpect(jsonPath("$.matches[?(@.listing.title == 'Rega turntable')]").isEmpty())
-                .andExpect(jsonPath("$.matches[?(@.listing.title == 'Turntable camera mount')]").isEmpty());
+                // a keyword in the title brings it in from another category; only the AI can tell it is an accessory
+                .andExpect(jsonPath("$.matches[?(@.listing.title == 'Turntable camera mount')]").isNotEmpty());
     }
 
     @Test
@@ -220,35 +221,40 @@ class SearchControllerTest {
 
         matches("test audio")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.matches[0].score").value(96))
+                .andExpect(jsonPath("$.matches[0].score").value(95))
                 .andExpect(jsonPath("$.matches[0].reason").value("Fits."))
-                .andExpect(jsonPath("$.matches[1].score").value(85))
+                .andExpect(jsonPath("$.matches[1].score").value(84))
                 // with must-haves, code decides what to ask
                 .andExpect(jsonPath("$.matches[1].missingDetails.length()").value(1))
                 .andExpect(jsonPath("$.matches[1].missingDetails[0]").value("Year: 1995"))
-                .andExpect(jsonPath("$.matches[?(@.listing.title == 'Dual turntable')].reason")
-                        .value(SearchService.NOT_ASSESSED))
-                .andExpect(jsonPath("$.matches[?(@.listing.id == 999999)]").doesNotExist());
+                // the model left it out
+                .andExpect(jsonPath("$.matches[?(@.listing.title == 'Dual turntable')]").isEmpty())
+                .andExpect(jsonPath("$.matches.length()").value(2));
     }
 
     @Test
     void aSmallCategoryFallsBackToAllCategories() throws Exception {
         rankingFails();
 
-        // only one listing in "test cameras": the search runs again without the category
-        matches("test cameras")
+        // only one listing in "test cameras" and no keyword: the search runs again without the category
+        mvc.perform(post("/api/searches/matches").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"mustHave": [{"attribute": "Brand", "value": "technics"}, {"attribute": "Year", "value": "1995"}],
+                                 "niceToHave": [], "category": "test cameras", "keywords": []}"""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.matches[0].listing.id").value(match.getId().intValue()));
     }
 
     @Test
-    void keywordsRankButNoLongerFilter() {
+    void keywordsRankButNoLongerFilterAndBringInMisfiledTitles() {
         Listing laptop = listing("Lenovo laptop", "300", "Test laptops", "8001", Map.of());
+        Listing misfiled = listing("Lenovo notebook", "300", "Test household", "8001", Map.of());
         em.flush();
         var req = new SearchRequirements(List.of(), List.of(), "test laptops", List.of("notebook"), null, null, null,
                 false, null, null);
 
-        assertThat(search.candidates(req)).extracting(ListingDetail::id).containsExactly(laptop.getId());
+        assertThat(search.candidates(req)).extracting(ListingDetail::id).contains(laptop.getId(), misfiled.getId())
+                .doesNotContain(match.getId());
     }
 
     @Test
