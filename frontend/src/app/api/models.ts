@@ -28,6 +28,7 @@ export type { PriceEvidence } from './models/price-evidence';
 export type { PrivacyMark } from './models/privacy-mark';
 export type { PrivacyWarning } from './models/privacy-warning';
 export type { RefineRequest } from './models/refine-request';
+export type { Relaxation } from './models/relaxation';
 export type { Requirement } from './models/requirement';
 export type { SearchMatch } from './models/search-match';
 export type { SearchRequest } from './models/search-request';

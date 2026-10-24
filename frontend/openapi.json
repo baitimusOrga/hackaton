@@ -903,6 +903,22 @@
           }
         }
       },
+      "Relaxation" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "BUDGET", "REGION", "CATEGORY", "MUST_HAVE" ]
+          },
+          "attribute" : {
+            "type" : [ "string", "null" ]
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
       "SearchMatch" : {
         "type" : "object",
         "properties" : {
@@ -952,6 +968,15 @@
           "compared" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "aiRanked" : {
+            "type" : "boolean"
+          },
+          "relaxations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Relaxation"
+            }
           }
         }
       },

@@ -11,8 +11,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -233,6 +235,25 @@ class SearchServiceTest {
 
         assertThat(results.matches()).extracting(SearchMatch::score).containsExactly(100);
         assertThat(results.matches().get(0).reason()).isEqualTo(SearchService.NO_AI_REASON);
+        assertThat(results.aiRanked()).isFalse();
+    }
+
+    @Test
+    void relaxationsCountWhatDroppingABudgetOrAMustHaveWouldGive() {
+        SearchService service = spy(service());
+        // the budget cuts every listing; without it three fit
+        doAnswer(call -> ((SearchRequirements) call.getArgument(0)).maxBudgetChf() == null
+                ? List.of(IMAC, IMAC_2019, OLD_IMAC) : List.of()).when(service).candidates(any());
+
+        SearchRequirements budget = requirements(List.of(), List.of(), List.of(), "100", null, null);
+        assertThat(service.relaxations(budget, List.of(), 0))
+                .containsExactly(new Relaxation(Relaxation.Kind.BUDGET, null, 3));
+
+        SearchRequirements year = requirements(List.of(req("Year", "2019")), List.of(), List.of(), null, null, null);
+        assertThat(service.relaxations(year, List.of(IMAC, IMAC_2019), 1))
+                .containsExactly(new Relaxation(Relaxation.Kind.MUST_HAVE, "Year", 2));
+        // nothing beats the matches already shown
+        assertThat(service.relaxations(year, List.of(IMAC, IMAC_2019), 2)).isEmpty();
     }
 
     @Test

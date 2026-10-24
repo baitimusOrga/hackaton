@@ -275,4 +275,50 @@ export const FIND_MESSAGES: Messages = {
     it: 'fuori dalla tua ricerca',
     en: 'outside your search',
   },
+  'Wunsch verstehen': {
+    fr: 'Comprendre ta demande',
+    it: 'Capire la richiesta',
+    en: 'Understanding your wish',
+  },
+  'Inserate durchsuchen': {
+    fr: 'Parcourir les annonces',
+    it: 'Cercare negli annunci',
+    en: 'Searching listings',
+  },
+  'Passung bewerten': {
+    fr: 'Évaluer la correspondance',
+    it: 'Valutare la corrispondenza',
+    en: 'Rating the fit',
+  },
+  Fortschritt: { fr: 'Progression', it: 'Avanzamento', en: 'Progress' },
+  'Assistent gerade nicht erreichbar – nach Regeln sortiert.': {
+    fr: 'Assistant indisponible – trié selon les règles.',
+    it: 'Assistente non raggiungibile – ordinato secondo le regole.',
+    en: 'Assistant unavailable right now – sorted by rules.',
+  },
+  'Mehr Treffer, wenn du lockerst:': {
+    fr: 'Plus de résultats si tu assouplis :',
+    it: 'Più risultati se allenti:',
+    en: 'More matches if you relax:',
+  },
+  'Ohne Budgetgrenze ({count})': {
+    fr: 'Sans limite de budget ({count})',
+    it: 'Senza limite di budget ({count})',
+    en: 'No budget limit ({count})',
+  },
+  'Ganze Schweiz ({count})': {
+    fr: 'Toute la Suisse ({count})',
+    it: 'Tutta la Svizzera ({count})',
+    en: 'All of Switzerland ({count})',
+  },
+  'Alle Kategorien ({count})': {
+    fr: 'Toutes les catégories ({count})',
+    it: 'Tutte le categorie ({count})',
+    en: 'All categories ({count})',
+  },
+  '{attribute} nur wünschen ({count})': {
+    fr: '{attribute} seulement souhaité ({count})',
+    it: '{attribute} solo desiderato ({count})',
+    en: '{attribute} nice to have only ({count})',
+  },
 };

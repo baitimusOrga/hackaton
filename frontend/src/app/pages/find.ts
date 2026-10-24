@@ -13,6 +13,7 @@ import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { ListingsService, SearchService } from '../api/services';
 import {
   ListingSummary,
+  Relaxation,
   Requirement,
   SearchMatch,
   SearchRequirements,
@@ -243,6 +244,30 @@ const GROUPS = [
     .find__foot {
       padding-top: var(--space-8);
     }
+    .find__steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      list-style: none;
+      padding: var(--space-4) 0 0;
+      margin: 0;
+    }
+    .find__steps li {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+    .find__step--now {
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .find__relax {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-2);
+      padding-top: var(--space-4);
+    }
     @keyframes findFade {
       from {
         opacity: 0;
@@ -306,6 +331,13 @@ export class Find {
   });
   protected readonly busy = computed(() => this.loading() || this.matching());
   protected readonly progress = signal('');
+  protected readonly steps = [
+    'Wunsch verstehen',
+    'Inserate durchsuchen',
+    'Passung bewerten',
+  ] as const;
+  /** 0 = idle, else the running step of `steps` (1-based). */
+  protected readonly step = signal(0);
   /** The status line: what runs right now, else the count. */
   protected readonly countText = computed(() =>
     this.busy()
@@ -477,6 +509,7 @@ export class Find {
     if (this.loading() || !this.text().trim()) return;
     const text = this.text();
     this.loading.set(true);
+    this.step.set(1);
     this.status(this.i18n.t('Lese deinen Wunsch…'), this.i18n.t('Mache Anforderungen daraus…'));
     this.search.create({ body: { text } }).subscribe({
       next: (req) => {
@@ -499,6 +532,7 @@ export class Find {
     const text = this.adjust().trim();
     if (this.loading() || !text) return;
     this.loading.set(true);
+    this.step.set(1);
     this.status(this.i18n.t('Passe deine Suche an…'));
     const topListingIds = (this.results()?.matches ?? [])
       .slice(0, 5)
@@ -648,6 +682,7 @@ export class Find {
   showMatches(message = ''): void {
     const id = ++this.seq;
     this.matching.set(true);
+    this.step.set(2);
     this.status(
       this.i18n.t('Durchsuche die Inserate…'),
       this.i18n.t('Vergleiche die Inserate mit deinen Anforderungen…'),
@@ -658,11 +693,13 @@ export class Find {
         if (id !== this.seq) return;
         this.results.set(res);
         this.matching.set(false);
+        this.step.set(0);
         this.status(message);
       },
       error: () => {
         if (id !== this.seq) return;
         this.matching.set(false);
+        this.step.set(0);
         this.status(message);
       },
     });
@@ -695,6 +732,7 @@ export class Find {
 
   private failed(): void {
     this.loading.set(false);
+    this.step.set(0);
     this.status('');
   }
 
@@ -702,7 +740,41 @@ export class Find {
   private status(first: string, second?: string): void {
     clearTimeout(this.timer);
     this.progress.set(first);
-    if (second) this.timer = setTimeout(() => this.progress.set(second), 1500);
+    if (!second) return;
+    this.timer = setTimeout(() => {
+      this.progress.set(second);
+      // after 1.5 s the app has scored the listings and the assistant is ranking them
+      if (this.step() === 2) this.step.set(3);
+    }, 1500);
+  }
+
+  /** The buyer drops the filter that costs the most matches. */
+  protected relax(r: Relaxation): void {
+    if (r.kind === 'BUDGET') return this.toggleToken('budget');
+    if (r.kind === 'REGION') return this.toggleToken('region');
+    if (r.kind === 'CATEGORY') this.category.set(null);
+    else {
+      const must = this.mustHave().find((x) => x.attribute === r.attribute);
+      if (must) this.move(must, 'mustHave');
+    }
+    this.showMatches();
+  }
+
+  protected relaxLabel(r: Relaxation): string {
+    const count = r.count ?? 0;
+    switch (r.kind) {
+      case 'BUDGET':
+        return this.i18n.t('Ohne Budgetgrenze ({count})', { count });
+      case 'REGION':
+        return this.i18n.t('Ganze Schweiz ({count})', { count });
+      case 'CATEGORY':
+        return this.i18n.t('Alle Kategorien ({count})', { count });
+      default:
+        return this.i18n.t('{attribute} nur wünschen ({count})', {
+          attribute: r.attribute ?? '',
+          count,
+        });
+    }
   }
 
   protected list(row: Row): Requirement[] {

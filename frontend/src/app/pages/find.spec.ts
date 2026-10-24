@@ -110,6 +110,31 @@ describe('Find', () => {
     expect(el.textContent).toContain('12 verglichen');
   });
 
+  it('offers the filters that cost matches and drops one on a click', async () => {
+    const create = vi.fn().mockReturnValue(of(REQ));
+    const matches = vi.fn().mockReturnValue(
+      of({
+        matches: [],
+        compared: 5,
+        aiRanked: false,
+        relaxations: [{ kind: 'BUDGET', count: 4 }],
+      }),
+    );
+    const { fixture, el } = setup({ create, matches });
+    await fixture.whenStable();
+    await search(fixture, el, TEXT);
+
+    expect(el.textContent).toContain('nach Regeln sortiert');
+    const relax = [...el.querySelectorAll<HTMLButtonElement>('.find__relax button')].find((b) =>
+      b.textContent?.includes('Ohne Budgetgrenze (4)'),
+    )!;
+    relax.click();
+    await fixture.whenStable();
+
+    expect(matches).toHaveBeenCalledTimes(2);
+    expect(matches.mock.calls[1][0].body.maxBudgetChf).toBeUndefined();
+  });
+
   it('tapping a token leaves it out of the next search; tapping again brings it back', async () => {
     const create = vi.fn().mockReturnValue(of(REQ));
     const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));

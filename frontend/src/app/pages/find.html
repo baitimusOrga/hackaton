@@ -315,6 +315,21 @@
     </div>
   </div>
 
+  @if (busy() && step() > 0) {
+    <ol class="find__steps zw-help" [attr.aria-label]="'Fortschritt' | t">
+      @for (s of steps; track s; let i = $index) {
+        <li
+          [class.find__step--now]="step() === i + 1"
+          [attr.aria-current]="step() === i + 1 ? 'step' : null"
+        >
+          @if (step() > i + 1) {
+            <app-icon name="check" [size]="16" />
+          }
+          {{ s | t }}
+        </li>
+      }
+    </ol>
+  }
   @if (busy()) {
     <div class="find__grid find__skeleton" aria-hidden="true">
       @for (i of skeleton; track i) {
@@ -325,7 +340,22 @@
         </div>
       }
     </div>
-  } @else if (shown()) {
+  } @else if (shown(); as res) {
+    @if (res.aiRanked === false && (res.compared ?? 0) > 0) {
+      <p class="zw-help">
+        {{ 'Assistent gerade nicht erreichbar – nach Regeln sortiert.' | t }}
+      </p>
+    }
+    @if (res.relaxations?.length) {
+      <div class="find__relax">
+        <span class="zw-help">{{ 'Mehr Treffer, wenn du lockerst:' | t }}</span>
+        @for (r of res.relaxations; track r.kind + (r.attribute ?? '')) {
+          <button appButton variant="ghost" size="sm" type="button" (click)="relax(r)">
+            {{ relaxLabel(r) }}
+          </button>
+        }
+      </div>
+    }
     @if (!groups().length) {
       <p class="find__foot">
         {{ 'Noch nichts Passendes. Entferne eine Anforderung oder vergrössere den Umkreis.' | t }}

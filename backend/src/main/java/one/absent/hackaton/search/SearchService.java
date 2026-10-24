@@ -54,6 +54,7 @@ public class SearchService {
     static final int MIN_SCORE = 30;
     static final int MIN_RELEVANCE = 50;
     static final int MAX_RESULTS = 20;
+    static final int MIN_MATCHES = 3;
     static final int NEAR_ME_KM = 25;
     static final String NO_AI_REASON = "Ranked without AI right now.";
     static final int MAX_TEXT = 200;
@@ -232,7 +233,7 @@ public class SearchService {
                     req.longitude(), req.budgetPhrase(), req.regionPhrase(), req.conditions()));
         }
         if (candidates.isEmpty()) {
-            return new SearchResults(List.of(), 0);
+            return new SearchResults(List.of(), 0, false, relaxations(req, candidates, 0));
         }
         List<ListingDetail> top = candidates.stream()
                 .sorted(Comparator.comparingInt((ListingDetail l) -> codeScore(req, l)).reversed())
@@ -264,7 +265,50 @@ public class SearchService {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
         }
-        return rank(req, candidates, ranked);
+        SearchResults results = rank(req, candidates, ranked);
+        return results.matches().size() >= MIN_MATCHES ? results : new SearchResults(results.matches(),
+                results.compared(), results.aiRanked(), relaxations(req, candidates, results.matches().size()));
+    }
+
+    /** Filters whose removal would give more matches, counted by code only: the most helpful first, at most 3. */
+    List<Relaxation> relaxations(SearchRequirements req, List<ListingDetail> candidates, int current) {
+        List<Relaxation> options = new ArrayList<>();
+        for (Requirement r : req.mustHave()) {
+            List<Requirement> must = req.mustHave().stream().filter(x -> x != r).toList();
+            List<Requirement> nice = Stream.concat(req.niceToHave().stream(), Stream.of(r)).toList();
+            options.add(new Relaxation(Relaxation.Kind.MUST_HAVE, r.attribute(),
+                    fitting(relaxed(req, must, nice, true, true, true), candidates)));
+        }
+        if (req.maxBudgetChf() != null) {
+            options.add(relaxation(Relaxation.Kind.BUDGET, relaxed(req, req.mustHave(), req.niceToHave(), true, false, true)));
+        }
+        if (trim(req.postcode()) != null || req.maxDistanceKm() != null || req.latitude() != null) {
+            options.add(relaxation(Relaxation.Kind.REGION, relaxed(req, req.mustHave(), req.niceToHave(), true, true, false)));
+        }
+        if (trim(req.category()) != null) {
+            options.add(relaxation(Relaxation.Kind.CATEGORY, relaxed(req, req.mustHave(), req.niceToHave(), false, true, true)));
+        }
+        return options.stream().filter(o -> o.count() > current)
+                .sorted(Comparator.comparingInt(Relaxation::count).reversed()).limit(3).toList();
+    }
+
+    private Relaxation relaxation(Relaxation.Kind kind, SearchRequirements relaxed) {
+        return new Relaxation(kind, null, fitting(relaxed, candidates(relaxed)));
+    }
+
+    /** Listings that would stay in the results by their code score alone. */
+    private static int fitting(SearchRequirements req, List<ListingDetail> listings) {
+        return (int) listings.stream().filter(l -> finalScore(codeScore(req, l), null,
+                fit(differences(req, l), missing(req, l))) >= MIN_SCORE).count();
+    }
+
+    private static SearchRequirements relaxed(SearchRequirements r, List<Requirement> must, List<Requirement> nice,
+                                              boolean keepCategory, boolean keepBudget, boolean keepRegion) {
+        return new SearchRequirements(must, nice, keepCategory ? r.category() : null, r.keywords(),
+                keepBudget ? r.maxBudgetChf() : null, keepRegion ? r.postcode() : null,
+                keepRegion ? r.maxDistanceKm() : null, keepRegion ? r.nearMe() : null,
+                keepRegion ? r.latitude() : null, keepRegion ? r.longitude() : null,
+                keepBudget ? r.budgetPhrase() : null, keepRegion ? r.regionPhrase() : null, r.conditions());
     }
 
     /**
@@ -297,7 +341,7 @@ public class SearchService {
         }
         // stable sort: candidates come newest first, so ties stay newest first
         return new SearchResults(matches.stream().sorted(Comparator.comparingInt(SearchMatch::score).reversed())
-                .limit(MAX_RESULTS).toList(), candidates.size());
+                .limit(MAX_RESULTS).toList(), candidates.size(), ranked != null, List.of());
     }
 
     private static final Pattern NUMBER = Pattern.compile("\\d+(?:[.,]\\d+)?");
