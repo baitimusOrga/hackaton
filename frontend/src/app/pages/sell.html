@@ -777,10 +777,10 @@
   <!-- TODO: pickup / shipping checkboxes ("Versand, Käufer zahlt CHF 35.–", "Im Preis inbegriffen"): CreateListingRequest has no delivery options yet. -->
 </ng-template>
 
-<ng-template #captureTpl let-small>
+<ng-template #captureTpl let-small let-text="text">
   <label class="zw-btn zw-btn--primary file" [class.zw-btn--sm]="small">
     <app-icon name="camera" />
-    <span>{{ 'Foto aufnehmen' | t }}</span>
+    <span>{{ text ?? ('Foto aufnehmen' | t) }}</span>
     <input
       type="file"
       accept="image/*"
@@ -801,9 +801,12 @@
         [marks]="st.marks"
         [scanning]="st.scanning"
         [compact]="st.compact"
+        [action]="st.capture"
       >
         @if (st.capture) {
-          <ng-container *ngTemplateOutlet="captureTpl; context: { $implicit: true }" />
+          <ng-container
+            *ngTemplateOutlet="captureTpl; context: { $implicit: true, text: st.marks[0].label }"
+          />
         }
       </app-detection-stage>
       <div class="status">

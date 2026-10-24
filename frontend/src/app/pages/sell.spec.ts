@@ -443,7 +443,9 @@ describe('Sell', () => {
       streams(photoGap, done(DRAFT)),
       streams(done(read)),
     ]);
-    expect(element.querySelector('[data-testid="hint"]')!.textContent).toContain('Modell hier');
+    expect(element.querySelector('[data-testid="hint"]')!.textContent).toContain(
+      'Modell fotografieren',
+    );
     // the camera button sits on the photo, the footer keeps only skip and typing
     expect(element.querySelector('.foot2 input[type="file"]')).toBeNull();
     expect(element.querySelector('.foot2')!.textContent).not.toContain('Zurück');

@@ -844,6 +844,13 @@ export class Sell {
       return this.i18n.t(this.detections().length ? 'Erkannt wird…' : 'Foto wird ausgewertet…');
     return '';
   });
+  // "Modell fotografieren" / "Photograph the model": nouns are lower case outside German
+  private photographLabel(fact: string): string {
+    const name = this.i18n.t(fact);
+    return this.i18n.t('{name} fotografieren', {
+      name: this.i18n.lang() === 'de' ? name : name.toLowerCase(),
+    });
+  }
   /** What the stage shows: which photo, whether it is still being scanned, and the boxes on it. */
   protected readonly stage = computed(() => {
     const card = this.currentCard();
@@ -872,7 +879,7 @@ export class Sell {
         ? [
             {
               box: hint.box,
-              label: this.i18n.t('{name} hier', { name: this.i18n.t(card!.fact) }),
+              label: this.photographLabel(card!.fact),
               kind: 'hint',
             },
           ]

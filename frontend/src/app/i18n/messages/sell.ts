@@ -526,7 +526,11 @@ export const SELL_MESSAGES: Messages = {
     it: 'Condizione e luogo seguono',
     en: 'Condition and place follow',
   },
-  '{name} hier': { fr: '{name} ici', it: '{name} qui', en: '{name} here' },
+  '{name} fotografieren': {
+    fr: 'Photographier : {name}',
+    it: 'Fotografa: {name}',
+    en: 'Photograph the {name}',
+  },
   '{step} von {steps}': {
     fr: '{step} sur {steps}',
     it: '{step} di {steps}',

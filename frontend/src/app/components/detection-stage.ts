@@ -11,8 +11,8 @@ export interface StageMark {
 /**
  * A photo with the AI's findings as in "Sell Erkennung v3" (style "Kurz"): a thin progress bar while
  * it is scanned, then corner marks with labels flash up one after the other and fade out after a few
- * seconds. Privacy marks and "photograph it here" hints stay; a hint shows the projected content (the
- * camera button) beside its label.
+ * seconds. Privacy marks and "photograph it here" hints stay; with "action" the hint's label is the
+ * projected camera button.
  */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,8 +49,12 @@ export interface StageMark {
                   [class.tag--above]="mark.pill === 'above'"
                   [class.tag--inside]="mark.pill === 'inside'"
                   [class.tag--end]="mark.end"
+                  [class.tag--action]="mark.action"
                 >
-                  @if (mark.kind === 'hint') {
+                  @if (mark.action) {
+                    <!-- the hint's camera button, labelled by the page -->
+                    <ng-content />
+                  } @else if (mark.kind === 'hint') {
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
                     </svg>
@@ -59,9 +63,8 @@ export interface StageMark {
                       <path d="M12 4l9 16H3zM12 10v4M12 17v.5" />
                     </svg>
                   }
-                  {{ mark.label }}
-                  @if (mark.kind === 'hint') {
-                    <ng-content />
+                  @if (!mark.action) {
+                    {{ mark.label }}
                   }
                 </span>
               }
@@ -174,10 +177,11 @@ export interface StageMark {
       color: #1e1d1a;
       font: 600 13px/18px var(--font-sans);
     }
-    .mark--hint .tag {
+    .tag--action {
       pointer-events: auto;
-      padding: 4px 4px 4px 8px;
-      gap: 8px;
+      padding: 0;
+      background: none;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
     }
     .tag--inside {
       top: 6px;
@@ -281,6 +285,8 @@ export class DetectionStage {
   readonly scanning = input(false);
   /** a smaller photo beside a chip question */
   readonly compact = input(false);
+  /** the hint label is replaced by the projected button (the page's camera button) */
+  readonly action = input(false);
 
   /**
    * Where each label goes: above, below or inside its box, whichever does not cover a label placed
@@ -291,10 +297,10 @@ export class DetectionStage {
     const taken: Rect[] = [];
     return this.marks().map((mark) => {
       const [x, y, w, h] = mark.box;
-      // a hint label also carries the camera button
-      const button = mark.kind === 'hint' ? 150 : 0;
-      const width = Math.min(0.95, (mark.label.length * 7.5 + 44 + button) / 560);
-      const height = mark.kind === 'hint' ? 0.11 : 0.075;
+      // the camera button is wider and taller than a label
+      const action = mark.kind === 'hint' && this.action();
+      const width = Math.min(0.95, (mark.label.length * (action ? 8.5 : 7.5) + 56) / 560);
+      const height = action ? 0.1 : 0.075;
       // each row starts at the box's left edge, or ends at its right edge when there is no room
       const rows: [Pill, number][] = [
         ['above', y - height - 0.015],
@@ -314,7 +320,7 @@ export class DetectionStage {
         spots.find((s) => fits(s.rect) && !taken.some((t) => overlaps(s.rect, t))) ??
         (mark.kind === 'hint' ? (spots.find((s) => fits(s.rect)) ?? spots[4]) : undefined);
       if (free) taken.push(free.rect);
-      return { ...mark, pill: free?.pill ?? null, end: free?.end ?? false };
+      return { ...mark, pill: free?.pill ?? null, end: free?.end ?? false, action };
     });
   });
 
