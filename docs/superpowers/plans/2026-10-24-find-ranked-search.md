@@ -27,7 +27,7 @@ Spec: `docs/superpowers/specs/2026-10-24-find-ranked-search-design.md`. Read `AG
 | `backend/src/main/resources/db/migration/V15__search_demo_listings.sql` | 90 demo listings |
 | `docs/DATA-MODEL.md` | V15 row |
 | `frontend/openapi.json`, `frontend/src/app/api/` | regenerated, never hand-edited |
-| `frontend/src/app/pages/find.ts`, `find.spec.ts` | rewritten |
+| `frontend/src/app/pages/find.ts`, `find.html`, `find.spec.ts` | adapted to one list, refine, near me |
 
 Commands (from the repo root of the worktree):
 
@@ -1018,6 +1018,104 @@ git commit -m "Search: refine a search with the original prompt and shown listin
 
 ---
 
+### Task 5b: Near me — position instead of postcode
+
+**Files:**
+- Modify: `backend/src/main/java/one/absent/hackaton/search/SearchRequirements.java`
+- Modify: `backend/src/main/java/one/absent/hackaton/search/SearchService.java`
+- Test: `backend/src/test/java/one/absent/hackaton/search/SearchControllerTest.java`, `SearchServiceTest.java`
+
+- [ ] **Step 1: Failing tests** (in `SearchControllerTest`)
+
+```java
+    @Test
+    void nearMeWithoutADistanceMeans25Km() throws Exception {
+        when(ai.ask(anyString(), anyString(), anyString(), anyList(), anyString(), eq(SearchService.Parsed.class)))
+                .thenReturn(new SearchService.Parsed(List.of(), List.of(), "Bikes", List.of("velo"), null, null, null,
+                        true));
+
+        mvc.perform(post("/api/searches").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"text\": \"Velo in meiner Nähe\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nearMe").value(true))
+                .andExpect(jsonPath("$.maxDistanceKm").value(25));
+    }
+
+    @Test
+    void thePositionIsTheOriginAndNeedsNoPostcode() {
+        match.setLatitude(47.378);
+        match.setLongitude(8.5234);
+        em.flush();
+        var req = new SearchRequirements(List.of(), List.of(), "test audio", List.of(), null, null, 30, true,
+                47.37, 8.52);
+
+        assertThat(search.candidates(req)).extracting(ListingDetail::id).containsExactly(match.getId());
+        verify(geo, never()).locate(anyString());
+    }
+```
+
+In `refineSendsOriginalHistoryCurrentAndShownListingsToTheAi` add `"nearMe": true, "latitude": 47.3781, "longitude": 8.5234` to `current` in `refineBody` and assert `.doesNotContain("47.3781")` on the prompt.
+
+- [ ] **Step 2: Run, see them fail** — `./mvnw -q test -Dtest='Search*Test'`: compilation errors (`Parsed` 8 args, `SearchRequirements` 10 args).
+
+- [ ] **Step 3: Implement**
+
+`SearchRequirements` components after `maxDistanceKm`:
+
+```java
+                                 boolean nearMe,
+                                 @Schema(nullable = true) @DecimalMin("-90") @DecimalMax("90") Double latitude,
+                                 @Schema(nullable = true) @DecimalMin("-180") @DecimalMax("180") Double longitude) {
+```
+
+Javadoc: `{@code nearMe}: the buyer means their own position; {@code latitude}/{@code longitude}: that position, only as input to matches, never sent to the AI.`
+
+Every `new SearchRequirements(...)` gets `, false, null, null` appended (tests) — except the category fallback in `matches`, which passes `req.nearMe(), req.latitude(), req.longitude()`.
+
+`Parsed` gets an 8th component `Boolean nearMe`; `PARSE_SCHEMA` gets `"nearMe": {"type": "boolean"}` and `"nearMe"` in `required`; `PARSE_SYSTEM` gets the line
+
+```
+            - nearMe: true when the buyer means their own position ("in meiner Nähe", "near me", "bei mir", "hier in der Umgebung"), else false.
+```
+
+In `parse(...)`:
+
+```java
+        boolean nearMe = Boolean.TRUE.equals(parsed.nearMe());
+        Integer distance = parsed.maxDistanceKm() != null && parsed.maxDistanceKm() > 0
+                && parsed.maxDistanceKm() <= 500 ? parsed.maxDistanceKm() : nearMe ? NEAR_ME_KM : null;
+        return new SearchRequirements(canonical(parsed.mustHave()), canonical(parsed.niceToHave()), category,
+                keywords, parsed.maxBudgetChf(), postcode != null && postcode.matches("\\d{4}") ? postcode : null,
+                distance, nearMe, null, null);
+```
+
+with `static final int NEAR_ME_KM = 25;` next to the other constants.
+
+`candidates`: the origin line becomes
+
+```java
+        // the buyer's position wins over the postcode, as in GET /api/listings
+        Coordinates origin = req.maxDistanceKm() == null ? null
+                : req.latitude() != null && req.longitude() != null ? new Coordinates(req.latitude(), req.longitude())
+                : trim(req.postcode()) == null ? null : geo.locate(trim(req.postcode())).orElse(null);
+```
+
+`refine`: the prompt's JSON of `current` drops the position:
+
+```java
+        SearchRequirements c = request.current();
+        SearchRequirements withoutPosition = new SearchRequirements(c.mustHave(), c.niceToHave(), c.category(),
+                c.keywords(), c.maxBudgetChf(), c.postcode(), c.maxDistanceKm(), c.nearMe(), null, null);
+```
+
+and `JSON.writeValueAsString(withoutPosition)` replaces `JSON.writeValueAsString(request.current())`.
+
+- [ ] **Step 4: Run** `./mvnw -q test -Dtest='Search*Test'` → PASS.
+
+- [ ] **Step 5: Commit** `git add backend/src/main/java/one/absent/hackaton/search/ backend/src/test/java/one/absent/hackaton/search/ && git commit -m "Search: near me uses the buyer's position, never sent to the AI"`
+
+---
+
 ### Task 6: 90 demo listings (V15)
 
 **Files:**
@@ -1267,610 +1365,37 @@ git commit -m "Seed 90 demo listings for the buying assistant"
 
 ---
 
-### Task 7: Regenerate the client, rewrite `find.ts`
+### Task 7: Regenerate the client, adapt the redesigned Find page
+
+The Zweit redesign (#49) already rewrote `find.ts`/`find.html` (German UI, filter column, chip strip, `app-summary-card`). Keep its layout and classes; change only:
 
 **Files:**
-- Regenerated: `frontend/src/app/api/` (never edit by hand)
-- Modify: `frontend/src/app/pages/find.ts`
+- Regenerated: `frontend/openapi.json`, `frontend/src/app/api/` (never by hand)
+- Modify: `frontend/src/app/pages/find.ts`, `frontend/src/app/pages/find.html`
 - Test: `frontend/src/app/pages/find.spec.ts`
 
-- [ ] **Step 1: Regenerate**
+- [ ] **Step 1: Regenerate** — `cd backend && ./mvnw -q verify && cd ../frontend && pnpm run api`; check `services/search.service.ts` has `refine`, `models/search-match.ts` has `score`/`fit`/`matched`, `models/search-requirements.ts` has `nearMe`/`latitude`/`longitude` and no `acceptUnknown`.
 
-Run: `cd frontend && pnpm run api`
-Expected: `src/app/api/services/search.service.ts` gains `refine(...)`; `models/search-match.ts` has `score`, `fit`, `matched`; `models/refine-request.ts` exists. Check with `grep -n "refine\|fit" src/app/api/services/search.service.ts src/app/api/models/search-match.ts` and note whether fields are optional (`?`) — the code below handles both.
+- [ ] **Step 2: Failing tests** in `find.spec.ts` (replace the two old tests; stub `navigator.geolocation` with `vi.stubGlobal`/`Object.defineProperty` where needed):
+  1. Suchen → `create`, then `matches` once without a click; body has no `acceptUnknown`; the card line shows "92 % · Passt" and the bar "1 Inserate · 12 verglichen".
+  2. Removing a chip and changing the radius select each call `matches` again, `create` stays at 1.
+  3. "Anpassen" sends `{originalText, refinements: [], current, text, topListingIds: [7]}` to `refine`, then `matches` with the new must-haves; "↳ doch etwas neuere Modelle" shows; a new Suchen clears it.
+  4. A late answer to an older `matches` call does not overwrite the newer one (two `Subject`s).
+  5. `create` returns `nearMe: true` → geolocation is asked, `matches` gets `latitude: 47.378, longitude: 8.523` (rounded to 3 decimals) and no postcode; the chip reads "25 km um deinen Standort".
+  6. Geolocation fails → status "Standort nicht verfügbar. Gib eine PLZ ein oder erlaube den Standortzugriff." and `matches` without position and radius.
 
-- [ ] **Step 2: Write the failing tests**
+- [ ] **Step 3: Implement** in `find.ts` / `find.html`:
+  - `Results` type and `groups` go; `results` holds `SearchResults`; one `zw-grid` of cards; per card `app-summary-card` plus a line `{{ m.score }} % · {{ fitLabel }} — {{ m.reason }}` and, when present, "Nicht angegeben: …" and the differences. Labels: MATCH "Passt", NEEDS_DETAILS "Angaben fehlen", ALTERNATIVE "Alternative".
+  - Bar: `{{ n }} Inserate · {{ compared }} verglichen`; empty text "Noch nichts Passendes. Entferne eine Anforderung oder vergrössere den Umkreis."; results wrapper `[attr.aria-busy]="matching()"` and dimmed while matching.
+  - `acceptUnknown` signal, checkbox and body field go.
+  - `showMatches()` loses the `if (this.matching()) return` guard and gets a sequence number (`++this.seq`, ignore older responses).
+  - `changed(delay = 0)` with a 400 ms debounce; called from `remove`, `move`, `clearRegion`, `reset`, the radius select (`(ngModelChange)`) and, debounced, from category, keywords, budget and postcode inputs. "Treffer aktualisieren" stays.
+  - Refine: `original` text and `refinements` signal; an `adjust` input + "Anpassen" button in a small form right under the chip strip; history list `↳ …` under the query; `find()` resets the history.
+  - Position: `position = signal<{ latitude: number; longitude: number } | null>(null)`; `nearMe()` asks `navigator.geolocation.getCurrentPosition`, rounds to 3 decimals, sets the radius to 25 if none, clears the postcode and matches; on failure or without geolocation it sets the message, clears position and radius and matches. A "Mein Standort" button (`appButton variant="ghost" size="sm"`) in the Region fieldset calls it; `create`/`refine` call it when the answer has `nearMe`. The request body sends `latitude`/`longitude` from `position()`. `regionLabel()` reads "`<r>` km um deinen Standort" with a position; `clearRegion()` also clears the position. Keep `nearMe` from the answer in the body.
 
-Replace `find.spec.ts`:
+- [ ] **Step 4: Frontend checks** — `pnpm run format && pnpm exec ng lint && pnpm exec ng test --watch=false && pnpm exec ng build` → green.
 
-```ts
-import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { of, Subject } from 'rxjs';
-import { SearchService } from '../api/services';
-import { Find } from './find';
-
-const REQ = {
-  mustHave: [
-    { attribute: 'Model', value: 'iMac' },
-    { attribute: 'Year', value: '2017' },
-  ],
-  niceToHave: [],
-  category: 'Computers',
-  keywords: ['imac'],
-  maxBudgetChf: 600,
-  postcode: '8001',
-};
-
-const IMAC = {
-  listing: { id: 7, title: 'iMac 27" 5K', priceChf: 520, condition: 'GOOD', locality: 'Zürich' },
-  score: 92,
-  fit: 'MATCH',
-  reason: 'Fits.',
-  matched: ['Model: iMac'],
-  missingDetails: [],
-  differences: [],
-};
-
-function setup(service: Record<string, unknown>) {
-  TestBed.configureTestingModule({
-    providers: [provideRouter([]), { provide: SearchService, useValue: service }],
-  });
-  const fixture = TestBed.createComponent(Find);
-  return { fixture, el: fixture.nativeElement as HTMLElement };
-}
-
-async function type(fixture: { whenStable(): Promise<unknown> }, input: HTMLInputElement | HTMLTextAreaElement, value: string) {
-  input.value = value;
-  input.dispatchEvent(new Event('input'));
-  await fixture.whenStable();
-}
-
-async function search(fixture: { whenStable(): Promise<unknown> }, el: HTMLElement, text: string) {
-  await type(fixture, el.querySelector('textarea')!, text);
-  el.querySelector<HTMLButtonElement>('#find-form button[type="submit"]')!.click();
-  await fixture.whenStable();
-}
-
-async function choose(fixture: { whenStable(): Promise<unknown> }, el: HTMLElement, id: string, value: string) {
-  const select = el.querySelector<HTMLSelectElement>(id)!;
-  select.value = value;
-  select.dispatchEvent(new Event('change'));
-  await fixture.whenStable();
-}
-
-describe('Find', () => {
-  it('matches without a click and shows ranked cards', async () => {
-    const create = vi.fn().mockReturnValue(of(REQ));
-    const matches = vi.fn().mockReturnValue(of({ matches: [IMAC], compared: 12 }));
-    const { fixture, el } = setup({ create, matches });
-    await fixture.whenStable();
-
-    await search(fixture, el, 'working iMac');
-
-    expect(create).toHaveBeenCalledWith({ body: { text: 'working iMac' } });
-    expect(matches).toHaveBeenCalledTimes(1);
-    expect(matches.mock.calls[0][0].body).toEqual({
-      mustHave: REQ.mustHave,
-      niceToHave: [],
-      category: 'Computers',
-      keywords: ['imac'],
-      maxBudgetChf: 600,
-      postcode: '8001',
-      maxDistanceKm: undefined,
-    });
-    expect(el.textContent).toContain('Compared 12 listings · 1 match');
-    expect(el.textContent).toContain('92 % match');
-    expect(el.textContent).toContain('✓ Model: iMac');
-    expect(el.querySelector('[data-testid="mustHave"]')!.textContent).toContain('Year: 2017');
-  });
-
-  it('a filter change only matches again, without a new parse', async () => {
-    const create = vi.fn().mockReturnValue(of(REQ));
-    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
-    const { fixture, el } = setup({ create, matches });
-    await fixture.whenStable();
-    await search(fixture, el, 'working iMac');
-
-    await choose(fixture, el, '#find-category', 'Laptops');
-    expect(matches.mock.calls[1][0].body.category).toBe('Laptops');
-
-    await choose(fixture, el, '#find-condition', 'Good');
-    expect(matches.mock.calls[2][0].body.mustHave).toContainEqual({
-      attribute: 'Condition',
-      value: 'Good',
-      comparison: 'EXACT',
-    });
-
-    await choose(fixture, el, '#find-distance', '25');
-    expect(matches.mock.calls[3][0].body.maxDistanceKm).toBe(25);
-
-    el.querySelector<HTMLButtonElement>('button[aria-label="Move Year to nice to have"]')!.click();
-    await fixture.whenStable();
-    expect(matches.mock.calls[4][0].body.niceToHave).toEqual([{ attribute: 'Year', value: '2017' }]);
-
-    expect(create).toHaveBeenCalledTimes(1);
-    expect(el.textContent).toContain('Nothing matches yet.');
-  });
-
-  it('refines with the original prompt, history and top ids; a new prompt clears the history', async () => {
-    const create = vi.fn().mockReturnValue(of(REQ));
-    const matches = vi.fn().mockReturnValue(of({ matches: [IMAC], compared: 12 }));
-    const newer = { ...REQ, mustHave: [{ attribute: 'Year', value: '2019', comparison: 'AT_LEAST' }] };
-    const refine = vi.fn().mockReturnValue(of(newer));
-    const { fixture, el } = setup({ create, matches, refine });
-    await fixture.whenStable();
-    await search(fixture, el, 'working iMac');
-
-    await type(fixture, el.querySelector<HTMLInputElement>('#find-adjust')!, 'rather newer');
-    el.querySelector<HTMLButtonElement>('#adjust-form button[type="submit"]')!.click();
-    await fixture.whenStable();
-
-    expect(refine).toHaveBeenCalledWith({
-      body: {
-        originalText: 'working iMac',
-        refinements: [],
-        current: expect.objectContaining({ category: 'Computers', mustHave: REQ.mustHave }),
-        text: 'rather newer',
-        topListingIds: [7],
-      },
-    });
-    expect(matches.mock.calls[1][0].body.mustHave).toEqual(newer.mustHave);
-    expect(el.textContent).toContain('↳ rather newer');
-    expect(el.textContent).toContain('Year: ≥ 2019');
-
-    await search(fixture, el, 'office chair');
-    expect(el.textContent).not.toContain('↳ rather newer');
-  });
-
-  it('ignores a late answer to an older request', async () => {
-    const first = new Subject();
-    const second = new Subject();
-    const create = vi.fn().mockReturnValue(of(REQ));
-    const matches = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second);
-    const { fixture, el } = setup({ create, matches });
-    await fixture.whenStable();
-    await search(fixture, el, 'working iMac');
-    await choose(fixture, el, '#find-category', 'Laptops');
-
-    second.next({ matches: [IMAC], compared: 3 });
-    first.next({
-      matches: [{ ...IMAC, listing: { ...IMAC.listing, id: 8, title: 'Old answer' } }],
-      compared: 9,
-    });
-    await fixture.whenStable();
-
-    expect(el.textContent).toContain('iMac 27" 5K');
-    expect(el.textContent).not.toContain('Old answer');
-  });
-});
-```
-
-- [ ] **Step 3: Run and see them fail**
-
-Run: `cd frontend && pnpm exec ng test --watch=false`
-Expected: FAIL (no `#find-category`, no refine form, old result shape).
-
-- [ ] **Step 4: Rewrite `find.ts`**
-
-```ts
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { SearchService } from '../api/services';
-import { Requirement, SearchMatch, SearchRequirements, SearchResults } from '../api/models';
-import { CATEGORIES } from '../categories';
-
-type Row = 'mustHave' | 'niceToHave';
-
-const CONDITIONS: Record<string, string> = {
-  NEW: 'New',
-  LIKE_NEW: 'Like new',
-  GOOD: 'Good',
-  USED: 'Used',
-  DEFECTIVE: 'Defective',
-};
-const FITS: Record<string, string> = {
-  MATCH: 'Match',
-  NEEDS_DETAILS: 'Details missing',
-  ALTERNATIVE: 'Alternative',
-};
-
-@Component({
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  selector: 'app-find',
-  imports: [FormsModule, RouterLink],
-  template: `
-    <h1 class="text-2xl font-semibold">Find an item</h1>
-    <p class="text-slate-600">Describe what you are looking for, the assistant does the rest.</p>
-
-    <form id="find-form" (ngSubmit)="find()" class="mt-4 grid max-w-2xl gap-3">
-      <label for="find-text" class="font-semibold">What do you want to buy?</label>
-      <textarea
-        id="find-text"
-        name="text"
-        [(ngModel)]="text"
-        (keydown.control.enter)="find()"
-        (keydown.meta.enter)="find()"
-        required
-        maxlength="500"
-        rows="3"
-        placeholder="working iMac 27 5K from 2017, max 600 CHF near Zürich"
-        class="rounded-md border border-slate-400 bg-white p-3"
-      ></textarea>
-      <p class="text-sm text-slate-600">Tip: ⌘ / Ctrl + Enter</p>
-      <button
-        type="submit"
-        [disabled]="loading() || !text().trim()"
-        class="cursor-pointer justify-self-start rounded-md bg-teal-800 px-4 py-2 text-white disabled:opacity-50"
-      >
-        {{ loading() ? 'Finding…' : 'Find' }}
-      </button>
-    </form>
-
-    @if (refinements().length) {
-      <ul aria-label="Your adjustments" class="mt-2 max-w-2xl text-slate-700">
-        @for (r of refinements(); track $index) {
-          <li>↳ {{ r }}</li>
-        }
-      </ul>
-    }
-
-    <p role="status" aria-live="polite" class="mt-3 text-slate-700">{{ progress() }}</p>
-
-    @if (searched()) {
-      <section aria-labelledby="req-heading" class="mt-6 grid max-w-2xl gap-4">
-        <h2 id="req-heading" class="text-xl font-semibold">Your requirements</h2>
-        @for (row of rows; track row.key) {
-          <div>
-            <h3 class="font-semibold">{{ row.label }}</h3>
-            <ul class="mt-1 flex flex-wrap gap-2" [attr.data-testid]="row.key">
-              @for (r of list(row.key); track r.attribute + r.value) {
-                <li class="flex items-center gap-1 rounded-full bg-slate-100 py-1 pr-1 pl-3">
-                  <span>{{ r.attribute }}: {{ prefix(r) }}{{ r.value }}</span>
-                  <button
-                    type="button"
-                    (click)="move(r, row.key)"
-                    class="cursor-pointer rounded-full px-2 text-sm underline"
-                    [attr.aria-label]="'Move ' + r.attribute + ' to ' + row.other"
-                  >
-                    {{ row.key === 'mustHave' ? '→ Nice to have' : '→ Must have' }}
-                  </button>
-                  <button
-                    type="button"
-                    (click)="remove(r, row.key)"
-                    class="cursor-pointer rounded-full px-2"
-                    [attr.aria-label]="'Remove ' + r.attribute"
-                  >
-                    ×
-                  </button>
-                </li>
-              } @empty {
-                <li class="text-slate-600">None.</li>
-              }
-            </ul>
-          </div>
-        }
-        <div class="grid gap-3 sm:grid-cols-2">
-          <label class="grid gap-1 font-semibold"
-            >Category
-            <select
-              id="find-category"
-              name="category"
-              [ngModel]="category() ?? ''"
-              (ngModelChange)="category.set($event || null); changed()"
-              class="rounded-md border border-slate-400 bg-white p-2 font-normal"
-            >
-              <option value="">Any</option>
-              @for (c of categories; track c) {
-                <option [value]="c">{{ c }}</option>
-              }
-            </select></label
-          >
-          <label class="grid gap-1 font-semibold"
-            >Minimum condition
-            <select
-              id="find-condition"
-              name="condition"
-              [ngModel]="minCondition()"
-              (ngModelChange)="setCondition($event)"
-              class="rounded-md border border-slate-400 bg-white p-2 font-normal"
-            >
-              <option value="">Any</option>
-              @for (c of minConditions; track c) {
-                <option [value]="c">{{ c }}</option>
-              }
-            </select></label
-          >
-          <label class="grid gap-1 font-semibold"
-            >Max budget (CHF)
-            <input
-              type="number"
-              min="0"
-              name="budget"
-              [ngModel]="budget()"
-              (ngModelChange)="budget.set($event); changed(400)"
-              class="rounded-md border border-slate-400 bg-white p-2 font-normal"
-          /></label>
-          <label class="grid gap-1 font-semibold"
-            >Postcode
-            <input
-              name="postcode"
-              [ngModel]="postcode()"
-              (ngModelChange)="postcode.set($event); changed(400)"
-              maxlength="4"
-              class="rounded-md border border-slate-400 bg-white p-2 font-normal"
-          /></label>
-          <label class="grid gap-1 font-semibold"
-            >Distance
-            <select
-              id="find-distance"
-              name="distance"
-              [ngModel]="distance() ?? ''"
-              (ngModelChange)="distance.set($event ? +$event : null); changed()"
-              class="rounded-md border border-slate-400 bg-white p-2 font-normal"
-            >
-              <option value="">Any</option>
-              @for (d of distances; track d) {
-                <option [value]="d">{{ d }} km</option>
-              }
-            </select></label
-          >
-        </div>
-        <form id="adjust-form" (ngSubmit)="refine()" class="grid gap-2">
-          <label for="find-adjust" class="font-semibold">Adjust your search</label>
-          <div class="flex gap-2">
-            <input
-              id="find-adjust"
-              name="adjust"
-              [(ngModel)]="adjust"
-              maxlength="200"
-              placeholder="no, rather newer models"
-              class="flex-1 rounded-md border border-slate-400 bg-white p-2"
-            />
-            <button
-              type="submit"
-              [disabled]="loading() || !adjust().trim()"
-              class="cursor-pointer rounded-md bg-teal-800 px-4 py-2 text-white disabled:opacity-50"
-            >
-              Adjust
-            </button>
-          </div>
-        </form>
-      </section>
-    }
-
-    @if (results(); as res) {
-      @let found = res.matches ?? [];
-      <section
-        aria-label="Matches"
-        [attr.aria-busy]="matching()"
-        class="mt-8 grid gap-3"
-        [class.opacity-50]="matching()"
-      >
-        @if (!found.length) {
-          <p>Nothing matches yet. Try removing a must-have or widening the distance.</p>
-        } @else {
-          <p class="text-slate-700">
-            Compared {{ res.compared }} listings · {{ found.length }}
-            {{ found.length === 1 ? 'match' : 'matches' }}
-          </p>
-          <ul class="grid gap-3">
-            @for (m of found; track m.listing?.id) {
-              <li class="rounded-md border border-slate-200 bg-white p-4">
-                <p class="flex flex-wrap gap-2 text-sm">
-                  <span class="rounded-full bg-teal-100 px-2">{{ m.score }} % match</span>
-                  <span class="rounded-full bg-slate-100 px-2">{{ fitLabel(m) }}</span>
-                </p>
-                <a [routerLink]="['/listings', m.listing?.id]" class="font-semibold underline">{{
-                  m.listing?.title
-                }}</a>
-                <p>CHF {{ m.listing?.priceChf }} · {{ condition(m) }} · {{ m.listing?.locality }}</p>
-                <p class="text-slate-700">{{ m.reason }}</p>
-                @for (x of m.matched ?? []; track x) {
-                  <p>✓ {{ x }}</p>
-                }
-                @for (x of m.missingDetails ?? []; track x) {
-                  <p>? {{ x }}</p>
-                }
-                @for (x of m.differences ?? []; track x) {
-                  <p>≠ {{ x }}</p>
-                }
-              </li>
-            }
-          </ul>
-        }
-      </section>
-    }
-  `,
-})
-export class Find {
-  private readonly search = inject(SearchService);
-
-  protected readonly rows = [
-    { key: 'mustHave', label: 'Must have', other: 'nice to have' },
-    { key: 'niceToHave', label: 'Nice to have', other: 'must have' },
-  ] as const;
-  protected readonly categories = CATEGORIES;
-  protected readonly minConditions = ['Used', 'Good', 'Like new', 'New'];
-  protected readonly distances = [10, 25, 50];
-
-  protected readonly text = signal('');
-  protected readonly adjust = signal('');
-  protected readonly refinements = signal<string[]>([]);
-  protected readonly loading = signal(false);
-  protected readonly matching = signal(false);
-  protected readonly searched = signal(false);
-  protected readonly mustHave = signal<Requirement[]>([]);
-  protected readonly niceToHave = signal<Requirement[]>([]);
-  protected readonly category = signal<string | null>(null);
-  protected readonly budget = signal<number | null>(null);
-  protected readonly postcode = signal('');
-  protected readonly distance = signal<number | null>(null);
-  protected readonly results = signal<SearchResults | null>(null);
-  protected readonly progress = signal('');
-  private keywords: string[] = [];
-  private original = '';
-  private seq = 0;
-  private debounce: ReturnType<typeof setTimeout> | undefined;
-
-  find(): void {
-    if (this.loading() || !this.text().trim()) return;
-    const text = this.text();
-    this.loading.set(true);
-    this.progress.set('Understanding your search…');
-    this.search.create({ body: { text } }).subscribe({
-      next: (req) => {
-        this.original = text;
-        this.refinements.set([]);
-        this.apply(req);
-        this.searched.set(true);
-        this.loading.set(false);
-        this.showMatches();
-      },
-      error: () => this.failed(),
-    });
-  }
-
-  refine(): void {
-    const text = this.adjust().trim();
-    if (this.loading() || !text) return;
-    this.loading.set(true);
-    this.progress.set('Adjusting your search…');
-    const topListingIds = (this.results()?.matches ?? [])
-      .slice(0, 5)
-      .map((m) => m.listing?.id)
-      .filter((id): id is number => id != null);
-    const body = {
-      originalText: this.original,
-      refinements: this.refinements().slice(-5),
-      current: this.requirements(),
-      text,
-      topListingIds,
-    };
-    this.search.refine({ body }).subscribe({
-      next: (req) => {
-        this.refinements.update((list) => [...list, text]);
-        this.adjust.set('');
-        this.apply(req);
-        this.loading.set(false);
-        this.showMatches();
-      },
-      error: () => this.failed(),
-    });
-  }
-
-  move(r: Requirement, from: Row): void {
-    const to: Row = from === 'mustHave' ? 'niceToHave' : 'mustHave';
-    this[from].update((list) => list.filter((x) => x !== r));
-    this[to].update((list) => [...list, r]);
-    this.changed();
-  }
-
-  remove(r: Requirement, from: Row): void {
-    this[from].update((list) => list.filter((x) => x !== r));
-    this.changed();
-  }
-
-  /** The minimum condition is the Condition must-have the backend checks. */
-  setCondition(value: string): void {
-    this.mustHave.update((list) => [
-      ...list.filter((r) => r.attribute !== 'Condition'),
-      ...(value ? [{ attribute: 'Condition', value, comparison: 'EXACT' as const }] : []),
-    ]);
-    this.changed();
-  }
-
-  /** Runs the matching again; typing waits for a pause. */
-  changed(delay = 0): void {
-    clearTimeout(this.debounce);
-    if (delay) this.debounce = setTimeout(() => this.showMatches(), delay);
-    else this.showMatches();
-  }
-
-  private showMatches(): void {
-    const id = ++this.seq;
-    this.matching.set(true);
-    this.progress.set('Comparing listings…');
-    this.search.matches({ body: this.requirements() }).subscribe({
-      next: (res) => {
-        // a slower answer to an older request must not overwrite a newer one
-        if (id !== this.seq) return;
-        this.results.set(res);
-        this.matching.set(false);
-        this.progress.set('');
-      },
-      error: () => {
-        if (id !== this.seq) return;
-        this.matching.set(false);
-        this.progress.set('');
-      },
-    });
-  }
-
-  private requirements(): SearchRequirements {
-    return {
-      mustHave: this.mustHave(),
-      niceToHave: this.niceToHave(),
-      category: this.category(),
-      keywords: this.keywords,
-      maxBudgetChf: this.budget() ?? undefined,
-      postcode: this.postcode().trim() || undefined,
-      maxDistanceKm: this.distance() ?? undefined,
-    };
-  }
-
-  private apply(req: SearchRequirements): void {
-    this.mustHave.set(req.mustHave);
-    this.niceToHave.set(req.niceToHave);
-    this.category.set(req.category ?? null);
-    this.keywords = req.keywords ?? [];
-    this.budget.set(req.maxBudgetChf ?? null);
-    this.postcode.set(req.postcode ?? '');
-    this.distance.set(req.maxDistanceKm ?? null);
-  }
-
-  private failed(): void {
-    this.loading.set(false);
-    this.progress.set('');
-  }
-
-  protected minCondition(): string {
-    const value = this.mustHave().find((r) => r.attribute === 'Condition')?.value ?? '';
-    return this.minConditions.includes(value) ? value : '';
-  }
-
-  protected list(row: Row): Requirement[] {
-    return this[row]();
-  }
-
-  protected prefix(r: Requirement): string {
-    return r.comparison === 'AT_LEAST' ? '≥ ' : r.comparison === 'AT_MOST' ? '≤ ' : '';
-  }
-
-  protected condition(m: SearchMatch): string {
-    return CONDITIONS[m.listing?.condition ?? ''] ?? '';
-  }
-
-  protected fitLabel(m: SearchMatch): string {
-    return FITS[m.fit ?? ''] ?? '';
-  }
-}
-```
-
-Type notes for the generated client: if `SearchRequirements.category` is typed `string | undefined` instead of `string | null`, write `category: this.category() ?? undefined`; if the test's first expectation then differs, adjust the expected `body` the same way (`category` stays `'Computers'`). If `comparison` is a string union, `'EXACT' as const` fits it.
-
-- [ ] **Step 5: Run the frontend checks**
-
-Run: `cd frontend && pnpm run format && pnpm exec ng lint && pnpm exec ng test --watch=false && pnpm exec ng build`
-Expected: all green. `pnpm run format` may reflow the template; re-run the tests afterwards if it changed anything.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add frontend/src/app/api frontend/openapi.json frontend/src/app/pages/find.ts frontend/src/app/pages/find.spec.ts
-git commit -m "Find: ranked list, instant filters and refine by text"
-```
+- [ ] **Step 5: Commit** `git add frontend/openapi.json frontend/src/app/api frontend/src/app/pages/find.ts frontend/src/app/pages/find.html frontend/src/app/pages/find.spec.ts && git commit -m "Find: ranked list, instant filters, refine by text and near me"`
 
 ---
 
@@ -1896,6 +1421,7 @@ Start `cd backend && ./mvnw spring-boot:run` and `cd frontend && pnpm start`, op
 2. "Bürostuhl ergonomisch, Herman Miller oder Steelcase, bis 300 Franken" → Steelcase Leap (1255) and Series 1 (1264) high, Aeron (690) not shown.
 3. "notebook for programming, at least 16 GB RAM" → ThinkPads, XPS, MacBook Air M2 as matches; 1221 as "Details missing" (RAM only in the text).
 4. "e-bike for commuting in Bern" → set Distance 10 km → only Bern bikes stay, without a new parse.
+5. "Velo in meiner Nähe" → allow the position → bikes within 25 km; deny once → the message, Swiss-wide results.
 
 Write down what fails as follow-up notes; do not tune prompts without a failing case.
 

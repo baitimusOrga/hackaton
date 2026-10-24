@@ -122,6 +122,19 @@ RefineRequest(@NotBlank @Size(max = 500) String originalText,
   `Categories.ALL`, postcode format, keywords lowercase and at most 6).
 - AI failure or unusable answer → 502 "Could not understand the change, please rephrase."
 
+### Near me ("in meiner Nähe")
+
+- The parse and refine schema get `nearMe` (boolean): true when the buyer means their own position
+  ("in meiner Nähe", "near me", "bei mir", "hier in der Umgebung"), false otherwise. With `nearMe`
+  and no stated distance, `maxDistanceKm` defaults to 25 km (the header's default range).
+- `SearchRequirements` gets `nearMe` (boolean, output of the parse) and nullable `latitude` /
+  `longitude` (input to `/matches`, range-checked, -90..90 / -180..180). The AI never sees or sets
+  coordinates: create and refine return them null, and the refine prompt's copy of `current` drops
+  them.
+- `candidates`: with a distance, the origin is `latitude`/`longitude` when both are set, else the
+  postcode's centroid (same rule as `GET /api/listings` in HAC-43, PR #46).
+- Coordinates are not stored or logged; the frontend rounds them to 3 decimals (~100 m).
+
 ### Other backend changes
 
 - Requirement attribute names stay `Attributes.ALL`.
@@ -129,47 +142,56 @@ RefineRequest(@NotBlank @Size(max = 500) String originalText,
   unit-tested without the AI.
 - No persistence, caching, pagination or streaming.
 
-## Frontend (`find.ts`)
+## Frontend (`find.ts` + `find.html`, Zweit redesign)
 
-Functional and accessible; styling stays minimal until Claude Design. UI text in English.
+Keep the redesigned layout from #49 (query bar, chip strip, filter column, results column, German
+UI text, `zw-*` classes, `app-summary-card`); change only what this feature needs.
 
 ### Flow
 
-1. Prompt + Find. A new prompt clears the refinement history.
-2. `create` runs; the status line (`aria-live`) says "Understanding your search…". Filters and
-   chips appear as soon as it returns.
-3. `matches` runs automatically ("Comparing listings…"), then the list. The "Show matches"
-   button is removed.
+1. Prompt + Suchen (also `/find?q=…` from the header). A new prompt clears the refinement history.
+2. `create` runs ("Lese deinen Wunsch…"); chips and filters appear as soon as it returns.
+3. `matches` runs automatically ("Vergleiche die Inserate…"), then the list.
 
-### Filters (after the first parse)
+### Filters
 
-- Category (select from `categories.ts` plus "Any"), max budget, postcode, distance (Any / 10 / 25
-  / 50 km), minimum condition (Any / Used / Good / Like new / New). The condition select adds,
-  changes or removes the `Condition` must-have.
-- Must-have / nice-to-have chips with move and remove, as today.
-- Every change runs `matches` again without a new parse: selects and chips at once, number and
-  postcode inputs after 400 ms without typing.
-- The keywords input and the "Show items with missing details" checkbox are removed.
+- The redesign's filter column stays. Removing or moving a chip, changing the radius select and
+  "Filter zurücksetzen" run `matches` at once; text and number inputs (category, keywords, budget,
+  postcode) after 400 ms without typing. "Treffer aktualisieren" stays for keyboard users.
+- The checkbox "Auch Inserate mit fehlenden Angaben" is removed (`acceptUnknown` is gone).
+- The disabled TODO filters of the redesign stay as they are.
+
+### Near me
+
+- The region fieldset gets a button "Mein Standort". It asks the browser for the position
+  (`navigator.geolocation.getCurrentPosition`), keeps it in memory, sets the radius to 25 km if none
+  is set, clears the postcode and runs `matches` with `latitude`/`longitude`.
+- When `create` or `refine` returns `nearMe: true`, the page does the same before matching.
+- The region chip then reads "25 km um deinen Standort"; removing it drops position and radius.
+- Denied or unavailable: the status line says "Standort nicht verfügbar. Gib eine PLZ ein oder
+  erlaube den Standortzugriff." and the search runs without position and radius.
+- The position is never put in the URL or storage.
 
 ### Refinement
 
-- An input "Adjust your search…" below the filters, submitted with Enter.
+- An input "Suche anpassen…" with a button "Anpassen" right below the chip strip.
 - Sends the original prompt, the refinements so far, the current requirements (including manual
   filters), the new text and the ids of the top 5 matches.
-- The returned requirements replace filters and chips, then `matches` runs automatically.
-- The history shows as a short list below the prompt ("↳ rather newer models"). No undo.
+- The returned requirements replace filters and chips, then `matches` runs automatically (with the
+  position if `nearMe`).
+- The history shows below the prompt ("↳ doch etwas neuere Modelle"). No undo.
 - On error the previous state stays and the text stays in the input.
 
 ### Results
 
-- One card per match: title, price, place, score badge ("92 % match"), fit badge (Match / Details
-  missing / Alternative), reason, ✓ matched, ? missing details (to ask the seller), ≠ differences,
-  link to the listing.
-- Header line: "Compared 87 listings · 14 matches".
+- One grid instead of the three groups: per match the `app-summary-card`, a line with score and
+  fit ("92 % · Passt" / "Angaben fehlen" / "Alternative") and the reason, then "Nicht angegeben: …"
+  for missing details and the differences, as the redesign's `why` line does today.
+- Bar: "14 Inserate · 87 verglichen"; sort stays "Beste Passung".
 - While a new result loads, the old list stays visible, dimmed and `aria-busy`.
-- Empty: "Nothing matches yet. Try removing a must-have or widening the distance."
+- Empty: "Noch nichts Passendes. Entferne eine Anforderung oder vergrössere den Umkreis."
 - Every request gets a sequence number; only the response to the newest one is applied.
-- Parse and refine errors go through the `errorInterceptor` banner.
+- Parse and refine errors go through the error toast (#51).
 
 ## Demo data — `V15__search_demo_listings.sql`
 
@@ -208,6 +230,8 @@ Backend (H2, `AiClient` mocked):
   history, current requirements and the top listings to the AI (checked on the mock call),
   ignores unknown `topListingIds`, returns 400 for more than 5 refinements or text over 200
   characters, 502 when the AI fails.
+- Near me: parse with `nearMe` and no distance → 25 km; `/matches` with latitude/longitude uses
+  them as origin and needs no postcode; the refine prompt contains no coordinates.
 - V15 runs on H2 (covered by `./mvnw verify`).
 
 Frontend (`find.spec.ts`, Vitest, `SearchService` mocked):
@@ -216,7 +240,9 @@ Frontend (`find.spec.ts`, Vitest, `SearchService` mocked):
 - A filter change calls only `matches`.
 - Refine sends original text, history and top ids; the history appears; a new prompt clears it.
 - A late older response does not overwrite a newer one.
-- Score and fit badges render; the empty state shows.
+- Score and fit line render; the empty state shows.
+- "Mein Standort" and a `nearMe` parse send rounded latitude/longitude; a denied position shows
+  the message and matches without them (geolocation stubbed).
 
 ## Manual demo checklist
 
@@ -229,8 +255,11 @@ Not covered by tests: the real ranking quality and latency. Check by hand before
 3. "notebook for programming, at least 16 GB RAM" → laptops titled "Laptop" / "MacBook" appear;
    listings without RAM show "Details missing".
 4. "e-bike for commuting in Bern" → set the distance filter to 10 km → results narrow instantly.
+5. "Velo in meiner Nähe" → the browser asks for the position → bikes within 25 km, region chip
+   "25 km um deinen Standort". Deny the permission once → the message appears, search runs Swiss-wide.
 
 ## Out of scope
 
-Learning or stored preferences, saved searches and alerts, search state in the URL, undo of
+Device location on the sell page (follow-up on `spec/sell-guided-flow`, next to its
+`PlaceController`), learning or stored preferences, saved searches and alerts, search state in the URL, undo of
 refinements, sorting by price, streaming, visual design.
