@@ -1,20 +1,26 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { TranslatePipe } from '../i18n/i18n';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TranslatePipe],
   selector: 'app-info',
-  template: `<h1>About the Project</h1>
+  template: `<h1>{{ 'Über das Projekt' | t }}</h1>
     <p>
-      Have you ever thought about how a few major platforms dominate the Swiss second-hand market?
-      Several well-known platforms belong to the same company, leaving users with limited
-      alternatives.
+      {{
+        'Hast du schon einmal darüber nachgedacht, wie wenige grosse Plattformen den Schweizer Secondhand-Markt dominieren? Mehrere bekannte Plattformen gehören demselben Unternehmen, sodass den Nutzenden nur wenige Alternativen bleiben.'
+          | t
+      }}
     </p>
-    <p>We believe it's time for a change. That's how <em>Zweite.</em> was born.</p>
     <p>
-      Our goal is to create an innovative online marketplace that offers a real alternative to
-      existing platforms. With lower fees, smarter AI integration and a better user experience, we
-      want to make buying and selling second-hand products easier, cheaper and more accessible for
-      everyone.
+      {{ 'Wir glauben, es ist Zeit für eine Veränderung. So ist' | t }} <em>Zweite.</em
+      >{{ ' entstanden.' | t }}
+    </p>
+    <p>
+      {{
+        'Unser Ziel ist es, einen innovativen Online-Marktplatz zu schaffen, der eine echte Alternative zu bestehenden Plattformen bietet. Mit tieferen Gebühren, intelligenterer KI-Integration und einer besseren Benutzererfahrung möchten wir den Kauf und Verkauf von Secondhand-Produkten für alle einfacher, günstiger und zugänglicher machen.'
+          | t
+      }}
     </p>`,
   styles: 'h1, p { margin-bottom: var(--space-4); }',
 })

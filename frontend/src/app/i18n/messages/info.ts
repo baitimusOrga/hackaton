@@ -71,4 +71,51 @@ export const INFO_MESSAGES: Messages = {
       it: 'Una chat, uno screenshot o un’e-mail non cambiano lo stato del pagamento. Una transazione diretta non è protetta dalla piattaforma.',
       en: 'A chat, a screenshot or an email does not change a payment status. A direct deal has no protection from the platform.',
     },
+  'Über das Projekt': { fr: 'À propos du projet', it: 'Il progetto', en: 'About the Project' },
+  'Wir sind vier Informatiklernende in der Fachrichtung Applikationsentwicklung im dritten Lehrjahr. Wir haben uns in der Schule kennengelernt und arbeiten in vier verschiedenen Unternehmen.':
+    {
+      fr: 'Nous sommes quatre apprentis en développement logiciel en troisième année de formation. Nous nous sommes rencontrés à l’école et travaillons dans quatre entreprises différentes.',
+      it: 'Siamo quattro apprendisti nello sviluppo software al terzo anno di formazione. Ci siamo conosciuti a scuola e lavoriamo in quattro aziende diverse.',
+      en: 'We are four software development apprentices in our third year of training. We met at school and work at four different companies.',
+    },
+  'Gemeinsam haben wir beschlossen, am Zentral Hack in der Kategorie': {
+    fr: 'Ensemble, nous avons décidé de participer au Zentral Hack dans la catégorie',
+    it: 'Insieme abbiamo deciso di partecipare allo Zentral Hack nella categoria',
+    en: 'Together, we decided to participate in Zentral Hack in the',
+  },
+  ' teilzunehmen. Unser Ziel ist es, einen Online-Marktplatz zu entwickeln.': {
+    fr: '. Notre objectif est de développer une place de marché en ligne.',
+    it: '. Il nostro obiettivo è sviluppare un marketplace online.',
+    en: ' category. Our goal is to develop an online marketplace.',
+  },
+  'Obwohl wir aus verschiedenen Unternehmen kommen, teilen wir die Leidenschaft für Softwareentwicklung und arbeiten gerne an neuen Herausforderungen.':
+    {
+      fr: 'Bien que nous venions d’entreprises différentes, nous partageons une passion pour le développement logiciel et aimons relever de nouveaux défis.',
+      it: 'Anche se proveniamo da aziende diverse, condividiamo la passione per lo sviluppo software e ci piace affrontare nuove sfide.',
+      en: 'Although we come from different companies, we share a passion for software development and enjoy working on new challenges.',
+    },
+  'Mit diesem Projekt möchten wir unsere Programmierkenntnisse verbessern, praktische Erfahrungen sammeln und gemeinsam etwas Nützliches schaffen.':
+    {
+      fr: 'Avec ce projet, nous souhaitons améliorer nos compétences en programmation, acquérir de l’expérience pratique et créer ensemble quelque chose d’utile.',
+      it: 'Con questo progetto vogliamo migliorare le nostre competenze di programmazione, acquisire esperienza pratica e creare insieme qualcosa di utile.',
+      en: 'With this project, we want to improve our programming skills, gain practical experience and create something useful together.',
+    },
+  'Hast du schon einmal darüber nachgedacht, wie wenige grosse Plattformen den Schweizer Secondhand-Markt dominieren? Mehrere bekannte Plattformen gehören demselben Unternehmen, sodass den Nutzenden nur wenige Alternativen bleiben.':
+    {
+      fr: 'As-tu déjà réfléchi à la façon dont quelques grandes plateformes dominent le marché suisse de la seconde main ? Plusieurs plateformes connues appartiennent à la même entreprise, ce qui laisse peu d’alternatives aux utilisateurs.',
+      it: 'Hai mai pensato a come poche grandi piattaforme dominino il mercato svizzero dell’usato? Diverse piattaforme note appartengono alla stessa azienda, lasciando agli utenti poche alternative.',
+      en: 'Have you ever thought about how a few major platforms dominate the Swiss second-hand market? Several well-known platforms belong to the same company, leaving users with limited alternatives.',
+    },
+  'Wir glauben, es ist Zeit für eine Veränderung. So ist': {
+    fr: 'Nous pensons qu’il est temps de changer les choses. C’est ainsi qu’est né',
+    it: 'Crediamo che sia il momento di cambiare. È così che è nato',
+    en: "We believe it's time for a change. That's how",
+  },
+  ' entstanden.': { fr: '.', it: '.', en: ' was born.' },
+  'Unser Ziel ist es, einen innovativen Online-Marktplatz zu schaffen, der eine echte Alternative zu bestehenden Plattformen bietet. Mit tieferen Gebühren, intelligenterer KI-Integration und einer besseren Benutzererfahrung möchten wir den Kauf und Verkauf von Secondhand-Produkten für alle einfacher, günstiger und zugänglicher machen.':
+    {
+      fr: 'Notre objectif est de créer une place de marché en ligne innovante qui offre une véritable alternative aux plateformes existantes. Grâce à des frais réduits, une intégration plus intelligente de l’IA et une meilleure expérience utilisateur, nous voulons rendre l’achat et la vente de produits de seconde main plus simples, moins chers et plus accessibles à tous.',
+      it: 'Il nostro obiettivo è creare un marketplace online innovativo che offra una vera alternativa alle piattaforme esistenti. Con commissioni più basse, un’integrazione più intelligente dell’IA e una migliore esperienza utente, vogliamo rendere l’acquisto e la vendita di prodotti di seconda mano più semplici, più economici e più accessibili a tutti.',
+      en: 'Our goal is to create an innovative online marketplace that offers a real alternative to existing platforms. With lower fees, smarter AI integration and a better user experience, we want to make buying and selling second-hand products easier, cheaper and more accessible for everyone.',
+    },
 };
