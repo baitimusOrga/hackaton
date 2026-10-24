@@ -6,7 +6,6 @@ import {
   DestroyRef,
   ElementRef,
   inject,
-  signal,
   viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -63,7 +62,7 @@ export class Home {
   protected readonly quickFilters = QUICK_FILTERS;
   protected readonly categories = CATEGORIES;
   protected readonly placeholders = Array.from({ length: 8 }, (_, i) => i);
-  protected readonly query = signal('');
+  protected readonly query = this.hero.query;
   private readonly router = inject(Router);
   private readonly api = inject(ListingsService);
   protected readonly auctions = toSignal(
