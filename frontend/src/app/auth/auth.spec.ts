@@ -42,6 +42,11 @@ describe('Better Auth identity and API tokens', () => {
     expect(client.getSession).toHaveBeenCalledTimes(1);
     expect(auth.user()?.id).toBe('seller-1');
   });
+  it('waits for a pending session restore before answering a token request', async () => {
+    void auth.restore();
+    expect(await auth.token()).not.toBeNull();
+    expect(client.token).toHaveBeenCalledTimes(1);
+  });
   it('caches the API JWT in memory and shares concurrent token requests', async () => {
     await auth.restore();
     const [first, second] = await Promise.all([auth.token(), auth.token()]);

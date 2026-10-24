@@ -88,6 +88,13 @@ export class Auth {
   }
 
   token(): Promise<string | null> {
+    // a request fired while the session is still being restored (page load) waits for it
+    if (!this.user() && this.sessionRequest) {
+      return this.sessionRequest.then(
+        () => this.token(),
+        () => null,
+      );
+    }
     if (!this.user()) return Promise.resolve(null);
     if (this.cachedToken && this.cachedToken.expiresAt > Date.now() + 30_000) {
       return Promise.resolve(this.cachedToken.value);
