@@ -19,9 +19,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.listing.Categories;
-import one.absent.hackaton.listing.Condition;
-import one.absent.hackaton.selling.ListingDraft.DraftFact;
-import one.absent.hackaton.selling.ListingDraft.PriceEstimate;
 import one.absent.hackaton.photo.PhotoStorage;
 import one.absent.hackaton.selling.WebFactsController.KnownFact;
 import org.springframework.beans.factory.annotation.Value;
@@ -115,14 +112,10 @@ public class DraftController {
                                @NotNull List<@Valid ConfirmedFact> confirmedFacts) {}
 
     public record DraftTextRequest(@NotBlank @Size(max = 80) String category, @NotNull @Size(max = 120) String title,
-                                   @Schema(nullable = true) Condition condition,
                                    @NotNull @Size(max = 4000) String description,
                                    @NotNull @Size(max = 30) List<@Valid @NotNull KnownFact> facts) {}
 
-    record AiText(String title, String description) {}
-
-    /** {@code price} is estimated again: the corrected facts usually change what the item is worth. */
-    public record DraftText(String title, String description, PriceEstimate price) {}
+    public record DraftText(String title, String description) {}
 
     private final PhotoRepository photos;
     private final PhotoStorage storage;
@@ -182,12 +175,8 @@ public class DraftController {
                 request.category(), request.title(), request.description(), request.facts().stream()
                         .map(f -> "- %s: %s (%s)".formatted(f.name(), f.value(), f.source()))
                         .collect(Collectors.joining("\n")));
-        AiText answer = ai.ask(fastModel, TEXT_SYSTEM, text, List.of(), TEXT_SCHEMA, AiText.class);
-        // same basis as the draft's first estimate: all facts the seller still sees
-        List<DraftFact> facts = request.facts().stream()
-                .map(f -> new DraftFact(f.name(), f.value(), f.source(), null)).toList();
-        return new DraftText(shortTitle(answer.title()), answer.description(),
-                prices.estimate(request.category(), answer.title(), facts, request.condition()));
+        DraftText answer = ai.ask(fastModel, TEXT_SYSTEM, text, List.of(), TEXT_SCHEMA, DraftText.class);
+        return new DraftText(shortTitle(answer.title()), answer.description());
     }
 
     /** The images of the seller's unpublished photos, in request order. */
