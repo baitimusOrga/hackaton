@@ -13,12 +13,16 @@ describe('About and Info pages', () => {
   }
 
   it('renders the about page', async () => {
-    expect((await render('about', About)).querySelector('h1')?.textContent).toContain('Über uns');
+    const element = await render('about', About);
+    expect(element.querySelector('h1')?.textContent).toBe('About Us');
+    expect(element.textContent).toContain('four software development apprentices');
+    expect(element.querySelector('em')?.textContent).toBe('Young Talents');
   });
 
-  it('renders the info page and says the platform never marks anything as paid', async () => {
+  it('renders the project page', async () => {
     const element = await render('info', Info);
-    expect(element.querySelector('h1')?.textContent).toContain('Informationen');
-    expect(element.textContent).toContain('markiert nichts als bezahlt');
+    expect(element.querySelector('h1')?.textContent).toBe('About the Project');
+    expect(element.textContent).toContain('Swiss second-hand market');
+    expect(element.querySelector('em')?.textContent).toBe('XXX');
   });
 });
