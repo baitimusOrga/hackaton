@@ -171,6 +171,12 @@ import { SummaryCard } from '../ui/summary-card';
     .bid {
       color: var(--blue-text);
     }
+    .picks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      padding: var(--space-1) 0;
+    }
     .danger {
       color: var(--danger);
       font-weight: 500;
@@ -272,6 +278,18 @@ export class ListingPage {
   protected readonly maxChf = signal<number | null>(null);
   protected readonly bidError = signal('');
   protected readonly bidding = signal(false);
+
+  /** The minimum and the next two steps, so a bid needs no typing. */
+  protected suggestions(a: AuctionState): number[] {
+    const min = a.minimumNextBidChf ?? 0;
+    const inc = a.incrementChf ?? 1;
+    return [0, 1, 2].map((steps) => Math.round((min + steps * inc) * 100) / 100);
+  }
+
+  protected pick(amount: number): void {
+    this.maxChf.set(amount);
+    this.bidError.set('');
+  }
 
   protected placeBid(event: Event, id: number): void {
     event.preventDefault();

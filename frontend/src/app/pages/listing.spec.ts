@@ -84,7 +84,19 @@ describe('ListingPage', () => {
       expect(getAuction).toHaveBeenCalledTimes(2);
       fixture.detectChanges();
 
+      const picks = Array.from(element.querySelectorAll<HTMLButtonElement>('.picks button'));
+      expect(picks.map((b) => b.textContent!.trim())).toEqual([
+        'CHF 210.–',
+        'CHF 215.–',
+        'CHF 220.–',
+      ]);
+      picks[1].click();
+      fixture.detectChanges();
       const input = element.querySelector<HTMLInputElement>('#bid-max')!;
+      expect(input.value).toBe('215');
+      expect(picks[1].getAttribute('aria-pressed')).toBe('true');
+      expect(placeBid).not.toHaveBeenCalled();
+
       input.value = '400';
       input.dispatchEvent(new Event('input'));
       element.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));

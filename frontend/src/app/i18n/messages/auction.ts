@@ -31,6 +31,7 @@ export const AUCTION_MESSAGES: Messages = {
     it: 'Almeno {min} · a passi di {inc}',
     en: 'At least {min} · steps of {inc}',
   },
+  'Maximum wählen': { fr: 'Choisir le maximum', it: 'Scegli il massimo', en: 'Choose a maximum' },
   'Jetzt bieten': { fr: 'Enchérir', it: 'Fai un’offerta', en: 'Bid now' },
   'Endet {date} · Ein Gebot in den letzten 2 Minuten verlängert um 2 Minuten. Bei gleichem Maximum gewinnt das frühere.':
     {

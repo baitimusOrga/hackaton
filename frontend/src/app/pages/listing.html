@@ -161,6 +161,18 @@
         [attr.aria-invalid]="bidError() ? 'true' : null"
         aria-describedby="bid-help"
       />
+      <div class="picks" role="group" [attr.aria-label]="'Maximum wählen' | t">
+        @for (amount of suggestions(a); track amount) {
+          <button
+            type="button"
+            class="zw-chip"
+            [attr.aria-pressed]="maxChf() === amount"
+            (click)="pick(amount)"
+          >
+            {{ amount | chf }}
+          </button>
+        }
+      </div>
       <p id="bid-help" class="zw-help" [class.zw-help--error]="bidError()">
         {{
           bidError() ||
