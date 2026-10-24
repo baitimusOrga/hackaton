@@ -306,6 +306,8 @@ export class Find {
   protected readonly postcode = signal('');
   protected readonly regionPhrase = signal<string | null>(null);
   protected readonly radius = signal<number | null>(null);
+  /** A distance needs a full postcode to measure from. */
+  protected readonly hasPostcode = computed(() => /^\d{4}$/.test(this.postcode().trim()));
   protected readonly keywords = signal('');
   protected readonly conditions = signal<Condition[]>([]);
   /** Keys of the tokens the buyer tapped off; their values stay, so a second tap restores them. */

@@ -208,6 +208,7 @@
               type="button"
               class="zw-chip"
               [attr.aria-pressed]="!off().has('region') && radius() === km"
+              [disabled]="!hasPostcode()"
               (click)="setRadius(km)"
             >
               {{ km }} km
