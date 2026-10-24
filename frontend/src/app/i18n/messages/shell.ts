@@ -72,6 +72,12 @@ export const SHELL_MESSAGES: Messages = {
     it: 'Navigazione principale',
     en: 'Main navigation',
   },
+  Start: { fr: 'Accueil', it: 'Inizio', en: 'Home' },
+  'Verkaufen, neues Inserat': {
+    fr: 'Vendre, nouvelle annonce',
+    it: 'Vendi, nuovo annuncio',
+    en: 'Sell, new listing',
+  },
   Verkaufen: { fr: 'Vendre', it: 'Vendi', en: 'Sell' },
   Abmelden: { fr: 'Se déconnecter', it: 'Esci', en: 'Sign out' },
   Anmelden: { fr: 'Se connecter', it: 'Accedi', en: 'Sign in' },
