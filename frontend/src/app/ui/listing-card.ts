@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslatePipe } from '../i18n/i18n';
 import { AuctionTimer } from './auction-timer';
 import { Badge } from './badge';
 import { chf } from './chf';
@@ -9,7 +10,7 @@ const MODE_LABELS = { auction: 'Auktion', fixed: 'Festpreis', offer: 'Preisvorsc
 /** Browse unit: square photo, badge row, title, price, meta. No border or shadow; the grid gap separates. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Badge, AuctionTimer],
+  imports: [RouterLink, Badge, AuctionTimer, TranslatePipe],
   selector: 'app-listing-card',
   styles: ':host { display: block; }',
   template: `<a class="zw-card" [routerLink]="link()">
@@ -19,9 +20,9 @@ const MODE_LABELS = { auction: 'Auktion', fixed: 'Festpreis', offer: 'Preisvorsc
       }
     </div>
     <div class="zw-card__badges">
-      <app-badge [variant]="mode() === 'auction' ? 'inverse' : ''">{{ modeLabel() }}</app-badge>
+      <app-badge [variant]="mode() === 'auction' ? 'inverse' : ''">{{ modeLabel() | t }}</app-badge>
       @if (greenPick()) {
-        <app-badge variant="green">Grüne Wahl</app-badge>
+        <app-badge variant="green">{{ 'Grüne Wahl' | t }}</app-badge>
       }
       @if (mode() === 'auction' && endsAt() !== null) {
         <app-auction-timer [endsAt]="endsAt()!" />
@@ -31,14 +32,14 @@ const MODE_LABELS = { auction: 'Auktion', fixed: 'Festpreis', offer: 'Preisvorsc
     <p class="zw-card__price" [class.zw-card__price--bid]="mode() === 'auction'">
       {{ priceText() }}
       @if (mode() === 'auction') {
-        <small>{{ bids() ? bids() + ' Gebote' : 'Gebot' }}</small>
+        <small>{{ bids() ? ('{count} Gebote' | t: { count: bids() }) : ('Gebot' | t) }}</small>
       } @else if (originalPrice() !== null) {
-        <small>neu {{ originalText() }}</small>
+        <small>{{ 'neu {price}' | t: { price: originalText() } }}</small>
       }
     </p>
     <p class="zw-card__meta">{{ meta() }}</p>
     @if (co2Saved() !== null) {
-      <p class="zw-card__green">spart ca. {{ co2Saved() }} kg CO₂</p>
+      <p class="zw-card__green">{{ 'spart ca. {kg} kg CO₂' | t: { kg: co2Saved()! } }}</p>
     }
   </a>`,
 })

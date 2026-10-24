@@ -18,6 +18,7 @@ import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
 import { Chip } from '../ui/chip';
 import { Icon } from '../ui/icon';
+import { I18n, TranslatePipe } from '../i18n/i18n';
 
 type Source = 'LABEL' | 'SELLER' | 'SUGGESTION' | 'WEB';
 type Field = 'title' | 'category' | 'condition' | 'description';
@@ -54,7 +55,7 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-sell',
-  imports: [NgTemplateOutlet, RouterLink, PricePanel, Button, ChfPipe, Chip, Icon],
+  imports: [NgTemplateOutlet, RouterLink, PricePanel, Button, ChfPipe, Chip, Icon, TranslatePipe],
   templateUrl: './sell.html',
   host: {
     '[class.sell--full]': "view() === 'full'",
@@ -303,6 +304,7 @@ const CONDITIONS = (Object.keys(HINTS) as Condition[]).map((value) => ({
 export class Sell {
   private readonly api = inject(SellingService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(I18n);
   constructor() {
     // The page behind the dialog must not scroll.
     const body = inject(DOCUMENT).body;
@@ -346,8 +348,8 @@ export class Sell {
   protected readonly previewPhoto = computed(
     () => this.photos().find((_, i) => !this.excluded().has(i))?.url,
   );
-  protected readonly conditionLabel = computed(
-    () => CONDITIONS.find((c) => c.value === this.fields().condition)?.label ?? '',
+  protected readonly conditionLabel = computed(() =>
+    this.i18n.t(CONDITIONS.find((c) => c.value === this.fields().condition)?.label ?? ''),
   );
   protected readonly canLookUp = computed(() =>
     this.facts().some(
