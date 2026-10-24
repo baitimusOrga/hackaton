@@ -1,88 +1,178 @@
-# hackaton
+# Zweit
 
-Zentral Hack 2026, challenge "Bring your own challenge" (Suva).
+Zentral Hack 2026, Challenge «Bring your own challenge» (Suva).
 
-## The project
+**Fotografiere, was du verkaufen willst. Beschreibe, was du kaufen willst.** Zweit ist ein Schweizer
+Secondhand-Marktplatz, auf dem die KI den mühsamen Teil übernimmt: Inserat schreiben, ehrlichen Preis
+finden und unter vielen Inseraten die wenigen, die wirklich passen.
 
-_To fill in at the hackathon._
+Demo: https://hackaton.absent.one/
+
+## Das Projekt
 
 | | |
 |---|---|
-| Problem | _what hurts today, for whom_ |
-| Target group | _who uses it_ |
-| Solution | _one or two sentences_ |
-| Business model | _how it earns money or sustains itself_ |
-| Demo | https://hackaton-staging.absent.one |
+| Problem | Etwas Gebrauchtes zu verkaufen dauert zu lange: genaues Modell herausfinden, Inserat schreiben, Preis schätzen. Viele lassen es bleiben, und brauchbare Dinge bleiben in der Schublade. Käufer haben das umgekehrte Problem: Die Stichwortsuche über unordentliche Inserate liefert Hüllen, Ladekabel und Defektes statt des gesuchten Geräts. |
+| Zielgruppe | Privatpersonen in der Schweiz, die ab und zu etwas verkaufen, und Käufer, die ein bestimmtes Modell suchen. Start mit Elektronik: Handys, Laptops, Monitore, Konsolen, TVs. |
+| Lösung | **Verkaufen per Foto:** Die KI erkennt den Artikel live, fragt nur nach, was sie auf dem Foto nicht sieht, und schlägt einen Preis mit Belegen aus vergleichbaren Inseraten vor. **Kaufen per Beschreibung:** Man schreibt in normaler Sprache, was man sucht (auch Schweizerdeutsch, Französisch, Italienisch). Der Kauf-Assistent macht daraus Anforderungen und zeigt passende Treffer, mögliche Treffer und Alternativen, jeweils mit Begründung. Dazu Festpreis-Kauf, Auktionen mit automatischem Bieten und eine Karte mit Umkreissuche nach PLZ. |
+| Geschäftsmodell | **Konzept, im Prototyp noch nicht umgesetzt.** Siehe Abschnitt [Geschäftsmodell](#geschäftsmodell). |
 
-### Demo accounts
+## Geschäftsmodell
 
-For the demo and testing on staging and prod (`/login`). Demo data only — no real personal data.
-The shared password is in the team password manager, not in this repository. It must be rotated
-on prod (and staging) before the repository is shared beyond the team and jury.
+> **Noch nicht umgesetzt.** Der Prototyp verlangt heute keine Gebühren und wickelt keine Zahlung ab:
+> Ein Kauf zum Festpreis oder ein Auktionszuschlag markiert das Inserat nur als verkauft, bezahlt wird
+> ausserhalb der Plattform (`PurchaseController`: «no payment yet»).
 
-| Email | Display name | Password |
-|---|---|---|
-| janis@hackathon.ch | Janis | see team password manager |
-| ryan@hackathon.ch | Ryan | see team password manager |
-| levin@hackathon.ch | Levin | see team password manager |
-| cyrus@hackathon.ch | Cyrus | see team password manager |
+Das Konzept baut auf dem auf, was heute schon funktioniert:
 
-### Before making the repository public
-
-- [ ] Rotate the demo account passwords on staging and prod (the old one is in git history).
-- [ ] PR CI runs on GitHub-hosted runners (`ci-*.yml`); do not move it back to the Docker-socket
-      homelab runners, or require approval for workflows from outside collaborators.
-- [ ] Keep the platform workflows in `deploy.yml` pinned to a commit SHA, and review the diff when bumping.
-
-### Progress during the hackathon
-
-Everything after the tag `hackathon-start` was built during the event: `git diff hackathon-start..main`.
-
-- _feature, PR link_
-
-### User feedback
-
-- _who tried it, what they said, what we changed_
-
-### Next steps
-
-- _..._
-
-## Prepared before the hackathon
-
-No product code existed at the start (tag `hackathon-start`). Prepared in advance:
-
-- Project template: Spring Boot + Angular monorepo, Postgres, Docker images, CI, staging and prod deploys.
-- Setup: Problem Details error handling, generated API client, Tailwind, Lombok, Prettier check.
-- Agent workflow: rules for coding agents (`AGENTS.md`, `docs/LEAN-CODE.md`), Linear issue flow (`docs/LINEAR.md`).
-- Product idea: `docs/PRODUCT-PLAN.md`.
-
-## AI and open source
-
-AI tools used during development:
-
-| Tool | Used for |
+| Heute im Prototyp | Darauf baut das Geschäftsmodell auf |
 |---|---|
-| Claude Code (Anthropic) | writing code, tests and docs, reviewing pull requests |
-| Codex (OpenAI) | writing code, reviewing pull requests |
-| Cyrus (self-hosted) | runs Claude Code on Linear issues and opens pull requests |
+| Inserieren per Foto mit KI-Entwurf und Preisvorschlag, gratis | Bleibt gratis, auch die KI-Funktionen. Gratis-Inserate bringen das Angebot, ohne das gibt es keinen Marktplatz. |
+| Festpreis-Kauf und Auktionen, ohne Zahlung | **Geschützter Checkout:** Zahlung über Zweit mit Käuferschutz, das Geld wird erst nach bestätigter Übergabe freigegeben. Dafür fällt eine kleine Kommission an, deutlich tiefer als bei bestehenden Plattformen. Wer direkt bezahlt, zahlt nichts. |
+| Als versendet markieren | **Abholung und Versand** als bezahlter Zusatz-Service, mit Partnern. |
+| Kauf-Assistent und Suche in normaler Sprache | Bleibt für Käufer gratis. Später: **Werkzeuge für professionelle Verkäufer** (Massen-Upload, Statistiken) im Abo. |
+| Firmen-Räumung im Produktplan, für die Demo entfernt (#76) | **Betreute Räumung von Firmeninventar** gegen Gebühr, später Ankauf ganzer Posten mit Weiterverkaufsmarge. |
 
-Every AI change went through a pull request that a team member reviewed and merged.
-AI features in the product itself: _model / API, what data is sent to it_.
+Reihenfolge: zuerst der geschützte Checkout, weil er am heutigen Kaufablauf ansetzt und die einzige
+Einnahme ist, die direkt mit jedem Verkauf wächst. Details: [`docs/PRODUCT-PLAN.md`](docs/PRODUCT-PLAN.md),
+Abschnitte 12–15.
 
-Open-source components:
+## Team
 
-| Component | License |
+Vier Personen, keine Teamleitung: Entscheide fällen wir gemeinsam per Abstimmung, wie in einer Demokratie.
+Gearbeitet wird über Linear-Issues und Pull Requests; jede Änderung kommt über einen Pull Request
+auf `main`.
+
+## Fortschritt während des Hackathons
+
+Alles nach dem Tag `hackathon-start` ist am Event entstanden: `git diff hackathon-start..main`.
+Rund 70 Pull Requests von 4 Personen, etwa 45'000 neue Zeilen (ein grosser Teil davon Demo-Daten und
+der generierte API-Client). Die Nummern verweisen auf die Pull Requests in diesem Repository.
+
+**Neu:**
+
+- Login-Service (Better Auth, RS256-JWTs) und geschützte API (#38)
+- KI-Anbindung mit strukturierten JSON-Antworten über die Anthropic-API (#28)
+- Verkaufen per Foto: Live-Erkennung mit Markierungen, geführte Foto-Fragen, KI-Textverbesserung,
+  Preis mit Belegen, Vorschau vor dem Veröffentlichen, Entwurf wiederherstellen
+  (#39, #41, #53, #77, #78, #89, #101, #103)
+- Kauf-Assistent: Suche in normaler Sprache, sortierte Treffer mit Begründung, Verfeinern per
+  Nachfrage, in meiner Nähe (#41, #54, #81, #85, #98, #105, #106)
+- Fotos auf S3 bei cloudscale, Metadaten werden beim Upload entfernt (#30, #47, #96)
+- PLZ-Geokodierung über swisstopo und Umkreissuche (#44); OpenStreetMap-Karten auf Inseraten und
+  in Discover (#46, #68, #84)
+- Auktionen mit Laufzeit, automatischem Bieten und Live-Geboten (#57, #67)
+- Festpreis-Kauf, als versendet markieren, meine Inserate und Käufe (#74, #83, #88, #90, #92)
+- Eigenes Designsystem und Redesign (#49), Mobile-Layout mit Tab-Leiste (#87), Deutsch, Französisch,
+  Italienisch und Englisch (#55)
+- Demo-Daten: rund 800 erfundene, absichtlich unordentliche Inserate mit KI-generierten Fotos (#70, #94)
+
+**Verbessert:**
+
+- Security-Audit der ganzen App und die Fixes daraus: unveröffentlichte Fotos privat, Schutz gegen
+  Prompt-Injection im Kauf-Assistenten, standardmässig alles gesperrt, CI auf GitHub-Runnern,
+  gepinnte Actions ([`docs/security/2026-10-24-security-audit.md`](docs/security/2026-10-24-security-audit.md), #48)
+- Content Security Policy und Caching für Staging und Prod (#50, #66, #100)
+
+**Bewusst entfernt**, damit die Demo fokussiert bleibt: Firmen-Räumungsprojekte (#76),
+Nachrichten-Platzhalter (#72), gespeicherte Suchen (#71).
+
+## Nutzerfeedback
+
+- **Sandra, Tele 1:** «Schönes Produkt. Intuitiv.»
+- Interne Evaluation des Kauf-Assistenten: rund 50 selbst geschriebene Testfälle auf Deutsch,
+  Schweizerdeutsch, Französisch und Englisch gegen die unordentlichen Demo-Daten, mit erwarteten und
+  verbotenen Treffern ([`docs/testing/search-eval.md`](docs/testing/search-eval.md)).
+- End-to-End-Testbefunde: [`docs/testing/2026-10-23-e2e-findings.md`](docs/testing/2026-10-23-e2e-findings.md).
+
+## Nächste Schritte
+
+- Chat zwischen Käufer und Verkäufer, Angebote und Kaufvereinbarung
+- Geschützter Checkout mit Kommission und Bestätigung der Übergabe (erster Schritt zum Geschäftsmodell)
+- Gespeicherte Suchen mit Benachrichtigung, sobald ein passendes Inserat erscheint
+- Firmen-Räumung: Inventar in grossen Mengen erfassen, betreuter Verkauf, Kauf ganzer Posten
+- Betrugserkennung und Verifizierung von Verkäufern
+- Tests gegen Postgres in der CI (heute nur H2), damit datenbankspezifische Fehler vor Staging auffallen
+
+## Vor dem Hackathon vorbereitet
+
+Beim Start (Tag `hackathon-start`) gab es keinen Produktcode. Vorbereitet waren:
+
+- Projektvorlage: Monorepo mit Spring Boot und Angular, Postgres, Docker-Images, CI, Deploys auf Staging und Prod
+- Setup: Fehler als Problem Details, generierter API-Client, Tailwind, Lombok, Prettier-Check
+- Arbeitsweise mit Coding-Agents: Regeln (`AGENTS.md`, `docs/LEAN-CODE.md`), Ablauf mit Linear-Issues (`docs/LINEAR.md`)
+- Produktidee: `docs/PRODUCT-PLAN.md`
+
+## KI und Open Source
+
+KI-Werkzeuge in der Entwicklung:
+
+| Werkzeug | Wofür |
 |---|---|
-| Spring Boot, Spring Data JPA, springdoc-openapi, Flyway | Apache-2.0 |
+| Claude Code (Anthropic) | Code, Tests und Doku schreiben, Pull Requests reviewen |
+| Codex (OpenAI) | Code schreiben, Pull Requests reviewen |
+| Cyrus (selbst gehostet) | lässt Claude Code Linear-Issues bearbeiten und Pull Requests öffnen |
+| Google Jules | Performance-Pull-Request (#43, `.jules/`) |
+| Claude Design (Anthropic) | Screen-Entwürfe für die Trefferseite (#98, `docs/design/`) |
+| Gemini-Bildmodell («Nano Banana 2 Pro», Google) | die erfundenen Fotos der Demo-Inserate (`frontend/public/demo/`, Prompts in `docs/testing/demo-image-prompts.md`) |
+
+Jede KI-Änderung lief über einen Pull Request, den ein Teammitglied geprüft und gemergt hat.
+
+KI im Produkt selbst, alles über die Anthropic Messages API (`backend/.../ai/AiClient.java`):
+
+| Modell | Wofür |
+|---|---|
+| Claude Sonnet 5.5 | Live-Erkennung des Artikels und Inserat-Entwurf, gestreamt während der Verkäufer Fotos hinzufügt |
+| Claude Opus 5.5 mit Websuche | Produktfakten für den Entwurf des Verkäufers (Quellen werden im Code geprüft) |
+| Claude Haiku 5.5 | Suchtext des Käufers in Anforderungen übersetzen, Treffer sortieren, Text des Verkäufers verbessern |
+
+An Anthropic gehen: Fotos (ohne Metadaten) und Texte des Verkäufers, der Suchtext des Käufers und die
+öffentlichen Felder der Kandidaten-Inserate. Keine Kontodaten. Jede Antwort wird über ein JSON-Schema
+erzwungen und im Code geprüft.
+
+Open-Source-Komponenten:
+
+| Komponente | Lizenz |
+|---|---|
+| Spring Boot, Spring Data JPA, Spring Security, springdoc-openapi, Flyway | Apache-2.0 |
+| AWS SDK for Java (S3-Client) | Apache-2.0 |
+| RxJS, TypeScript | Apache-2.0 |
+| Leaflet | BSD-2-Clause |
+| OpenStreetMap-Kacheln und -Daten | ODbL (© OpenStreetMap-Mitwirkende) |
+| swisstopo Geokodierungs-API | Geodaten des Bundes, Nutzungsbedingungen von swisstopo |
+| Schrift Inter (@fontsource/inter) | SIL OFL-1.1 |
+| node-postgres (pg), jose, tsx, jsdom, PostCSS | MIT |
 | Lombok | MIT |
 | PostgreSQL | PostgreSQL License |
-| H2 (tests only) | MPL-2.0 / EPL-1.0 |
+| H2 (nur Tests) | MPL-2.0 / EPL-1.0 |
 | Angular, Tailwind CSS, ng-openapi-gen, Vitest, ESLint, Prettier | MIT |
 | nginx | BSD-2-Clause |
 | Better Auth | MIT |
 | Cyrus | MIT |
-| Ponytail (basis of `docs/LEAN-CODE.md`) | MIT |
+| Ponytail (Grundlage von `docs/LEAN-CODE.md`) | MIT |
+
+## Demo-Accounts
+
+Für Demo und Tests auf Staging und Prod (`/login`). Nur Demo-Daten, keine echten Personendaten.
+Das gemeinsame Passwort liegt im Passwortmanager des Teams, nicht in diesem Repository.
+
+| E-Mail | Anzeigename | Passwort |
+|---|---|---|
+| janis@hackathon.ch | Janis | siehe Passwortmanager |
+| ryan@hackathon.ch | Ryan | siehe Passwortmanager |
+| levin@hackathon.ch | Levin | siehe Passwortmanager |
+| cyrus@hackathon.ch | Cyrus | siehe Passwortmanager |
+
+### Bevor das Repository öffentlich wird
+
+- [ ] Passwörter der Demo-Accounts auf Staging und Prod rotieren (das alte steht in der Git-History).
+- [ ] PR-CI läuft auf GitHub-Runnern (`ci-*.yml`); nicht zurück auf die Homelab-Runner mit Docker-Socket
+      verschieben, oder Freigabe für Workflows externer Mitwirkender verlangen.
+- [ ] Die Platform-Workflows in `deploy.yml` auf einen Commit-SHA gepinnt lassen und den Diff beim Update prüfen.
+
+---
+
+_Technical documentation below is in English, like the code._
 
 ## Technical setup
 
@@ -140,7 +230,7 @@ On a cold start the frontend is ready before the backend, so the first `/api` ca
 
 For a personal variant (other port, env vars), copy a configuration and leave *Store as project file* unchecked, so it doesn't end up in `.run/`.
 
-Tests: `cd backend && ./mvnw verify` (H2, no Docker needed) and `cd frontend && npx ng lint && npx ng test`.
+Tests: `cd backend && ./mvnw verify` (H2, no Docker needed) and `cd frontend && pnpm exec ng lint && pnpm exec ng test --watch=false`.
 
 AI features need `ANTHROPIC_API_KEY=...` in `backend/.env` (gitignored, read by Spring; not a global shell variable, or Claude Code bills that key). Check it with `./mvnw test -Dtest=AiClientLiveTest -Dai.live=true`.
 
