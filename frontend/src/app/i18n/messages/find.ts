@@ -275,4 +275,23 @@ export const FIND_MESSAGES: Messages = {
     it: 'fuori dalla tua ricerca',
     en: 'outside your search',
   },
+  // plain search page
+  Liste: { fr: 'Liste', it: 'Elenco', en: 'List' },
+  Karte: { fr: 'Carte', it: 'Mappa', en: 'Map' },
+  Ansicht: { fr: 'Affichage', it: 'Vista', en: 'View' },
+  'Karte der Treffer': {
+    fr: 'Carte des résultats',
+    it: 'Mappa dei risultati',
+    en: 'Map of results',
+  },
+  'Keine Inserate gefunden.': {
+    fr: 'Aucune annonce trouvée.',
+    it: 'Nessun annuncio trovato.',
+    en: 'No listings found.',
+  },
+  'Inserate werden geladen…': {
+    fr: 'Chargement des annonces…',
+    it: 'Caricamento degli annunci…',
+    en: 'Loading listings…',
+  },
 };

@@ -5,6 +5,18 @@ import { of } from 'rxjs';
 import { ListingsService } from '../api/services';
 import { Search } from './search';
 
+function trigger(el: HTMLElement, label: string): HTMLButtonElement {
+  return [...el.querySelectorAll<HTMLButtonElement>('.facet__trigger')].find((b) =>
+    b.textContent!.includes(label),
+  )!;
+}
+
+function chip(el: HTMLElement, text: string): HTMLButtonElement {
+  return [...el.querySelectorAll<HTMLButtonElement>('button')].find(
+    (b) => b.textContent!.trim() === text,
+  )!;
+}
+
 describe('Search', () => {
   async function setup(url: string, items: unknown[]) {
     const list = vi.fn().mockReturnValue(of(items));
@@ -19,57 +31,75 @@ describe('Search', () => {
     return { list, harness, element: harness.routeNativeElement as HTMLElement };
   }
 
-  it('shows a card per listing and preselects the category', async () => {
+  it('shows a card per listing and the category as heading and facet summary', async () => {
     const { list, element } = await setup('/search?category=Monitors', [
       { id: 2, title: 'Dell monitor', priceChf: 120 },
     ]);
     expect(list).toHaveBeenCalledWith({ category: 'Monitors' });
-    expect(element.querySelector('a[href="/listings/2"]')!.textContent).toContain('Dell monitor');
-    expect(element.querySelector<HTMLSelectElement>('select')!.value).toBe('Monitors');
-    expect(element.querySelector('h1')!.textContent).toBe('Bildschirme');
+    expect(element.querySelector('a[href="/listings/2"]')).not.toBeNull();
+    expect(trigger(element, 'Kategorie').textContent).toContain('Bildschirme');
+    expect(element.querySelector('h1')!.textContent!.trim()).toBe('Bildschirme');
   });
 
-  it('reloads with the new filter and keeps the others in the URL', async () => {
+  it('reloads with the new price and keeps the other filters in the URL', async () => {
     const { list, harness, element } = await setup('/search?q=imac', []);
-    expect(element.textContent).toContain('Keine Inserate gefunden.');
-    const maxPrice = element.querySelector<HTMLInputElement>('input[name="maxPrice"]')!;
-    maxPrice.value = '500';
-    maxPrice.dispatchEvent(new Event('change'));
+    trigger(element, 'Preis').click();
+    await harness.fixture.whenStable();
+    const price = element.querySelector<HTMLInputElement>('#search-price')!;
+    price.value = '500';
+    price.dispatchEvent(new Event('change'));
     await harness.fixture.whenStable();
     expect(list).toHaveBeenLastCalledWith({ q: 'imac', maxPrice: 500 });
     expect(TestBed.inject(Router).url).toBe('/search?q=imac&maxPrice=500');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await harness.fixture.whenStable();
+    expect(element.querySelector('[role="dialog"]')).toBeNull();
   });
 
-  it('sends the radius with a full postcode and drops it without one', async () => {
-    const { list } = await setup('/search?postcode=8004&radiusKm=25', []);
-    expect(list).toHaveBeenCalledWith({ postcode: '8004', radiusKm: 25 });
+  it('filters auctions and removes all filters at once', async () => {
+    const { list, harness, element } = await setup('/search', []);
+    trigger(element, 'Verkaufsart').click();
+    await harness.fixture.whenStable();
+    element.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click();
+    await harness.fixture.whenStable();
+    expect(list).toHaveBeenLastCalledWith({ saleMode: 'AUCTION' });
+
+    [...element.querySelectorAll('button')]
+      .find((b) => b.textContent!.trim() === 'Alle entfernen')!
+      .click();
+    await harness.fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/search');
+    expect(list).toHaveBeenLastCalledWith({});
+  });
+
+  it('shows the empty state without the view toggle', async () => {
+    const { element } = await setup('/search', []);
+    expect(element.textContent).toContain('Keine Inserate gefunden.');
+    expect(element.querySelector('[role="group"][aria-label="Ansicht"]')).toBeNull();
+  });
+
+  it('keeps the radius only with a full postcode', async () => {
+    const full = await setup('/search?postcode=8004&radiusKm=25', []);
+    expect(full.list).toHaveBeenCalledWith({ postcode: '8004', radiusKm: 25 });
     TestBed.resetTestingModule();
     const partial = await setup('/search?postcode=80&radiusKm=25', []);
     expect(partial.list).toHaveBeenCalledWith({ postcode: '80' });
   });
 
-  it('ignores a radius without a full postcode', async () => {
-    const { list } = await setup('/search?radiusKm=5', []);
-    expect(list).toHaveBeenCalledWith({});
-  });
-
-  it('sets the radius from a typed postcode', async () => {
+  it('a radius chip measures from a full postcode and is disabled without one', async () => {
     const { list, harness, element } = await setup('/search?postcode=8004', []);
-    const radius = element.querySelector<HTMLSelectElement>('select[name="radiusKm"]')!;
-    radius.value = '10';
-    radius.dispatchEvent(new Event('change'));
+    trigger(element, 'Region').click();
+    await harness.fixture.whenStable();
+    chip(element, '10 km').click();
     await harness.fixture.whenStable();
     expect(list).toHaveBeenLastCalledWith({ postcode: '8004', radiusKm: 10 });
-  });
+    expect(trigger(element, 'Region').textContent).toContain('10 km um 8004');
 
-  it('switches from the list to the clustered map', async () => {
-    const { harness, element } = await setup('/search', [
-      { id: 2, title: 'Dell monitor', priceChf: 120, latitude: 47.4, longitude: 8.5 },
-    ]);
-    expect(element.querySelector('a[href="/listings/2"]')).not.toBeNull();
-    [...element.querySelectorAll('button')].find((b) => b.textContent!.trim() === 'Karte')!.click();
-    await harness.fixture.whenStable();
-    expect(element.querySelector('a[href="/listings/2"]')).toBeNull();
-    expect(element.querySelector('[role="region"]')).not.toBeNull();
+    TestBed.resetTestingModule();
+    const bare = await setup('/search', []);
+    trigger(bare.element, 'Region').click();
+    await bare.harness.fixture.whenStable();
+    expect(chip(bare.element, '10 km').disabled).toBe(true);
   });
 });
