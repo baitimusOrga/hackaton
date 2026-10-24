@@ -825,6 +825,11 @@ textarea.zw-input {
   body:has(.find__filters--open) {
     overflow: hidden;
   }
+  /* In a narrow card column the bid count moves under the price. */
+  .zw-card__price {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
   /* Long titles and prices must not widen a phone page. */
   h1,
   h2,
