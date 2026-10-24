@@ -30,10 +30,10 @@ import { chf, ChfPipe } from '../ui/chf';
 import { SectionHeading } from '../ui/section-heading';
 import { SummaryCard } from '../ui/summary-card';
 
-interface BidNote {
-  kind: 'error' | 'ok' | 'outbid';
+interface BidStatus {
+  tone: 'lead' | 'outbid';
+  title: string;
   text: string;
-  bidCount?: number;
 }
 
 /** Listing detail, fixed price or auction: photo left, buying column right, facts and description below. */
@@ -186,9 +186,22 @@ interface BidNote {
       gap: var(--space-2);
       padding: var(--space-1) 0;
     }
-    .danger {
+    .status {
+      display: grid;
+      gap: var(--space-1);
+      padding-left: var(--space-3);
+      border-left: var(--border-2) solid var(--ink);
+    }
+    .status--outbid {
+      border-left-color: var(--danger);
+    }
+    .status h3 {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .status--outbid h3 {
       color: var(--danger);
-      font-weight: 500;
     }
     .bids {
       margin: 0;
@@ -301,37 +314,84 @@ export class ListingPage {
     },
   });
   protected readonly maxChf = signal<number | null>(null);
-  /**
-   * The one line under the bid field: why a bid was refused, or what an accepted bid did. An accepted note
-   * belongs to the bid count it was made for and disappears once a poll shows newer bids.
-   */
-  protected readonly bidNote = signal<BidNote | null>(null);
+  /** Why the last bid was refused, shown under the field until the amount changes. */
+  protected readonly bidError = signal('');
+  /** The bid count right after the own bid; the status explains that bid until a poll shows newer bids. */
+  private readonly ownBidCount = signal<number | null>(null);
   protected readonly bidding = signal(false);
 
-  /** The minimum and the next two steps, so a bid needs no typing. */
+  /** The minimum (above the own maximum while leading) and the next two steps, so a bid needs no typing. */
   protected suggestions(a: AuctionState): number[] {
-    const min = a.minimumNextBidChf ?? 0;
     const inc = a.incrementChf ?? 1;
+    const min = Math.max(a.minimumNextBidChf ?? 0, a.leading ? (a.myMaxChf ?? 0) + inc : 0);
     return [0, 1, 2].map((steps) => Math.round((min + steps * inc) * 100) / 100);
   }
 
   protected setMax(amount: number): void {
     this.maxChf.set(Number.isNaN(amount) ? null : amount);
-    this.bidNote.set(null);
+    this.bidError.set('');
   }
 
-  /** The note to show for this state, if it still applies. */
-  protected note(a: AuctionState): BidNote | null {
-    const note = this.bidNote();
-    return note && (note.kind === 'error' || note.bidCount === a.bidCount) ? note : null;
+  /** Where the viewer stands, in one headline: leading, outbid or the result; null before the first own bid. */
+  protected status(a: AuctionState): BidStatus | null {
+    if (a.myMaxChf == null) return null;
+    const t = (key: string, params: Record<string, string>) => this.i18n.t(key, params);
+    const price = chf(a.currentBidChf ?? 0);
+    const max = chf(a.myMaxChf);
+    const min = chf(a.minimumNextBidChf ?? 0);
+    const justBid = this.ownBidCount() === a.bidCount;
+    if (a.ended)
+      return a.leading
+        ? { tone: 'lead', title: t('Du hast gewonnen', {}), text: t('Für {price}.', { price }) }
+        : {
+            tone: 'outbid',
+            title: t('Jemand hat mehr geboten', {}),
+            text: t('Verkauft für {price}. Dein Maximum war {max}.', { price, max }),
+          };
+    if (a.leading)
+      return {
+        tone: 'lead',
+        title: t('Du führst mit {price}', { price }),
+        text: t(
+          justBid
+            ? 'Gebot angenommen. Dein Maximum {max} bleibt geheim; wir bieten automatisch für dich, bis es erreicht ist.'
+            : 'Dein Maximum ist {max}; wir bieten automatisch für dich, bis es erreicht ist.',
+          { max },
+        ),
+      };
+    return {
+      tone: 'outbid',
+      title: t('Du wurdest überboten', {}),
+      text: justBid
+        ? t(
+            'Gebot angenommen, aber ein anderes Maximum ist höher. Der Preis stieg automatisch auf {price}. Biete mindestens {min}, um zu führen.',
+            { price, min },
+          )
+        : t('Dein Maximum war {max}. Biete mindestens {min}, um wieder zu führen.', { max, min }),
+    };
+  }
+
+  /** What the typed maximum will do, before it is sent; '' while the field is empty or invalid. */
+  protected preview(a: AuctionState): string {
+    const max = this.maxChf();
+    if (max === null || this.problem(max, a)) return '';
+    return a.leading
+      ? this.i18n.t('Der Preis bleibt bei {price}. Du erhöhst nur dein Maximum auf {max}.', {
+          price: chf(a.currentBidChf ?? 0),
+          max: chf(max),
+        })
+      : this.i18n.t(
+          'Dein Gebot startet bei {min}. Bietet jemand mit, erhöhen wir automatisch bis {max}.',
+          { min: chf(a.minimumNextBidChf ?? 0), max: chf(max) },
+        );
   }
 
   /** "Maximum CHF 400.– bieten" once the field holds a valid amount, so the button says what is sent. */
   protected bidLabel(a: AuctionState): string {
     const max = this.maxChf();
-    return max !== null && !this.problem(max, a)
-      ? this.i18n.t('Maximum {max} bieten', { max: chf(max) })
-      : this.i18n.t('Jetzt bieten');
+    if (max !== null && !this.problem(max, a))
+      return this.i18n.t('Maximum {max} bieten', { max: chf(max) });
+    return this.i18n.t(a.leading ? 'Maximum erhöhen' : 'Jetzt bieten');
   }
 
   protected placeBid(event: Event, id: number, a: AuctionState): void {
@@ -340,22 +400,22 @@ export class ListingPage {
     if (!this.auth.user()) return this.signIn();
     const maxChf = this.maxChf();
     const problem = this.problem(maxChf, a);
-    if (problem) return this.bidNote.set({ kind: 'error', text: problem });
+    if (problem) return this.bidError.set(problem);
     this.bidding.set(true);
-    this.bidNote.set(null);
+    this.bidError.set('');
     this.auctions
       .placeBid({ id, body: { maxChf: maxChf! } }, new HttpContext().set(HANDLES_ERRORS, true))
       .subscribe({
         next: (state) => {
           this.auction.set(state);
           this.maxChf.set(null);
-          this.bidNote.set(this.accepted(state));
+          this.ownBidCount.set(state.bidCount ?? null);
           this.bidding.set(false);
         },
         error: (err: HttpErrorResponse) => {
           this.bidding.set(false);
           if (err.status === 401) return this.signIn();
-          this.bidNote.set({ kind: 'error', text: messageOf(err, this.i18n) });
+          this.bidError.set(messageOf(err, this.i18n));
           // someone bid meanwhile or the auction is over: show the server's numbers, not the old ones
           if (err.status === 400 || err.status === 409) this.refresh(id);
         },
@@ -378,30 +438,6 @@ export class ListingPage {
     if (max < min)
       return this.i18n.t('Dein Maximum muss mindestens {min} sein.', { min: chf(min) });
     return '';
-  }
-
-  private accepted(state: AuctionState): BidNote {
-    const price = chf(state.currentBidChf ?? 0);
-    return state.leading
-      ? {
-          kind: 'ok',
-          bidCount: state.bidCount,
-          text: this.i18n.t(
-            'Gebot angenommen. Du führst mit {price}, dein Maximum {max} bleibt geheim.',
-            {
-              price,
-              max: chf(state.myMaxChf ?? 0),
-            },
-          ),
-        }
-      : {
-          kind: 'outbid',
-          bidCount: state.bidCount,
-          text: this.i18n.t(
-            'Gebot angenommen, aber ein anderes Maximum ist höher. Der Preis steigt automatisch auf {price}.',
-            { price },
-          ),
-        };
   }
 
   private refresh(id: number): void {

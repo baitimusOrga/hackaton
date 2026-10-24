@@ -76,7 +76,12 @@ describe('ListingPage', () => {
       fixture.detectChanges();
       const element = fixture.nativeElement as HTMLElement;
       expect(getAuction).toHaveBeenCalledTimes(1);
-      expect(element.textContent).toContain('Du wurdest überboten. Dein Maximum war CHF 200.–.');
+      expect(element.querySelector('.status--outbid h3')!.textContent).toContain(
+        'Du wurdest überboten',
+      );
+      expect(element.textContent).toContain(
+        'Dein Maximum war CHF 200.–. Biete mindestens CHF 210.–, um wieder zu führen.',
+      );
       expect(element.textContent).toContain('Mindestens CHF 210.– · Schritte von CHF 5.–');
       expect(element.querySelectorAll('.bids li')).toHaveLength(3);
       expect(element.querySelector('.bids .mine')!.textContent).toContain('Du');
@@ -100,11 +105,20 @@ describe('ListingPage', () => {
 
       input.value = '400';
       input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(element.querySelector('#bid-note')!.textContent).toContain(
+        'Dein Gebot startet bei CHF 210.–. Bietet jemand mit, erhöhen wir automatisch bis CHF 400.–.',
+      );
       element.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
       fixture.detectChanges();
       expect(placeBid.mock.calls[0][0]).toEqual({ id: 9, body: { maxChf: 400 } });
       expect(element.textContent).toContain('Du führst mit CHF 305.–');
+      expect(element.textContent).toContain(
+        'Gebot angenommen. Dein Maximum CHF 400.– bleibt geheim',
+      );
       expect(element.textContent).not.toContain('überboten');
+      const raised = element.querySelectorAll<HTMLButtonElement>('.picks button');
+      expect(raised[0].textContent!.trim()).toBe('CHF 405.–');
 
       // the mock keeps answering with the state from before the bid: a stale poll must not undo it
       await vi.advanceTimersByTimeAsync(5000);
@@ -202,8 +216,24 @@ describe('ListingPage', () => {
       input.value = '400';
       input.dispatchEvent(new Event('input'));
       fixture.detectChanges();
+      expect(element.querySelector('#bid-note')!.textContent).toContain(
+        'Dein Gebot startet bei CHF 210.–. Bietet jemand mit, erhöhen wir automatisch bis CHF 400.–.',
+      );
       expect(element.querySelector('button[type="submit"]')!.textContent).toContain(
         'Maximum CHF 400.– bieten',
+      );
+    });
+
+    it('says when the own bid is outbid right away by a higher maximum', async () => {
+      const placeBid = vi
+        .fn()
+        .mockReturnValue(
+          of({ ...open, currentBidChf: 405, bidCount: 4, minimumNextBidChf: 410, myMaxChf: 400 }),
+        );
+      const { element, bid } = await page(open, placeBid);
+      bid('400');
+      expect(element.querySelector('.status--outbid')!.textContent).toContain(
+        'Gebot angenommen, aber ein anderes Maximum ist höher. Der Preis stieg automatisch auf CHF 405.–. Biete mindestens CHF 410.–, um zu führen.',
       );
     });
 
