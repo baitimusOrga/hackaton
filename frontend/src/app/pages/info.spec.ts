@@ -23,6 +23,6 @@ describe('About and Info pages', () => {
     const element = await render('info', Info);
     expect(element.querySelector('h1')?.textContent).toBe('About the Project');
     expect(element.textContent).toContain('Swiss second-hand market');
-    expect(element.querySelector('em')?.textContent).toBe('XXX');
+    expect(element.querySelector('em')?.textContent).toBe('Zweite.');
   });
 });
