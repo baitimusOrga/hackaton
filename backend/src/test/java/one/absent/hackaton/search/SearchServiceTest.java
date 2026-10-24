@@ -25,6 +25,7 @@ import java.util.stream.LongStream;
 import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.listing.Condition;
 import one.absent.hackaton.listing.ListingDetail;
+import one.absent.hackaton.listing.SaleMode;
 import one.absent.hackaton.search.SearchMatch.Fit;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -34,14 +35,18 @@ class SearchServiceTest {
 
     static final ListingDetail IMAC = new ListingDetail(1, "iMac 27\" Retina 5K (2017)", new BigDecimal("450"),
             Condition.GOOD, "Computers", "8004", "Zürich", null, "Works well.",
-            Map.of("Display", "27\" 5K", "RAM", "16 GB", "Year", "2017"), Instant.now(), null, null, null);
+            Map.of("Display", "27\" 5K", "RAM", "16 GB", "Year", "2017"), Instant.now(), null, null, null,
+            SaleMode.FIXED, null, null, 0);
     static final ListingDetail IMAC_2019 = new ListingDetail(2, "iMac 27\" Retina 5K (2019)", new BigDecimal("720"),
             Condition.LIKE_NEW, "Computers", "3007", "Bern", null, "Very good condition.",
-            Map.of("Display", "27\" 5K", "Year", "2019"), Instant.now(), null, null, null);
+            Map.of("Display", "27\" 5K", "Year", "2019"), Instant.now(), null, null, null,
+            SaleMode.FIXED, null, null, 0);
     static final ListingDetail OLD_IMAC = new ListingDetail(3, "Apple iMac 27 inch", new BigDecimal("300"),
-            Condition.USED, "Computers", "8001", "Zürich", null, "Older iMac.", Map.of(), Instant.now(), null, null, null);
+            Condition.USED, "Computers", "8001", "Zürich", null, "Older iMac.", Map.of(), Instant.now(), null, null, null,
+            SaleMode.FIXED, null, null, 0);
     static final ListingDetail DEFECTIVE_PHONE = new ListingDetail(4, "Phone", new BigDecimal("50"),
-            Condition.DEFECTIVE, "Phones", "8001", "Zürich", null, "Broken screen.", Map.of(), Instant.now(), null, null, null);
+            Condition.DEFECTIVE, "Phones", "8001", "Zürich", null, "Broken screen.", Map.of(), Instant.now(), null, null, null,
+            SaleMode.FIXED, null, null, 0);
 
     static Requirement req(String attribute, String value) {
         return new Requirement(attribute, value, EXACT);
@@ -259,21 +264,23 @@ class SearchServiceTest {
 
     static ListingDetail withAttributes(ListingDetail l, Map<String, String> attributes) {
         return new ListingDetail(l.id(), l.title(), l.priceChf(), l.condition(), l.category(), l.postcode(),
-                l.locality(), l.imageUrl(), l.description(), attributes, l.createdAt(), null, null, null);
+                l.locality(), l.imageUrl(), l.description(), attributes, l.createdAt(), null, null, null, SaleMode.FIXED, null, null, 0);
     }
 
     static ListingDetail withCondition(ListingDetail l, Condition condition) {
         return new ListingDetail(l.id(), l.title(), l.priceChf(), condition, l.category(), l.postcode(),
-                l.locality(), l.imageUrl(), l.description(), l.attributes(), l.createdAt(), null, null, null);
+                l.locality(), l.imageUrl(), l.description(), l.attributes(), l.createdAt(), null, null, null, SaleMode.FIXED, null, null, 0);
     }
 
     static ListingDetail withPrice(ListingDetail l, String price) {
         return new ListingDetail(l.id(), l.title(), new BigDecimal(price), l.condition(), l.category(), l.postcode(),
-                l.locality(), l.imageUrl(), l.description(), l.attributes(), l.createdAt(), null, null, null);
+                l.locality(), l.imageUrl(), l.description(), l.attributes(), l.createdAt(), null, null, null,
+                SaleMode.FIXED, null, null, 0);
     }
 
     static ListingDetail withId(ListingDetail l, long id) {
         return new ListingDetail(id, l.title(), l.priceChf(), l.condition(), l.category(), l.postcode(),
-                l.locality(), l.imageUrl(), l.description(), l.attributes(), l.createdAt(), null, null, null);
+                l.locality(), l.imageUrl(), l.description(), l.attributes(), l.createdAt(), null, null, null,
+                SaleMode.FIXED, null, null, 0);
     }
 }

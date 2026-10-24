@@ -76,6 +76,11 @@ export const FIND_MESSAGES: Messages = {
   Gebraucht: { fr: "D'occasion", it: 'Usato', en: 'Used' },
   Defekt: { fr: 'Défectueux', it: 'Difettoso', en: 'Defective' },
   Verkaufsart: { fr: 'Type de vente', it: 'Tipo di vendita', en: 'Sale type' },
+  'Gerade läuft keine Auktion.': {
+    fr: "Aucune enchère en cours pour l'instant.",
+    it: 'Al momento non ci sono aste in corso.',
+    en: 'No auction is running right now.',
+  },
   Festpreis: { fr: 'Prix fixe', it: 'Prezzo fisso', en: 'Fixed price' },
   Preisvorschlag: { fr: 'Offre de prix', it: 'Proposta di prezzo', en: 'Price offer' },
   Auktion: { fr: 'Enchère', it: 'Asta', en: 'Auction' },

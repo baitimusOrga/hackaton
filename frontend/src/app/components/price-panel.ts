@@ -133,7 +133,9 @@ const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW
     @if (compact()) {
       <div class="compact">
         <div class="zw-field">
-          <label class="zw-label" for="price-compact">{{ 'Preis' | t }}</label>
+          <label class="zw-label" for="price-compact">{{
+            (auctionDays() === null ? 'Preis' : 'Startpreis') | t
+          }}</label>
           <span class="zw-affix">
             <span class="zw-affix__unit">CHF</span>
             <input
@@ -156,7 +158,9 @@ const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW
       </div>
     } @else {
       <fieldset class="zw-fieldset">
-        <legend class="zw-sr-only">{{ 'Preis' | t }}</legend>
+        <legend class="zw-sr-only">
+          {{ (auctionDays() === null ? 'Preis' : 'Startpreis') | t }}
+        </legend>
         @for (s of strategies(); track s.label) {
           <label class="zw-option">
             <input
@@ -209,12 +213,21 @@ const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW
     <ng-template #modes>
       <div class="zw-field">
         <span class="zw-label" id="sale-mode">{{ 'Wie verkaufen?' | t }}</span>
-        <!-- TODO: the backend only publishes fixed-price listings; Preisvorschlag, Auktion (with a secret seller-set reserve) and Verschenken need sale modes in CreateListingRequest. -->
+        <!-- TODO: Preisvorschlag and Verschenken need sale modes in CreateListingRequest. -->
         <div class="modes" role="group" aria-labelledby="sale-mode">
-          <button type="button" class="zw-chip" aria-pressed="true">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
-            <span>{{ 'Festpreis' | t }}</span>
-          </button>
+          @for (mode of saleModes; track mode.label) {
+            <button
+              type="button"
+              class="zw-chip"
+              [attr.aria-pressed]="(auctionDays() !== null) === mode.auction"
+              (click)="auctionDays.set(mode.auction ? (auctionDays() ?? 5) : null)"
+            >
+              @if ((auctionDays() !== null) === mode.auction) {
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
+              }
+              <span>{{ mode.label | t }}</span>
+            </button>
+          }
           @for (mode of laterModes; track mode) {
             <button type="button" class="zw-chip" aria-pressed="false" disabled>
               <span>{{ mode | t }}</span>
@@ -222,6 +235,24 @@ const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW
           }
         </div>
       </div>
+      @if (auctionDays() !== null) {
+        <div class="zw-field">
+          <label class="zw-label" for="auction-days">{{ 'Dauer' | t }}</label>
+          <select
+            id="auction-days"
+            class="zw-input"
+            name="auctionDays"
+            [value]="auctionDays()"
+            (change)="auctionDays.set(+$any($event.target).value)"
+          >
+            @for (days of durations; track days) {
+              <option [value]="days" [selected]="days === auctionDays()">
+                {{ '{days} Tage' | t: { days } }}
+              </option>
+            }
+          </select>
+        </div>
+      }
     </ng-template>
   `,
 })
@@ -232,7 +263,14 @@ export class PricePanel {
   readonly price = model<number | null>(null);
   /** One price field beside the sale modes (one-page form) instead of the three suggestions (wizard step). */
   readonly compact = input(false);
-  protected readonly laterModes = ['Preisvorschlag', 'Auktion', 'Verschenken'];
+  /** null = fixed price, otherwise the auction runs this many days and the price is the start price. */
+  readonly auctionDays = model<number | null>(null);
+  protected readonly saleModes = [
+    { label: 'Festpreis', auction: false },
+    { label: 'Auktion', auction: true },
+  ];
+  protected readonly durations = [3, 5, 7];
+  protected readonly laterModes = ['Preisvorschlag', 'Verschenken'];
   protected readonly own = signal(false);
   protected readonly ownValue = signal<number | null>(null);
 

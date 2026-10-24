@@ -182,7 +182,7 @@ public class ClearanceService {
         List<ItemView> views = rows.stream().map(i -> new ItemView(i.getId(), i.getName(), i.getCategory(),
                 i.getQuantity(), i.isQuantityConfirmed(), i.getCondition(), i.getNotes(), i.getEstimatedUnitChf(),
                 unitPrice(i), i.getUnitPriceChf() != null, total(i), i.getListingId() == null ? ItemStatus.DRAFT
-                        : listingStatus.get(i.getListingId()) == ListingStatus.SOLD ? ItemStatus.SOLD
+                        : listingStatus.get(i.getListingId()) != ListingStatus.AVAILABLE ? ItemStatus.SOLD
                         : ItemStatus.LISTED, i.getListingId())).toList();
         BigDecimal resale = rows.stream().map(ClearanceService::total).reduce(BigDecimal.ZERO, BigDecimal::add);
         Totals totals = new Totals(rows.size(), rows.stream().mapToInt(ClearanceItem::getQuantity).sum(), resale,

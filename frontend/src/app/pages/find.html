@@ -190,6 +190,13 @@
           <span>{{ (position() ? 'Standort aktualisieren' : 'Mein Standort') | t }}</span>
         </button>
       </fieldset>
+      <fieldset class="zw-fieldset find__f">
+        <legend class="zw-label">{{ 'Verkaufsart' | t }}</legend>
+        <label class="zw-check">
+          <input type="checkbox" name="auctionsOnly" [(ngModel)]="auctionsOnly" />
+          {{ 'Auktion' | t }}
+        </label>
+      </fieldset>
       <button appButton type="submit" [disabled]="matching()">
         {{ (matching() ? 'Suche läuft…' : 'Treffer aktualisieren') | t }}
       </button>
@@ -199,7 +206,7 @@
     </form>
 
     <div class="find__results" [class.find__busy]="matching()" [attr.aria-busy]="matching()">
-      @if (results(); as res) {
+      @if (shown(); as res) {
         @let found = res.matches ?? [];
         <div class="find__bar">
           <span>{{ '{count} Inserate' | t: { count: found.length } }}</span>
@@ -222,7 +229,7 @@
           <div class="zw-grid" [attr.aria-label]="'Treffer' | t">
             @for (m of found; track m.listing?.id) {
               <div class="find__item">
-                <!-- TODO: sale mode, current bid ("Gebot, nicht Endpreis") and total cost incl. shipping are not in ListingSummary yet; all cards show as Festpreis. -->
+                <!-- TODO: total cost incl. shipping; listings have no shipping cost yet. -->
                 <app-summary-card [listing]="m.listing ?? {}" />
                 <p class="zw-small" [class.find__why--ok]="m.fit === 'MATCH'">{{ scoreLine(m) }}</p>
                 @for (d of details(m); track d) {
@@ -244,4 +251,17 @@
       }
     </div>
   </div>
+} @else if (auctions(); as list) {
+  <section class="find__grp" aria-labelledby="find-auctions">
+    <h2 id="find-auctions">{{ 'Alle Auktionen' | t }}</h2>
+    @if (list.length) {
+      <div class="zw-grid">
+        @for (auction of list; track auction.id) {
+          <app-summary-card [listing]="auction" />
+        }
+      </div>
+    } @else {
+      <p class="zw-muted">{{ 'Gerade läuft keine Auktion.' | t }}</p>
+    }
+  </section>
 }

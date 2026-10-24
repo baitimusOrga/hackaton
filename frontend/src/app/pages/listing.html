@@ -11,26 +11,41 @@
 
     <section [attr.aria-label]="'Kaufen' | t" class="stack">
       <div class="group">
-        <!-- TODO: backend has no sale mode or auction data; branch here to the auction variant (DetailAuction: timer, current bid, bid field, blue "Jetzt bieten") once ListingDetail has it. -->
         <!-- TODO: backend has no "Grüne Wahl" flag; add <app-badge variant="green">Grüne Wahl</app-badge> once it does. -->
         <div class="badges">
-          <app-badge>{{ 'Festpreis' | t }}</app-badge>
+          @if (item.saleMode === 'AUCTION') {
+            <app-badge variant="inverse">{{ 'Auktion' | t }}</app-badge>
+            @if (auction()?.endsAt ?? item.endsAt; as endsAt) {
+              <app-auction-timer [endsAt]="+toDate(endsAt)" />
+            }
+          } @else {
+            <app-badge>{{ 'Festpreis' | t }}</app-badge>
+          }
         </div>
         <h1>{{ item.title }}</h1>
         <!-- TODO: backend has no included accessories or distance to the buyer; extend the meta line once it does. -->
         <p class="meta">{{ meta(item) }}</p>
       </div>
 
-      <div class="group tight">
-        <span class="zw-price-lg">{{ item.priceChf ?? 0 | chf }}</span>
-        <!-- TODO: backend has no pickup/shipping cost or new price; show "Abholung gratis · Versand CHF 35.– · neu CHF 1’890.–" once it does. -->
-      </div>
+      @if (item.saleMode === 'AUCTION') {
+        @if (auction(); as a) {
+          <ng-container *ngTemplateOutlet="auctionTpl; context: { $implicit: a, item }" />
+        }
+      } @else {
+        <div class="group tight">
+          <span class="zw-price-lg">{{ item.priceChf ?? 0 | chf }}</span>
+          <!-- TODO: backend has no pickup/shipping cost or new price; show "Abholung gratis · Versand CHF 35.– · neu CHF 1’890.–" once it does. -->
+        </div>
+
+        <div class="group tight">
+          <!-- TODO: backend has no purchase endpoint; wire Kaufen to it (then the Bought flow). -->
+          <button appButton variant="primary" [block]="true" type="button" disabled>
+            {{ 'Kaufen' | t }}
+          </button>
+        </div>
+      }
 
       <div class="group tight">
-        <!-- TODO: backend has no purchase endpoint; wire Kaufen to it (then the Bought flow). -->
-        <button appButton variant="primary" [block]="true" type="button" disabled>
-          {{ 'Kaufen' | t }}
-        </button>
         <div class="links">
           <!-- TODO: backend has no public Q&A or watchlist; enable these once it does. -->
           <button type="button" class="zw-link" disabled>{{ 'Frage stellen' | t }}</button>
@@ -116,3 +131,140 @@
     </section>
   }
 }
+
+<ng-template #auctionTpl let-a let-item="item">
+  <div class="group tight">
+    <span class="zw-price-lg bid">{{ a.currentBidChf ?? item.priceChf ?? 0 | chf }}</span>
+    <span class="bid">{{
+      a.bidCount ? ('{count} Gebote' | t: { count: a.bidCount }) : ('Startpreis' | t)
+    }}</span>
+  </div>
+
+  @if (a.ended) {
+    <p class="group">
+      {{
+        (a.currentBidChf ?? null) !== null
+          ? ('Verkauft für {price}' | t: { price: chf(a.currentBidChf) })
+          : ('Ohne Gebot beendet' | t)
+      }}
+    </p>
+  } @else {
+    @if ((a.myMaxChf ?? null) !== null && !a.leading) {
+      <p class="danger">
+        {{ 'Du wurdest überboten. Dein Maximum war {max}.' | t: { max: chf(a.myMaxChf) } }}
+      </p>
+    } @else if (a.leading) {
+      <p class="zw-muted">
+        {{
+          'Du führst. Dein Maximum ist {max}; wir bieten automatisch für dich, bis es erreicht ist.'
+            | t: { max: chf(a.myMaxChf) }
+        }}
+      </p>
+    }
+    @if (a.ownListing) {
+      <p class="zw-muted">{{ 'Das ist dein Inserat. Du kannst nicht mitbieten.' | t }}</p>
+    } @else {
+      <form class="group tight" novalidate (submit)="placeBid($event, item.id, a)">
+        <label class="zw-label" for="bid-max">{{ 'Dein Maximum (CHF)' | t }}</label>
+        <input
+          id="bid-max"
+          class="zw-input zw-input--price"
+          name="maxChf"
+          type="number"
+          inputmode="decimal"
+          step="0.01"
+          [min]="a.minimumNextBidChf"
+          [value]="maxChf() ?? ''"
+          (input)="setMax($any($event.target).valueAsNumber)"
+          [attr.aria-invalid]="note(a)?.kind === 'error' ? 'true' : null"
+          aria-describedby="bid-help bid-note"
+        />
+        <div class="picks" role="group" [attr.aria-label]="'Maximum wählen' | t">
+          @for (amount of suggestions(a); track amount) {
+            <button
+              type="button"
+              class="zw-chip"
+              [attr.aria-pressed]="maxChf() === amount"
+              (click)="setMax(amount)"
+            >
+              {{ amount | chf }}
+            </button>
+          }
+        </div>
+        <p id="bid-help" class="zw-help">
+          {{
+            'Mindestens {min} · Schritte von {inc}'
+              | t: { min: chf(a.minimumNextBidChf), inc: chf(a.incrementChf) }
+          }}
+        </p>
+        <p
+          id="bid-note"
+          class="zw-help"
+          [class.zw-help--error]="note(a)?.kind !== 'ok'"
+          [attr.role]="note(a)?.kind === 'error' ? 'alert' : 'status'"
+        >
+          {{ note(a)?.text }}
+        </p>
+        <button appButton variant="bid" [block]="true" type="submit" [disabled]="bidding()">
+          {{ bidding() ? ('Wird gesendet…' | t) : bidLabel(a) }}
+        </button>
+      </form>
+    }
+    <p class="zw-help">
+      {{
+        'Endet {date} · Ein Gebot in den letzten 2 Minuten verlängert um 2 Minuten. Bei gleichem Maximum gewinnt das frühere.'
+          | t: { date: (a.endsAt | date: 'dd.MM.yyyy HH:mm') ?? '' }
+      }}
+    </p>
+  }
+
+  @if (a.bids.length) {
+    <div class="group tight">
+      <h2>{{ 'Letzte Gebote' | t }}</h2>
+      <ng-container *ngTemplateOutlet="bidRows; context: { $implicit: a.bids.slice(0, 3), a }" />
+      @if (a.bids.length > 3) {
+        <button type="button" class="zw-link" (click)="bidsDialog.showModal()">
+          {{ 'Alle {count} Gebote' | t: { count: a.bids.length } }}
+        </button>
+        <dialog #bidsDialog aria-labelledby="bids-title">
+          <div class="dlg-top">
+            <h2 id="bids-title">{{ 'Alle {count} Gebote' | t: { count: a.bids.length } }}</h2>
+            <button
+              type="button"
+              class="zw-link"
+              [attr.aria-label]="'Schliessen' | t"
+              (click)="bidsDialog.close()"
+            >
+              <app-icon name="x" />
+            </button>
+          </div>
+          <ng-container *ngTemplateOutlet="bidRows; context: { $implicit: a.bids, a }" />
+        </dialog>
+      }
+    </div>
+  }
+</ng-template>
+
+<ng-template #bidRows let-bids let-a="a">
+  <ol class="bids">
+    @for (b of bids; track $index; let first = $first) {
+      <li
+        [class.mine]="b.mine"
+        [class.lead]="first"
+        [class.outbid]="b.mine && !first && !a.leading"
+      >
+        <span>{{ b.amountChf | chf }}</span>
+        <span
+          >{{ b.mine ? ('Du' | t) : b.bidder }}
+          @if (b.automatic) {
+            · {{ 'automatisch' | t }}
+          }
+          @if (b.mine && b.myMaxChf) {
+            · {{ 'Maximum {max}' | t: { max: chf(b.myMaxChf) } }}
+          }
+        </span>
+        <time [attr.datetime]="b.at">{{ b.at | date: 'dd.MM.yyyy HH:mm' }}</time>
+      </li>
+    }
+  </ol>
+</ng-template>
