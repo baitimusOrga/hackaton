@@ -23,6 +23,7 @@ import { ErrorBanner, HANDLES_ERRORS, messageOf } from '../errors';
 import { I18n, TranslatePipe } from '../i18n/i18n';
 import { AuctionTimer } from '../ui/auction-timer';
 import { Badge } from '../ui/badge';
+import { ListingMap } from '../components/listing-map';
 import { Button } from '../ui/button';
 import { Icon } from '../ui/icon';
 import { chf, ChfPipe } from '../ui/chf';
@@ -42,6 +43,7 @@ import { SummaryCard } from '../ui/summary-card';
     Button,
     ChfPipe,
     Icon,
+    ListingMap,
     SectionHeading,
     SummaryCard,
     TranslatePipe,

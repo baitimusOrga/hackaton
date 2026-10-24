@@ -10,9 +10,6 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import java.util.List;
-
-import one.absent.hackaton.ai.AiClient;
 import one.absent.hackaton.listing.ListingRepository;
 import one.absent.hackaton.photo.PhotoStorage;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +38,6 @@ class PhotoS3StorageTest {
     @Autowired PhotoRepository photos;
     @Autowired JsonMapper json;
     @Autowired ListingRepository listings;
-    @MockitoBean AiClient ai;
     @MockitoBean PhotoStorage storage;
     MockMvc mvc;
 
@@ -49,16 +45,13 @@ class PhotoS3StorageTest {
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
 
-    @Test void draftPhotoIsStoredInS3AndServedFromThere() throws Exception {
-        when(ai.ask(anyString(), anyString(), anyList(), anyString(), eq(DraftController.AiDraft.class)))
-                .thenReturn(new DraftController.AiDraft("Monitors", "Dell monitor", "A monitor.", null, List.of(),
-                        List.of(), List.of()));
-        String body = mvc.perform(multipart("/api/listing-drafts")
+    @Test void uploadedPhotoIsStoredInS3AndServedFromThere() throws Exception {
+        String body = mvc.perform(multipart("/api/photos")
                         .file(new MockMultipartFile("photos", "item.jpg", "image/jpeg", JPEG))
                         .with(jwt().jwt(j -> j.subject("seller"))))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        long id = json.readTree(body).path("photoIds").get(0).asLong();
+        long id = json.readTree(body).get(0).asLong();
 
         Photo photo = photos.findById(id).orElseThrow();
         assertThat(photo.getData()).isNull();
@@ -74,16 +67,13 @@ class PhotoS3StorageTest {
     }
 
     @Test void s3FailureKeepsThePhotoInTheDatabase() throws Exception {
-        when(ai.ask(anyString(), anyString(), anyList(), anyString(), eq(DraftController.AiDraft.class)))
-                .thenReturn(new DraftController.AiDraft("Monitors", "Dell monitor", "A monitor.", null, List.of(),
-                        List.of(), List.of()));
         doThrow(SdkClientException.create("bucket unreachable")).when(storage).put(anyString(), any(), anyString());
-        String body = mvc.perform(multipart("/api/listing-drafts")
+        String body = mvc.perform(multipart("/api/photos")
                         .file(new MockMultipartFile("photos", "item.jpg", "image/jpeg", JPEG))
                         .with(jwt().jwt(j -> j.subject("seller"))))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        Photo photo = photos.findById(json.readTree(body).path("photoIds").get(0).asLong()).orElseThrow();
+        Photo photo = photos.findById(json.readTree(body).get(0).asLong()).orElseThrow();
         assertThat(photo.getStorageKey()).isNull();
         assertThat(photo.getData()).isNotEmpty();
     }

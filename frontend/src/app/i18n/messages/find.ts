@@ -225,4 +225,43 @@ export const FIND_MESSAGES: Messages = {
     it: 'Simili, nelle vicinanze',
     en: 'Similar, nearby',
   },
+  // ranked list, refine and near me
+  'Deine Anpassungen': { fr: 'Tes ajustements', it: 'Le tue modifiche', en: 'Your adjustments' },
+  'Suche anpassen': { fr: 'Ajuster la recherche', it: 'Modifica la ricerca', en: 'Adjust search' },
+  'Suche anpassen, z.B. „doch etwas neuere Modelle“': {
+    fr: 'Ajuster la recherche, p. ex. « plutôt des modèles plus récents »',
+    it: 'Modifica la ricerca, p. es. «meglio modelli più recenti»',
+    en: 'Adjust the search, e.g. “rather newer models”',
+  },
+  Anpassen: { fr: 'Ajuster', it: 'Modifica', en: 'Adjust' },
+  'Mein Standort': { fr: 'Ma position', it: 'La mia posizione', en: 'My location' },
+  'Standort aktualisieren': {
+    fr: 'Actualiser la position',
+    it: 'Aggiorna la posizione',
+    en: 'Update location',
+  },
+  Treffer: { fr: 'Résultats', it: 'Risultati', en: 'Results' },
+  'Noch nichts Passendes. Entferne eine Anforderung oder vergrössere den Umkreis.': {
+    fr: 'Rien de correspondant pour l’instant. Retire une exigence ou élargis le rayon.',
+    it: 'Ancora niente di adatto. Rimuovi un requisito o allarga il raggio.',
+    en: 'Nothing matching yet. Remove a requirement or widen the radius.',
+  },
+  'Passe deine Suche an…': {
+    fr: 'J’ajuste ta recherche…',
+    it: 'Sto modificando la tua ricerca…',
+    en: 'Adjusting your search…',
+  },
+  'Standort nicht verfügbar. Gib eine PLZ ein oder erlaube den Standortzugriff.': {
+    fr: 'Position indisponible. Saisis un NPA ou autorise l’accès à la position.',
+    it: 'Posizione non disponibile. Inserisci un NPA o consenti l’accesso alla posizione.',
+    en: 'Location not available. Enter a postcode or allow location access.',
+  },
+  '{km} km um deinen Standort': {
+    fr: '{km} km autour de ta position',
+    it: '{km} km intorno alla tua posizione',
+    en: '{km} km around your location',
+  },
+  Passt: { fr: 'Correspond', it: 'Adatto', en: 'Match' },
+  'Angaben fehlen': { fr: 'Informations manquantes', it: 'Dati mancanti', en: 'Details missing' },
+  Alternative: { fr: 'Alternative', it: 'Alternativa', en: 'Alternative' },
 };

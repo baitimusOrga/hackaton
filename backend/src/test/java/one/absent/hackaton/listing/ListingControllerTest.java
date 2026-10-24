@@ -1,6 +1,10 @@
 package one.absent.hackaton.listing;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.when;
@@ -46,37 +50,42 @@ class ListingControllerTest {
     void qMatchesTitleOrDescriptionCaseInsensitiveNewestFirst() throws Exception {
         mvc.perform(get("/api/listings").param("q", "IMAC"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].id").value(contains(1201, 1, 1002, 1001)))
-                .andExpect(jsonPath("$[1].priceChf").value(450.00))
-                .andExpect(jsonPath("$[1].condition").value("GOOD"))
-                .andExpect(jsonPath("$[0].saleMode").value("AUCTION"))
+                // newest first: the V4 demo, then the V15 iMacs, the V6 ones last
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[-2:].id").value(contains(1002, 1001)))
+                .andExpect(jsonPath("$[0].priceChf").value(450.00))
+                .andExpect(jsonPath("$[0].condition").value("GOOD"))
                 .andExpect(jsonPath("$[0].description").doesNotExist());
     }
 
     @Test
     void categoryIsExactButCaseInsensitive() throws Exception {
         mvc.perform(get("/api/listings").param("category", "monitors"))
-                .andExpect(jsonPath("$[*].id").value(contains(2, 1006, 1005)));
+                .andExpect(jsonPath("$[*].category").value(everyItem(org.hamcrest.Matchers.is("Monitors"))))
+                .andExpect(jsonPath("$[*].id").value(hasItems(2, 1006, 1005)));
     }
 
     @Test
     void saleModeFiltersAndAuctionsEndSoonestFirst() throws Exception {
         mvc.perform(get("/api/listings").param("saleMode", "AUCTION"))
-                .andExpect(jsonPath("$[*].id").value(contains(1201, 1202, 1203, 1204)));
+                .andExpect(jsonPath("$[*].id").value(contains(1301, 1302, 1303, 1304)));
         mvc.perform(get("/api/listings").param("saleMode", "FIXED"))
-                .andExpect(jsonPath("$[*].id").value(not(hasItem(1201))));
+                .andExpect(jsonPath("$[*].id").value(not(hasItem(1301))));
     }
 
     @Test
     void maxPriceIsInclusive() throws Exception {
         mvc.perform(get("/api/listings").param("maxPrice", "70"))
-                .andExpect(jsonPath("$[*].id").value(contains(1204, 1017, 1006)));
+                .andExpect(jsonPath("$[*].priceChf").value(everyItem(lessThanOrEqualTo(70.0))))
+                // 1006 costs exactly 70
+                .andExpect(jsonPath("$[*].id").value(hasItems(1017, 1006)));
     }
 
     @Test
     void postcodeIsAPrefix() throws Exception {
         mvc.perform(get("/api/listings").param("postcode", "301"))
-                .andExpect(jsonPath("$[*].id").value(contains(1203, 2, 1012, 1008)));
+                .andExpect(jsonPath("$[*].postcode").value(everyItem(startsWith("301"))))
+                .andExpect(jsonPath("$[*].id").value(hasItems(2, 1012, 1008)));
     }
 
     @Test
@@ -86,7 +95,7 @@ class ListingControllerTest {
         listings.save(phone);
         try {
             mvc.perform(get("/api/listings").param("q", "galaxy"))
-                    .andExpect(jsonPath("$.length()").value(0));
+                    .andExpect(jsonPath("$[*].id").value(not(hasItem(1019))));
         } finally {
             phone.setStatus(ListingStatus.AVAILABLE);
             listings.save(phone);
@@ -127,5 +136,14 @@ class ListingControllerTest {
         mvc.perform(get("/api/listings").param("postcode", "9999").param("radiusKm", "10"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Postcode 9999 not found."));
+    }
+
+    @Test
+    void radiusAroundThePositionNeedsNoPostcode() throws Exception {
+        mvc.perform(get("/api/listings").param("lat", "47.378").param("lon", "8.5234").param("radiusKm", "30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].locality").value(hasItem("Zug")))
+                .andExpect(jsonPath("$[*].locality").value(not(hasItem("Lausanne"))))
+                .andExpect(jsonPath("$[0].locality").value("Zürich"));
     }
 }

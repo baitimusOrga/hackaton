@@ -4,7 +4,10 @@
 import { ListingSummary } from '../models/listing-summary';
 export interface SearchMatch {
   differences?: Array<string>;
+  fit?: 'MATCH' | 'NEEDS_DETAILS' | 'ALTERNATIVE';
   listing?: ListingSummary;
+  matched?: Array<string>;
   missingDetails?: Array<string>;
   reason?: string;
+  score?: number;
 }

@@ -8,8 +8,7 @@ import one.absent.hackaton.listing.Condition;
 
 public record ListingDraft(List<Long> photoIds, String category, String title, String description,
                            @Schema(nullable = true) Condition condition, List<DraftFact> facts,
-                           List<String> questions, PriceEstimate price,
-                           List<PrivacyWarning> privacyWarnings) {
+                           PriceEstimate price, List<PrivacyWarning> privacyWarnings) {
 
     public record DraftFact(String name, String value, FactSource source,
                             @Schema(nullable = true) String sourceUrl) {}

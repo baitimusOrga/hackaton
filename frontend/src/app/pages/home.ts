@@ -1,6 +1,7 @@
 import {
   afterNextRender,
   ChangeDetectionStrategy,
+  computed,
   Component,
   DestroyRef,
   ElementRef,
@@ -15,6 +16,7 @@ import { catchError, map, of } from 'rxjs';
 import { ListingsService } from '../api/services';
 import { TranslatePipe } from '../i18n/i18n';
 import { HeroSearch } from '../shell/hero-search';
+import { ListingMap } from '../components/listing-map';
 import { Button } from '../ui/button';
 import { Chip } from '../ui/chip';
 import { Icon } from '../ui/icon';
@@ -45,6 +47,7 @@ const CATEGORIES: { label: string; icon: IconName }[] = [
     Button,
     Chip,
     Icon,
+    ListingMap,
     SectionHeading,
     SummaryCard,
     TranslatePipe,
@@ -61,19 +64,15 @@ export class Home {
   protected readonly placeholders = Array.from({ length: 8 }, (_, i) => i);
   protected readonly query = signal('');
   private readonly router = inject(Router);
-  private readonly listings = inject(ListingsService);
+  private readonly api = inject(ListingsService);
   protected readonly auctions = toSignal(
-    this.listings.list({ saleMode: 'AUCTION' }).pipe(
+    this.api.list({ saleMode: 'AUCTION' }).pipe(
       map((items) => items.slice(0, 4)),
       catchError(() => of([])),
     ),
   );
-  protected readonly nearby = toSignal(
-    this.listings.list({}).pipe(
-      map((items) => items.slice(0, 8)),
-      catchError(() => of([])),
-    ),
-  );
+  protected readonly listings = toSignal(this.api.list({}).pipe(catchError(() => of([]))));
+  protected readonly nearby = computed(() => this.listings()?.slice(0, 8));
 
   protected quickFilter(filter: string): void {
     // shortcut: only "Nur Auktionen" has a backend filter; the other chips do nothing yet

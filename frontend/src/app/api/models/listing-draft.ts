@@ -12,6 +12,5 @@ export interface ListingDraft {
   photoIds?: Array<number>;
   price?: PriceEstimate;
   privacyWarnings?: Array<PrivacyWarning>;
-  questions?: Array<string>;
   title?: string;
 }

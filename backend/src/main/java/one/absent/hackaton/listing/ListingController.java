@@ -38,23 +38,26 @@ public class ListingController {
                                      @RequestParam(required = false) BigDecimal maxPrice,
                                      @RequestParam(required = false) String postcode,
                                      @RequestParam(required = false) Double radiusKm,
+                                     @RequestParam(required = false) Double lat,
+                                     @RequestParam(required = false) Double lon,
                                      @RequestParam(required = false) SaleMode saleMode) {
-        List<ListingSummary> found = find(q, category, maxPrice, postcode, radiusKm, saleMode);
+        List<ListingSummary> found = find(q, category, maxPrice, postcode, radiusKm, lat, lon, saleMode);
         return saleMode == SaleMode.AUCTION
                 ? found.stream().sorted(Comparator.comparing(ListingSummary::endsAt)).toList() : found;
     }
 
     private List<ListingSummary> find(String q, String category, BigDecimal maxPrice, String postcode,
-                                      Double radiusKm, SaleMode saleMode) {
+                                      Double radiusKm, Double lat, Double lon, SaleMode saleMode) {
         String code = postcode == null || postcode.isBlank() ? null : postcode.strip();
-        if (radiusKm == null || code == null) {
+        boolean here = lat != null && lon != null; // the buyer's position wins over the postcode
+        if (radiusKm == null || (code == null && !here)) {
             return listings.search(contains(q), lower(category), maxPrice, code == null ? null : code + "%",
                     saleMode, null, null, null, null).stream().map(listing -> listing.detail().summary()).toList();
         }
         if (radiusKm <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The radius must be more than 0 km.");
         }
-        Coordinates origin = geo.locate(code).orElseThrow(
+        Coordinates origin = here ? new Coordinates(lat, lon) : geo.locate(code).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Postcode " + code + " not found."));
         double latSpan = Coordinates.latitudeSpan(radiusKm);
         double lonSpan = origin.longitudeSpan(radiusKm);

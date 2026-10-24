@@ -114,4 +114,24 @@ describe('ListingPage', () => {
       vi.useRealTimers();
     }
   });
+
+  for (const [coordinates, shown] of [
+    [{ latitude: 47.378, longitude: 8.523 }, true],
+    [{ latitude: null, longitude: null }, false],
+  ] as const) {
+    it(shown ? 'shows the area map' : 'hides the map without coordinates', async () => {
+      const get = vi
+        .fn()
+        .mockReturnValue(of({ title: 'Desk', priceChf: 80, postcode: '8004', ...coordinates }));
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: '4' })) } },
+          { provide: ListingsService, useValue: { get, list: () => of([]) } },
+        ],
+      });
+      const fixture = TestBed.createComponent(ListingPage);
+      await fixture.whenStable();
+      expect(fixture.nativeElement.querySelector('[role="region"]') !== null).toBe(shown);
+    });
+  }
 });

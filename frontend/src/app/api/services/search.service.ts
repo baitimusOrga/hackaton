@@ -14,6 +14,8 @@ import { create } from '../fn/search/create';
 import { Create$Params } from '../fn/search/create';
 import { matches } from '../fn/search/matches';
 import { Matches$Params } from '../fn/search/matches';
+import { refine } from '../fn/search/refine';
+import { Refine$Params } from '../fn/search/refine';
 import { SearchRequirements } from '../models/search-requirements';
 import { SearchResults } from '../models/search-results';
 
@@ -45,6 +47,33 @@ export class SearchService extends BaseService {
    */
   create(params: Create$Params, context?: HttpContext): Observable<SearchRequirements> {
     const resp = this.create$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<SearchRequirements>): SearchRequirements => r.body)
+    );
+  }
+
+  /** Path part for operation `refine()` */
+  static readonly RefinePath = '/api/searches/refine';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `refine()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  refine$Response(params: Refine$Params, context?: HttpContext): Observable<StrictHttpResponse<SearchRequirements>> {
+    const obs = refine(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `refine$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  refine(params: Refine$Params, context?: HttpContext): Observable<SearchRequirements> {
+    const resp = this.refine$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<SearchRequirements>): SearchRequirements => r.body)
     );

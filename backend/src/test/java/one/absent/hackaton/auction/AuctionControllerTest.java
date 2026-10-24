@@ -147,7 +147,7 @@ class AuctionControllerTest {
     }
 
     @Test void biddingRequiresAuthentication() throws Exception {
-        mvc.perform(post("/api/listings/1201/auction/bids").contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/api/listings/1301/auction/bids").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"maxChf\":500}")).andExpect(status().isUnauthorized());
     }
 }

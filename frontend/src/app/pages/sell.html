@@ -1,4 +1,10 @@
-<form (submit)="publish($event)">
+<form
+  (submit)="publish($event)"
+  (dragover)="onDragOver($event)"
+  (dragleave)="dragging.set(false)"
+  (drop)="onDrop($event)"
+  [class.dragging]="dragging()"
+>
   @if (view() === 'steps') {
     <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="sell-q">
       <div class="top">
@@ -18,71 +24,120 @@
           <app-icon name="x" />
         </button>
       </div>
+      <ng-container *ngTemplateOutlet="restoredTpl" />
 
       @switch (step()) {
         @case (1) {
-          @if (askForPhotos()) {
+          @if (analyzing() || streamFailed()) {
             <div class="stack">
-              <h1 id="sell-q">{{ 'Das konnten wir nicht erkennen.' | t }}</h1>
-              <p class="zw-muted">
-                {{
-                  'Kein Etikett und kein Modellname. Ein, zwei Fotos mehr, und wir füllen den Rest aus.'
-                    | t
-                }}
+              <h1 id="sell-q">
+                {{ (streamFailed() ? 'Das hat nicht geklappt.' : 'Wir schauen uns das an…') | t }}
+              </h1>
+              <p class="zw-muted" aria-live="polite">
+                @if (streamFailed()) {
+                  {{ 'Deine Fotos sind gespeichert. Versuch es nochmals.' | t }}
+                } @else {
+                  {{ '{n} erkannt' | t: { n: detections().length } }}
+                }
               </p>
             </div>
-            <ng-container *ngTemplateOutlet="photosTpl" />
-            <ul class="zw-fieldset" [attr.aria-label]="'Diese Fotos helfen' | t">
-              <li class="zw-row">
-                <span
-                  ><span class="zw-option__title">{{
-                    'Etikett oder Typenschild, scharf' | t
-                  }}</span>
-                  <span class="zw-muted zw-small">{{
-                    'Meist unten, hinten oder im Batteriefach. Modell- und Seriennummer reichen uns.'
-                      | t
-                  }}</span></span
-                >
-              </li>
-              <li class="zw-row">
-                <span
-                  ><span class="zw-option__title">{{ 'Der ganze Artikel von vorne' | t }}</span>
-                  <span class="zw-muted zw-small">{{
-                    'Nicht angeschnitten, bei Tageslicht, ohne andere Dinge im Bild.' | t
-                  }}</span></span
-                >
-              </li>
-              <li class="zw-row">
-                <span
-                  ><span class="zw-option__title">{{
-                    'Verpackung, Rechnung oder Anleitung' | t
-                  }}</span>
-                  <span class="zw-muted zw-small">{{
-                    'Falls vorhanden. Der Produktname darauf genügt.' | t
-                  }}</span></span
-                >
-              </li>
-            </ul>
-            <!-- TODO: "Kein Etikett? Dann schreib uns, was es ist": the backend cannot redraft from a typed brand and model yet. -->
-            <div class="foot">
-              <button type="button" class="zw-link" (click)="back()">{{ 'Zurück' | t }}</button>
-              <button appButton type="button" (click)="step.set(2)">
-                {{ 'Ohne Erkennung weiter' | t }}
-              </button>
-              @if (photos().length < maxPhotos) {
-                <label class="zw-btn zw-btn--primary file">
-                  <app-icon name="camera" />
-                  <span>{{ (busy() ? 'Fotos werden ausgewertet…' : 'Fotos hinzufügen') | t }}</span>
+            <ng-container *ngTemplateOutlet="scanTpl" />
+            @if (streamFailed()) {
+              <div class="foot">
+                <span></span>
+                <button appButton variant="primary" type="button" (click)="runStream()">
+                  {{ 'Nochmals auswerten' | t }}
+                </button>
+              </div>
+            }
+          } @else if (currentCard(); as card) {
+            <ng-container *ngTemplateOutlet="scanTpl" />
+            <div class="stack" data-testid="gap" aria-live="polite">
+              <span class="zw-caption">{{
+                'Frage {n} von {total}'
+                  | t: { n: answered() + 1, total: answered() + cards().length }
+              }}</span>
+              <h1 id="sell-q" class="q--sm">{{ card.prompt }}</h1>
+              @if (card.kind === 'CONFIRM' && !typing()) {
+                <div class="chips">
+                  <button
+                    appButton
+                    variant="primary"
+                    type="button"
+                    (click)="answer(card, card.value ?? '')"
+                  >
+                    {{ 'Stimmt' | t }}
+                  </button>
+                  <button appButton type="button" (click)="typing.set(true)">
+                    {{ 'Ändern' | t }}
+                  </button>
+                </div>
+              } @else if (card.kind === 'PHOTO' && !typing() && photos().length < maxPhotos) {
+                <div class="chips">
+                  <label class="zw-btn zw-btn--primary file">
+                    <app-icon name="camera" />
+                    <span>{{ (busy() ? 'Wird hochgeladen…' : 'Foto aufnehmen') | t }}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      class="zw-sr-only"
+                      [disabled]="busy()"
+                      (change)="addPhotos($any($event.target), true)"
+                    />
+                  </label>
+                  <button type="button" class="zw-link" (click)="typing.set(true)">
+                    {{ 'Lieber eintippen' | t }}
+                  </button>
+                </div>
+              } @else if (card.fact === conditionGap) {
+                <div class="chips">
+                  @for (condition of conditions; track condition.value) {
+                    <button appButton type="button" (click)="answer(card, condition.value)">
+                      {{ condition.label | t }}
+                    </button>
+                  }
+                </div>
+              } @else {
+                @if (card.options.length) {
+                  <div class="chips">
+                    @for (option of card.options; track option) {
+                      <button appButton size="sm" type="button" (click)="answer(card, option)">
+                        {{ option }}
+                      </button>
+                    }
+                  </div>
+                }
+                <div class="zw-field">
+                  <label class="zw-label" for="gap-answer">{{ card.fact }}</label>
                   <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    class="zw-sr-only"
-                    [disabled]="busy()"
-                    (change)="addPhotos($any($event.target), true)"
+                    id="gap-answer"
+                    class="zw-input"
+                    maxlength="500"
+                    [value]="draftAnswer()"
+                    (input)="draftAnswer.set($any($event.target).value)"
                   />
-                </label>
+                </div>
+                <div>
+                  <button
+                    appButton
+                    variant="primary"
+                    type="button"
+                    [disabled]="!draftAnswer().trim()"
+                    (click)="answer(card, draftAnswer())"
+                  >
+                    {{ 'Speichern' | t }}
+                  </button>
+                </div>
               }
+            </div>
+            <div class="foot">
+              <button type="button" class="zw-link" (click)="skip(card)">
+                {{ 'Überspringen' | t }}
+              </button>
+              <button appButton type="button" (click)="finishGaps()">
+                {{ 'Zur Übersicht' | t }}
+              </button>
             </div>
           } @else {
             <div class="stack">
@@ -100,6 +155,9 @@
                 <span class="zw-muted zw-small">{{
                   'Artikel, Typenschild, Mängel. Bis zu {max} Fotos.' | t: { max: maxPhotos }
                 }}</span>
+                <span class="zw-muted zw-small">{{
+                  'Du kannst Fotos auch hierher ziehen oder einfügen.' | t
+                }}</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -109,7 +167,7 @@
                 />
               </label>
             }
-            <!-- TODO: "Ohne Foto weiter": a listing needs photo ids from createDraft; the backend has no draft without photos. -->
+            <!-- TODO: "Ohne Foto weiter": a listing needs uploaded photo ids; the backend has no draft without photos. -->
             <div class="foot">
               <span></span>
               <button
@@ -144,15 +202,7 @@
               </button>
             </div>
           </div>
-          @if (draft()?.questions?.[0]; as question) {
-            <div class="stack">
-              <p class="strong">{{ question }}</p>
-              <!-- TODO: the design answers the open question with chips (variants + "Weiss ich nicht"); the draft only returns the question text, no options. -->
-              <p class="zw-muted zw-small">
-                {{ 'Wenn du es nicht weisst, schreiben wir «nicht bestätigt».' | t }}
-              </p>
-            </div>
-          }
+          <ng-container *ngTemplateOutlet="openTpl" />
           <ng-container *ngTemplateOutlet="factsTpl" />
           <ng-container *ngTemplateOutlet="footTpl" />
         }
@@ -221,9 +271,13 @@
       </div>
     </header>
     <div class="page" role="region" aria-labelledby="sell-full">
+      <ng-container *ngTemplateOutlet="restoredTpl" />
       <section class="sec" aria-labelledby="sec-photos">
         <h2 id="sec-photos">{{ 'Fotos' | t }}</h2>
         <ng-container *ngTemplateOutlet="photosTpl" />
+        @if (detections().length || privacyMarks().length) {
+          <ng-container *ngTemplateOutlet="scanTpl" />
+        }
         @if (labelFacts().length) {
           <p class="zw-muted zw-small">
             {{ 'Erkannt: {title}. Vom Etikett gelesen:' | t: { title: fields().title } }}
@@ -240,10 +294,10 @@
               appButton
               variant="primary"
               type="button"
-              [disabled]="!photos().length || busy()"
-              (click)="createDraft()"
+              [disabled]="!photos().length || busy() || analyzing()"
+              (click)="analyse()"
             >
-              {{ (busy() ? 'Fotos werden ausgewertet…' : 'Fotos auswerten') | t }}
+              {{ (busy() || analyzing() ? 'Fotos werden ausgewertet…' : 'Fotos auswerten') | t }}
             </button>
           </div>
         }
@@ -251,6 +305,12 @@
 
       <section class="sec" aria-labelledby="sec-item">
         <h2 id="sec-item">{{ 'Artikel' | t }}</h2>
+        <ng-container *ngTemplateOutlet="openTpl" />
+        @if (rewriting()) {
+          <p class="zw-muted zw-small" aria-live="polite">
+            {{ 'Titel und Beschreibung werden angepasst…' | t }}
+          </p>
+        }
         <div class="zw-field">
           <label class="zw-label" for="sell-title">{{ 'Titel' | t }}</label>
           <input
@@ -272,9 +332,9 @@
             required
             (change)="setField('category', $any($event.target).value)"
           >
-            @for (category of categories; track category) {
-              <option [value]="category" [selected]="category === fields().category">
-                {{ category }}
+            @for (category of categories(); track category.name) {
+              <option [value]="category.name" [selected]="category.name === fields().category">
+                {{ category.name }}
               </option>
             }
           </select>
@@ -360,7 +420,7 @@
           [src]="photo.url"
           [alt]="(excluded().has(i) ? 'Foto {n} (weggelassen)' : 'Foto {n}') | t: { n: i + 1 }"
         />
-        @if (!draft()) {
+        @if (photo.id === undefined) {
           <button
             appButton
             variant="ghost"
@@ -389,7 +449,7 @@
             [attr.aria-label]="
               (draft() ? 'Foto hinzufügen und Entwurf aktualisieren' : 'Foto hinzufügen') | t
             "
-            [disabled]="busy()"
+            [disabled]="busy() || analyzing()"
             (change)="addPhotos($any($event.target), !!draft())"
           />
         </label>
@@ -438,6 +498,7 @@
             maxlength="500"
             [value]="fact.value"
             (input)="editFact(i, $any($event.target).value)"
+            (change)="rewriteText()"
           />
           <span class="zw-muted zw-small" data-testid="marker">{{ markers[fact.source] | t }}</span>
           <div class="fact__acts">
@@ -550,7 +611,7 @@
         inputmode="numeric"
         autocomplete="postal-code"
         [value]="postcode()"
-        (input)="postcode.set($any($event.target).value)"
+        (input)="setPostcode($any($event.target).value)"
       />
     </div>
     <div class="zw-field">
@@ -567,6 +628,78 @@
       />
     </div>
   </div>
+  <div>
+    <button appButton size="sm" type="button" [disabled]="locating()" (click)="useMyLocation()">
+      <app-icon name="pin" />
+      <span>{{ (locating() ? 'Standort wird ermittelt…' : 'Mein Standort') | t }}</span>
+    </button>
+  </div>
+  @if (locationNote()) {
+    <p class="zw-small" aria-live="polite">{{ locationNote() | t }}</p>
+  }
   <p class="zw-muted zw-small">{{ 'Nur PLZ und Ort sind öffentlich.' | t }}</p>
   <!-- TODO: pickup / shipping checkboxes ("Versand, Käufer zahlt CHF 35.–", "Im Preis inbegriffen"): CreateListingRequest has no delivery options yet. -->
+</ng-template>
+
+<ng-template #scanTpl>
+  @if (photos()[shownPhoto()]; as photo) {
+    <figure class="scan" [attr.aria-label]="'Erkennung' | t">
+      <img [src]="photo.url" [alt]="'Foto {n}' | t: { n: shownPhoto() + 1 }" />
+      @for (mark of marksOn(shownPhoto() + 1); track $index) {
+        <div
+          class="mark"
+          [class.mark--privacy]="mark.privacy"
+          [style.left.%]="mark.box[0] * 100"
+          [style.top.%]="mark.box[1] * 100"
+          [style.width.%]="mark.box[2] * 100"
+          [style.height.%]="mark.box[3] * 100"
+          [attr.data-testid]="mark.privacy ? 'privacy' : 'detection'"
+        >
+          <span>{{ mark.label }}</span>
+        </div>
+      }
+    </figure>
+    @if (photos().length > 1) {
+      <div class="chips" [attr.aria-label]="'Foto wählen' | t">
+        @for (p of photos(); track p.url; let i = $index) {
+          <button
+            appButton
+            size="sm"
+            type="button"
+            [attr.aria-pressed]="shownPhoto() === i"
+            (click)="shownPhoto.set(i)"
+          >
+            {{ 'Foto {n}' | t: { n: i + 1 } }}
+          </button>
+        }
+      </div>
+    }
+  }
+</ng-template>
+
+<ng-template #openTpl>
+  @if (draft()) {
+    <div class="stack" [attr.aria-label]="'Offene Punkte' | t">
+      <p class="zw-muted zw-small">
+        {{ 'Inserat zu {percent} % vollständig' | t: { percent: percentComplete() } }}
+      </p>
+      @if (openNames()) {
+        <p class="zw-small">{{ 'Noch offen: {names}' | t: { names: openNames() } }}</p>
+        <div>
+          <button appButton size="sm" type="button" (click)="answerOpenPoints()">
+            {{ 'Offene Punkte beantworten' | t }}
+          </button>
+        </div>
+      }
+    </div>
+  }
+</ng-template>
+
+<ng-template #restoredTpl>
+  @if (restored()) {
+    <p class="zw-muted zw-small" aria-live="polite">
+      {{ 'Entwurf wiederhergestellt.' | t }}
+      <button type="button" class="zw-link" (click)="startOver()">{{ 'Neu beginnen' | t }}</button>
+    </p>
+  }
 </ng-template>

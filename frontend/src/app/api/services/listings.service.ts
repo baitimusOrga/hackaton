@@ -10,6 +10,9 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { categories } from '../fn/listings/categories';
+import { Categories$Params } from '../fn/listings/categories';
+import { CategoryInfo } from '../models/category-info';
 import { get } from '../fn/listings/get';
 import { Get$Params } from '../fn/listings/get';
 import { list } from '../fn/listings/list';
@@ -74,6 +77,33 @@ export class ListingsService extends BaseService {
     const resp = this.get$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<ListingDetail>): ListingDetail => r.body)
+    );
+  }
+
+  /** Path part for operation `categories()` */
+  static readonly CategoriesPath = '/api/categories';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `categories()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  categories$Response(params?: Categories$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<CategoryInfo>>> {
+    const obs = categories(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `categories$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  categories(params?: Categories$Params, context?: HttpContext): Observable<Array<CategoryInfo>> {
+    const resp = this.categories$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<CategoryInfo>>): Array<CategoryInfo> => r.body)
     );
   }
 
