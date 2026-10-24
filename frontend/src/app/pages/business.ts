@@ -3,12 +3,13 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { ClearanceService } from '../api/services';
+import { TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business',
-  imports: [DatePipe, RouterLink, Button],
+  imports: [DatePipe, RouterLink, Button, TranslatePipe],
   templateUrl: './business.html',
   styles: `
     .bz-head {

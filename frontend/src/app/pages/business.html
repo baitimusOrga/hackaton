@@ -1,34 +1,44 @@
 <!-- TODO: not designed yet, replace with the Firmen-Projekt design -->
 <header class="bz-head">
-  <span class="zw-caption">Für Firmen</span>
-  <h1>Räumungsprojekte</h1>
+  <span class="zw-caption">{{ 'Für Firmen' | t }}</span>
+  <h1>{{ 'Räumungsprojekte' | t }}</h1>
   <p class="zw-muted">
-    Ein Projekt pro Räumung: Inventar erfassen, drei Wege vergleichen, Inserate veröffentlichen.
+    {{
+      'Ein Projekt pro Räumung: Inventar erfassen, drei Wege vergleichen, Inserate veröffentlichen.'
+        | t
+    }}
   </p>
 </header>
 
 <section class="zw-section" aria-labelledby="h-projects">
-  <h2 id="h-projects">Deine Projekte</h2>
+  <h2 id="h-projects">{{ 'Deine Projekte' | t }}</h2>
   <ul class="zw-list bz-list">
     @for (project of projects(); track project.id) {
       <li class="zw-row">
         <a class="bz-name" [routerLink]="['/business', project.id]">{{ project.companyName }}</a>
         <span class="zw-muted">
-          {{ project.locality }} · Termin {{ project.deadline | date: 'dd.MM.yyyy' }} ·
-          {{ project.itemLines }} Positionen
+          {{ project.locality }} ·
+          {{
+            'Termin {date} · {count} Positionen'
+              | t
+                : {
+                    date: (project.deadline | date: 'dd.MM.yyyy') ?? '',
+                    count: project.itemLines ?? 0,
+                  }
+          }}
         </span>
       </li>
     } @empty {
-      <li class="zw-muted">Noch keine Projekte.</li>
+      <li class="zw-muted">{{ 'Noch keine Projekte.' | t }}</li>
     }
   </ul>
 </section>
 
 <section class="zw-section zw-section--last bz-new" aria-labelledby="h-new">
-  <h2 id="h-new">Neues Projekt</h2>
+  <h2 id="h-new">{{ 'Neues Projekt' | t }}</h2>
   <form class="bz-form" (submit)="create($event)">
     <div class="zw-field">
-      <label class="zw-label" for="bz-company">Firma</label>
+      <label class="zw-label" for="bz-company">{{ 'Firma' | t }}</label>
       <input
         id="bz-company"
         class="zw-input"
@@ -41,7 +51,7 @@
       />
     </div>
     <div class="zw-field">
-      <label class="zw-label" for="bz-postcode">PLZ</label>
+      <label class="zw-label" for="bz-postcode">{{ 'PLZ' | t }}</label>
       <input
         id="bz-postcode"
         class="zw-input"
@@ -55,7 +65,7 @@
       />
     </div>
     <div class="zw-field">
-      <label class="zw-label" for="bz-locality">Ort</label>
+      <label class="zw-label" for="bz-locality">{{ 'Ort' | t }}</label>
       <input
         id="bz-locality"
         class="zw-input"
@@ -68,7 +78,7 @@
       />
     </div>
     <div class="zw-field">
-      <label class="zw-label" for="bz-deadline">Räumungstermin</label>
+      <label class="zw-label" for="bz-deadline">{{ 'Räumungstermin' | t }}</label>
       <input
         id="bz-deadline"
         class="zw-input"
@@ -79,11 +89,11 @@
         [value]="deadline()"
         (input)="deadline.set($any($event.target).value)"
       />
-      <p class="zw-help">Bis dann muss alles weg sein.</p>
+      <p class="zw-help">{{ 'Bis dann muss alles weg sein.' | t }}</p>
     </div>
     <div>
       <button appButton variant="primary" type="submit" [disabled]="busy()">
-        {{ busy() ? 'Wird angelegt …' : 'Projekt starten' }}
+        {{ (busy() ? 'Wird angelegt …' : 'Projekt starten') | t }}
       </button>
     </div>
   </form>

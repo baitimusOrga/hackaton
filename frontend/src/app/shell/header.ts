@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Auth } from '../auth/auth';
 import { ErrorBanner } from '../errors';
+import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
 import { Icon } from '../ui/icon';
 import { HeroSearch } from './hero-search';
@@ -13,7 +14,7 @@ const LOCATION = { place: '8001 Zürich', radius: '25 km' };
 /** Sticky page header. The search docks into it whenever no hero search is on screen. */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, Button, Icon],
+  imports: [FormsModule, RouterLink, Button, Icon, TranslatePipe],
   selector: 'app-header',
   host: { class: 'zw-header', '[class.zw-header--docked]': 'docked()' },
   templateUrl: './header.html',
@@ -23,8 +24,11 @@ export class Header {
   protected readonly hero = inject(HeroSearch);
   private readonly errors = inject(ErrorBanner);
   private readonly router = inject(Router);
+  private readonly i18n = inject(I18n);
   protected readonly location = LOCATION;
-  protected readonly locationLabel = `Standort ändern: ${LOCATION.place}, Umkreis ${LOCATION.radius}`;
+  protected readonly locationLabel = computed(() =>
+    this.i18n.t('Standort ändern: {place}, Umkreis {radius}', LOCATION),
+  );
   protected readonly docked = computed(() => !this.hero.visible());
   protected readonly query = signal('');
   protected readonly signingOut = signal(false);
@@ -36,7 +40,7 @@ export class Header {
       await this.auth.logout();
       await this.router.navigateByUrl('/');
     } catch {
-      this.errors.show('Abmelden hat nicht geklappt. Versuch es nochmals.');
+      this.errors.show(this.i18n.t('Abmelden hat nicht geklappt. Versuch es nochmals.'));
     } finally {
       this.signingOut.set(false);
     }

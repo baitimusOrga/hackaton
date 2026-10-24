@@ -6,6 +6,7 @@ import { catchError, distinctUntilChanged, filter, map, of, shareReplay, switchM
 import { ListingDetail } from '../api/models';
 import { ListingsService } from '../api/services';
 import { conditionLabel, metaLine } from '../conditions';
+import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { ChfPipe } from '../ui/chf';
@@ -16,7 +17,16 @@ import { SummaryCard } from '../ui/summary-card';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-listing',
-  imports: [DatePipe, KeyValuePipe, Badge, Button, ChfPipe, SectionHeading, SummaryCard],
+  imports: [
+    DatePipe,
+    KeyValuePipe,
+    Badge,
+    Button,
+    ChfPipe,
+    SectionHeading,
+    SummaryCard,
+    TranslatePipe,
+  ],
   templateUrl: './listing.html',
   styles: `
     .cols {
@@ -140,6 +150,7 @@ import { SummaryCard } from '../ui/summary-card';
 })
 export class ListingPage {
   private readonly api = inject(ListingsService);
+  private readonly i18n = inject(I18n);
   private readonly listing$ = inject(ActivatedRoute).paramMap.pipe(
     map((params) => Number(params.get('id'))),
     filter((id) => Number.isSafeInteger(id) && id > 0),
@@ -162,6 +173,9 @@ export class ListingPage {
   );
 
   protected meta(item: ListingDetail): string {
-    return metaLine(conditionLabel(item.condition), [item.postcode, item.locality].join(' '));
+    return metaLine(
+      this.i18n.t(conditionLabel(item.condition)),
+      [item.postcode, item.locality].join(' '),
+    );
   }
 }
