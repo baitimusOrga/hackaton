@@ -87,7 +87,7 @@ describe('PricePanel', () => {
     expect(strategies().length).toBe(3);
   });
 
-  it('shows no estimate, only the own price', () => {
+  it('without an estimate shows only the own price, no note', () => {
     const { element } = setup({
       lowChf: null,
       midChf: null,
@@ -97,10 +97,18 @@ describe('PricePanel', () => {
       explanation: 'No estimate: we could not identify brand and model.',
       evidence: [],
     });
-    expect(element.textContent).toContain('Keine Schätzung');
-    expect(element.textContent).toContain('brand and model');
+    expect(element.textContent).not.toContain('Keine Schätzung');
+    expect(element.textContent).not.toContain('brand and model');
     expect(element.querySelectorAll('input[type="radio"]').length).toBe(0);
     expect(element.querySelector<HTMLInputElement>('input[name="price"]')!.required).toBe(true);
+  });
+
+  it('shows one option when all suggestions are the same price', () => {
+    const { fixture, strategies } = setup({ ...ESTIMATE, lowChf: 650, midChf: 650, highChf: 650 });
+    expect(strategies().length).toBe(1);
+    expect(strategies()[0].closest('label')!.textContent).toContain('Ausgewogen');
+    expect(strategies()[0].checked).toBe(true);
+    expect(fixture.componentInstance.price()).toBe(650);
   });
 
   it('rescales when the condition changes', () => {
@@ -108,5 +116,26 @@ describe('PricePanel', () => {
     fixture.componentRef.setInput('condition', 'USED');
     fixture.detectChanges();
     expect(strategies()[1].closest('label')!.textContent).toContain('CHF 85.–');
+  });
+
+  it('starts on "Ausgewogen" and keeps the choice when the range changes', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(PricePanel);
+    fixture.componentRef.setInput('estimate', ESTIMATE);
+    await fixture.whenStable();
+    expect(fixture.componentInstance.price()).toBe(100);
+
+    const radios = fixture.nativeElement.querySelectorAll('input[type="radio"]');
+    radios[2].click(); // Hoch
+    await fixture.whenStable();
+    fixture.componentRef.setInput('estimate', {
+      ...ESTIMATE,
+      lowChf: 600,
+      midChf: 700,
+      highChf: 800,
+    });
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.price()).toBe(800);
   });
 });

@@ -3,10 +3,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   model,
   signal,
+  untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PriceEstimate } from '../api/models';
@@ -34,6 +36,7 @@ const STRATEGIES = [
   { label: 'Ausgewogen', key: 'midChf', hint: 'In der Mitte der Vergleiche.' },
   { label: 'Hoch', key: 'highChf', hint: 'Oberer Rand, dauert eher länger.' },
 ] as const;
+type Strategy = (typeof STRATEGIES)[number]['key'];
 const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW: 'tief' };
 
 /** Price step (Sell4): evidence range in one sentence, 3 suggested prices + own price, sale mode. */
@@ -85,11 +88,8 @@ const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW
   `,
   template: `
     @if (view(); as v) {
-      @if (v.noEstimate) {
-        <p class="zw-muted zw-small">
-          <strong>{{ 'Keine Schätzung.' | t }}</strong> {{ v.explanation }}
-        </p>
-      } @else {
+      <!-- without an estimate only the own price field below is shown -->
+      @if (!v.noEstimate) {
         <div>
           <p class="zw-muted zw-small">
             {{ 'Ähnliche Artikel auf Zweit:' | t }} <strong>{{ v.rangeText }}</strong
@@ -167,8 +167,8 @@ const CONFIDENCE: Record<string, string> = { HIGH: 'hoch', MEDIUM: 'mittel', LOW
               type="radio"
               name="price-choice"
               required
-              [checked]="!own() && price() === s.amount"
-              (change)="choose(s.amount)"
+              [checked]="!own() && chosen() === s.key"
+              (change)="choose(s.key, s.amount)"
             />
             <span>
               <span class="zw-option__title">{{ s.label | t }}</span>
@@ -277,9 +277,8 @@ export class PricePanel {
   protected readonly view = computed(() => {
     const est = this.estimate();
     if (!est) return null;
-    const explanation = est.explanation ?? '';
     const items = est.evidence ?? [];
-    if (est.midChf == null) return { noEstimate: true as const, explanation };
+    if (est.midChf == null) return { noEstimate: true as const };
     return this.estimateView(est, items);
   });
 
@@ -290,7 +289,7 @@ export class PricePanel {
 
   // The middle suggestion as a hint in the compact field; the seller still types the price.
   protected readonly placeholder = computed(() => {
-    const middle = this.strategies()[1];
+    const middle = this.strategies().find((s) => s.key === 'midChf');
     return middle ? chf(middle.amount).replace('CHF ', '') : '0.–';
   });
 
@@ -319,7 +318,10 @@ export class PricePanel {
             since: this.since(oldest),
           })
         : '',
-      strategies: STRATEGIES.map((s) => ({ ...s, amount: amounts[s.key] })),
+      // equal amounts (few comparables) collapse into the middle option instead of three same prices
+      strategies: STRATEGIES.map((s) => ({ ...s, amount: amounts[s.key] })).filter(
+        (s) => s.key === 'midChf' || s.amount !== mid,
+      ),
       items: items.map((item) =>
         this.row(item, (item.adjustedPriceChf ?? item.priceChf ?? 0) * ratio),
       ),
@@ -338,13 +340,32 @@ export class PricePanel {
         : this.i18n.t('letzte {days} Tage', { days });
   }
 
-  protected choose(amount: number): void {
+  // the chosen suggestion; null while the seller types an own price
+  protected readonly chosen = signal<Strategy | null>(null);
+
+  constructor() {
+    // The wizard starts on "Ausgewogen"; a new estimate (e.g. after the model is confirmed) keeps the choice.
+    effect(() => {
+      const strategies = this.strategies();
+      if (this.compact() || this.own() || !strategies.length) return;
+      const chosen = untracked(this.chosen);
+      if (chosen === null && untracked(this.price) !== null) return;
+      const pick =
+        strategies.find((s) => s.key === chosen) ?? strategies.find((s) => s.key === 'midChf')!;
+      this.chosen.set(pick.key);
+      this.price.set(pick.amount);
+    });
+  }
+
+  protected choose(key: Strategy, amount: number): void {
     this.own.set(false);
+    this.chosen.set(key);
     this.price.set(amount);
   }
 
   protected typeOwn(value: number): void {
     const amount = Number.isNaN(value) ? null : value;
+    this.chosen.set(null);
     this.own.set(true);
     this.ownValue.set(amount);
     this.price.set(amount);

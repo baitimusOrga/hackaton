@@ -13,11 +13,19 @@ export interface KnownFact {
 export interface GapCard {
   fact: string;
   kind: NonNullable<Gap['kind']>;
+  /** the AI's question; empty when the page phrases it (translated) from the fact name */
   prompt: string;
   options: string[];
   /** the suggested value of a CONFIRM card */
   value?: string;
+  /** where on an existing photo (1-based) the missing detail likely is: x, y, width, height as fractions */
+  hint?: { photo: number; box: number[] };
 }
+
+const hintOf = (gap: Gap | undefined): GapCard['hint'] =>
+  gap?.kind === 'PHOTO' && gap.photo && gap.box?.length === 4
+    ? { photo: gap.photo, box: gap.box }
+    : undefined;
 
 const confirmed = (fact: KnownFact | undefined) =>
   !!fact?.value.trim() && (fact.source === 'LABEL' || fact.source === 'SELLER');
@@ -32,6 +40,7 @@ export function openGaps(
   condition: string,
   aiGaps: Gap[],
   skipped: ReadonlySet<string>,
+  limit = MAX_CARDS,
 ): GapCard[] {
   const identity: string[] = keyFacts.filter((name) => name === 'Brand' || name === 'Model');
   const rest = keyFacts.filter((name) => !identity.includes(name));
@@ -41,12 +50,8 @@ export function openGaps(
     const ai = aiGaps.find((gap) => gap.fact === name);
     if (name === CONDITION) {
       if (!condition)
-        cards.push({
-          fact: name,
-          kind: 'PHOTO',
-          prompt: ai?.prompt ?? 'Fotografiere den ganzen Artikel, damit man den Zustand sieht',
-          options: [],
-        });
+        // picked from chips; the AI's photo idea for it is not needed
+        cards.push({ fact: name, kind: 'ASK', prompt: '', options: [] });
       continue;
     }
     const fact = facts.find((f) => f.name === name);
@@ -55,7 +60,7 @@ export function openGaps(
       cards.push({
         fact: name,
         kind: 'CONFIRM',
-        prompt: `${name}: ${fact.value}?`,
+        prompt: '',
         options: [],
         value: fact.value,
       });
@@ -64,12 +69,13 @@ export function openGaps(
       cards.push({
         fact: name,
         kind,
-        prompt: ai?.prompt ?? `${name}?`,
+        prompt: ai?.prompt ?? '',
         options: ai?.options ?? [],
+        ...(kind === 'PHOTO' && hintOf(ai) ? { hint: hintOf(ai) } : {}),
       });
     }
   }
-  return cards.slice(0, MAX_CARDS);
+  return cards.slice(0, Math.max(0, limit));
 }
 
 /** Share of the category's key facts that come from a label or the seller. */

@@ -19,8 +19,13 @@ public record DraftEvent(Type type, @Schema(nullable = true) Detection detection
 
     public record PrivacyMark(int photo, List<Double> box, String text) {}
 
-    /** How to ask for a missing key fact; {@code fact} is a key fact name or "Condition". */
-    public record Gap(String fact, GapKind kind, String prompt, List<String> options) {}
+    /**
+     * How to ask for a missing key fact; {@code fact} is a key fact name or "Condition". A PHOTO question may
+     * point at where on an existing photo the missing detail likely is ({@code photo} 1-based, {@code box} as
+     * in {@link Detection}).
+     */
+    public record Gap(String fact, GapKind kind, String prompt, List<String> options,
+                      @Schema(nullable = true) Integer photo, @Schema(nullable = true) List<Double> box) {}
 
     static DraftEvent of(Detection detection) {
         return new DraftEvent(Type.DETECTION, detection, null, null, null, null);

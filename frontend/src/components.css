@@ -935,3 +935,79 @@ textarea.zw-input {
   color: var(--ink);
   border-radius: var(--radius-0);
 }
+
+/* Busy hint: a caption with three pulsing dots, e.g. while the AI rewrites the listing text */
+.zw-busy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--blue-text);
+}
+.zw-busy__dots {
+  display: inline-flex;
+  gap: 3px;
+}
+.zw-busy__dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: zw-dot 1.2s ease-in-out infinite;
+}
+.zw-busy__dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.zw-busy__dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+/* A glass sheen running over content that is about to change */
+.zw-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.zw-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(170, 210, 255, 0.25) 56%,
+    transparent 70%
+  );
+  background-size: 260% 100%;
+  animation: zw-sheen 1.4s ease-in-out infinite;
+}
+@keyframes zw-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+@keyframes zw-sheen {
+  from {
+    background-position: 160% 0;
+  }
+  to {
+    background-position: -60% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zw-busy__dots span,
+  .zw-shimmer::after {
+    animation: none;
+  }
+}

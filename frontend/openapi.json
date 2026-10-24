@@ -1595,6 +1595,10 @@
             "maxLength" : 120,
             "minLength" : 0
           },
+          "language" : {
+            "type" : [ "string", "null" ],
+            "pattern" : "de|fr|it|en"
+          },
           "condition" : {
             "type" : [ "string", "null" ],
             "enum" : [ "NEW", "LIKE_NEW", "GOOD", "USED", "DEFECTIVE" ]
@@ -1778,6 +1782,17 @@
             "items" : {
               "type" : "string"
             }
+          },
+          "photo" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "box" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "number",
+              "format" : "double"
+            }
           }
         }
       },
@@ -1885,6 +1900,10 @@
             "items" : {
               "$ref" : "#/components/schemas/ConfirmedFact"
             }
+          },
+          "language" : {
+            "type" : [ "string", "null" ],
+            "pattern" : "de|fr|it|en"
           }
         },
         "required" : [ "confirmedFacts", "photoIds" ]
