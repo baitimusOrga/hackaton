@@ -624,30 +624,6 @@ textarea.zw-input {
 .zw-dock .zw-btn {
   padding: 0 14px;
 }
-@media (max-width: 720px) {
-  /* Phones: one row with the wordmark and the location chip; the tab bar carries the nav, /find its own search. */
-  .zw-header {
-    position: static;
-  }
-  .zw-header__bar {
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    gap: var(--space-3);
-    min-height: 56px;
-    padding-top: var(--space-2);
-    padding-bottom: var(--space-2);
-  }
-  .zw-wordmark__tagline,
-  .zw-nav,
-  .zw-dock {
-    display: none;
-  }
-  .zw-header .zw-chip--location {
-    height: 36px;
-    max-width: 60%;
-  }
-}
-
 .zw-nav {
   display: flex;
   align-items: center;
@@ -677,6 +653,30 @@ textarea.zw-input {
 .zw-nav a.zw-avatar:hover {
   color: var(--ink-inverse);
   text-decoration: none;
+}
+
+@media (max-width: 720px) {
+  /* Phones: one row with the wordmark and the location chip; the tab bar carries the nav, /find its own search. */
+  .zw-header {
+    position: static;
+  }
+  .zw-header__bar {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-height: 56px;
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-2);
+  }
+  .zw-wordmark__tagline,
+  .zw-nav,
+  .zw-dock {
+    display: none;
+  }
+  .zw-header .zw-chip--location {
+    height: 36px;
+    max-width: 60%;
+  }
 }
 
 /* Footer */
@@ -767,9 +767,10 @@ textarea.zw-input {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 2px;
   min-height: 44px;
+  padding-bottom: 2px;
   font-size: 11px;
   line-height: 14px;
   font-weight: 500;
@@ -791,8 +792,6 @@ textarea.zw-input {
 }
 /* The sell button is the one round element: it rises 16px above the bar, its label sits under it. */
 .zw-tabs__sell {
-  justify-content: flex-end;
-  padding-bottom: 2px;
   color: var(--ink);
 }
 .zw-tabs__plus {
@@ -904,6 +903,51 @@ textarea.zw-input {
   padding: 0 var(--space-6);
   font-size: 16px;
 }
+.zw-hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.zw-hero__hint {
+  margin: var(--space-2) 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink-muted);
+}
+.zw-cats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2) var(--space-4);
+  max-width: 1200px;
+  margin-top: var(--space-8);
+}
+.zw-cat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 112px;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-1);
+  text-decoration: none;
+  border-radius: var(--radius-1);
+}
+.zw-cat,
+.zw-cat:hover {
+  color: var(--ink);
+}
+.zw-cat:hover {
+  background: var(--bg-100);
+}
+.zw-cat span {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+
 @media (max-width: 720px) {
   /* Mockup 1a: left-aligned, input and icon button in one row, quick filters scroll sideways. */
   .zw-hero {
@@ -964,50 +1008,6 @@ textarea.zw-input {
   .zw-cat {
     flex: none;
   }
-}
-.zw-hero__chips {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-2);
-}
-.zw-hero__hint {
-  margin: var(--space-2) 0 0;
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--ink-muted);
-}
-.zw-cats {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-2) var(--space-4);
-  max-width: 1200px;
-  margin-top: var(--space-8);
-}
-.zw-cat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  width: 112px;
-  min-height: 44px;
-  padding: var(--space-3) var(--space-1);
-  text-decoration: none;
-  border-radius: var(--radius-1);
-}
-.zw-cat,
-.zw-cat:hover {
-  color: var(--ink);
-}
-.zw-cat:hover {
-  background: var(--bg-100);
-}
-.zw-cat span {
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
-  text-align: center;
 }
 
 /* Map (Leaflet): Zweit palette, square corners, white areas with black outline and count */
