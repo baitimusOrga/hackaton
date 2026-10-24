@@ -46,9 +46,10 @@ class ListingControllerTest {
     void qMatchesTitleOrDescriptionCaseInsensitiveNewestFirst() throws Exception {
         mvc.perform(get("/api/listings").param("q", "IMAC"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].id").value(contains(1, 1002, 1001)))
-                .andExpect(jsonPath("$[0].priceChf").value(450.00))
-                .andExpect(jsonPath("$[0].condition").value("GOOD"))
+                .andExpect(jsonPath("$[*].id").value(contains(1201, 1, 1002, 1001)))
+                .andExpect(jsonPath("$[1].priceChf").value(450.00))
+                .andExpect(jsonPath("$[1].condition").value("GOOD"))
+                .andExpect(jsonPath("$[0].saleMode").value("AUCTION"))
                 .andExpect(jsonPath("$[0].description").doesNotExist());
     }
 
@@ -59,15 +60,23 @@ class ListingControllerTest {
     }
 
     @Test
+    void saleModeFiltersAndAuctionsEndSoonestFirst() throws Exception {
+        mvc.perform(get("/api/listings").param("saleMode", "AUCTION"))
+                .andExpect(jsonPath("$[*].id").value(contains(1201, 1202, 1203, 1204)));
+        mvc.perform(get("/api/listings").param("saleMode", "FIXED"))
+                .andExpect(jsonPath("$[*].id").value(not(hasItem(1201))));
+    }
+
+    @Test
     void maxPriceIsInclusive() throws Exception {
         mvc.perform(get("/api/listings").param("maxPrice", "70"))
-                .andExpect(jsonPath("$[*].id").value(contains(1017, 1006)));
+                .andExpect(jsonPath("$[*].id").value(contains(1204, 1017, 1006)));
     }
 
     @Test
     void postcodeIsAPrefix() throws Exception {
         mvc.perform(get("/api/listings").param("postcode", "301"))
-                .andExpect(jsonPath("$[*].id").value(contains(2, 1012, 1008)));
+                .andExpect(jsonPath("$[*].id").value(contains(1203, 2, 1012, 1008)));
     }
 
     @Test

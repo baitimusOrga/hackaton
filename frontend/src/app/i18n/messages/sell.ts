@@ -118,6 +118,14 @@ export const SELL_MESSAGES: Messages = {
     it: 'Prezzo fisso · ecco come appare',
     en: 'Fixed price · how it will look',
   },
+  'Auktion · so erscheint es': {
+    fr: 'Enchère · voilà à quoi ça ressemble',
+    it: 'Asta · ecco come appare',
+    en: 'Auction · how it will look',
+  },
+  Startpreis: { fr: 'Prix de départ', it: 'Prezzo di partenza', en: 'Starting price' },
+  Dauer: { fr: 'Durée', it: 'Durata', en: 'Duration' },
+  '{days} Tage': { fr: '{days} jours', it: '{days} giorni', en: '{days} days' },
   'Titel und Beschreibung haben wir aus deinen Fotos und Antworten geschrieben. Du kannst sie jederzeit ändern. Inserieren ist gratis.':
     {
       fr: 'Nous avons rédigé le titre et la description à partir de tes photos et réponses. Tu peux les modifier à tout moment. Publier est gratuit.',

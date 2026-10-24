@@ -35,5 +35,9 @@ export type { CompleteFacts$Params as CompleteFacts$Params } from './fn/selling/
 export { completeFacts as completeFacts } from './fn/selling/complete-facts';
 export type { GetPhoto$Params as GetPhoto$Params } from './fn/selling/get-photo';
 export { getPhoto as getPhoto } from './fn/selling/get-photo';
+export type { PlaceBid$Params as PlaceBid$Params } from './fn/auctions/place-bid';
+export { placeBid as placeBid } from './fn/auctions/place-bid';
+export type { GetAuction$Params as GetAuction$Params } from './fn/auctions/get-auction';
+export { getAuction as getAuction } from './fn/auctions/get-auction';
 export type { Info$Params as Info$Params } from './fn/info/info';
 export { info as info } from './fn/info/info';

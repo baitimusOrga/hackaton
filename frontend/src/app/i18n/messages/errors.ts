@@ -68,6 +68,30 @@ export const ERROR_MESSAGES: Messages = {
     it: 'CAP {code} non trovato.',
     en: 'Postcode {code} not found.',
   },
+  'This listing is not an auction.': {
+    de: 'Dieses Inserat ist keine Auktion.',
+    fr: "Cette annonce n'est pas une enchère.",
+    it: 'Questo annuncio non è un’asta.',
+    en: 'This listing is not an auction.',
+  },
+  'This auction has ended.': {
+    de: 'Diese Auktion ist beendet.',
+    fr: 'Cette enchère est terminée.',
+    it: 'Quest’asta è conclusa.',
+    en: 'This auction has ended.',
+  },
+  'You cannot bid on your own listing.': {
+    de: 'Auf dein eigenes Inserat kannst du nicht bieten.',
+    fr: 'Tu ne peux pas enchérir sur ta propre annonce.',
+    it: 'Non puoi fare offerte sul tuo annuncio.',
+    en: 'You cannot bid on your own listing.',
+  },
+  'Your maximum must be at least CHF {amount}.': {
+    de: 'Dein Maximum muss mindestens CHF {amount}.– sein.',
+    fr: 'Ton maximum doit être d’au moins CHF {amount}.–.',
+    it: 'Il tuo massimo deve essere almeno CHF {amount}.–.',
+    en: 'Your maximum must be at least CHF {amount}.',
+  },
   'Listing not found.': {
     de: 'Inserat nicht gefunden.',
     fr: 'Annonce introuvable.',

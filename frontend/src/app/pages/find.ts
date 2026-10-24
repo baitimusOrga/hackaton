@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { SearchService } from '../api/services';
-import { Requirement, SearchMatch, SearchRequirements } from '../api/models';
+import { ListingsService, SearchService } from '../api/services';
+import { ListingSummary, Requirement, SearchMatch, SearchRequirements } from '../api/models';
 import { CONDITION_LABELS } from '../conditions';
 import { I18n, TranslatePipe } from '../i18n/i18n';
 import { Button } from '../ui/button';
@@ -130,6 +130,7 @@ type Results = Record<'confirmed' | 'possible' | 'alternatives', SearchMatch[]> 
 })
 export class Find {
   private readonly search = inject(SearchService);
+  private readonly listings = inject(ListingsService);
   private readonly i18n = inject(I18n);
 
   protected readonly rows = [
@@ -147,9 +148,13 @@ export class Find {
     },
   ] as const;
   protected readonly radii = [5, 10, 25, 50, 100];
-  // TODO: the backend has no filters for these yet (condition, sale mode, "Nur" flags); wire them up once SearchRequirements has them.
+  // TODO: the backend has no filters for these yet (condition, "Nur" flags); wire them up once SearchRequirements has them.
   protected readonly conditionOptions = Object.values(CONDITION_LABELS);
-  protected readonly modeOptions = ['Festpreis', 'Preisvorschlag', 'Auktion'];
+  protected readonly modeOptions = ['Festpreis', 'Preisvorschlag'];
+  // shortcut: matches are filtered to auctions in the browser; move into SearchRequirements if lists get long
+  protected readonly auctionsOnly = signal(false);
+  /** All running auctions, shown on /find?mode=auction before a search. */
+  protected readonly auctions = signal<ListingSummary[] | null>(null);
   protected readonly onlyOptions = ['Getestet, funktioniert', 'Grüne Wahl', 'Geprüfte Verkäufer'];
 
   protected readonly text = signal('');
@@ -165,6 +170,17 @@ export class Find {
   protected readonly acceptUnknown = signal(true);
   protected readonly matching = signal(false);
   protected readonly results = signal<Results | null>(null);
+  protected readonly shown = computed(() => {
+    const res = this.results();
+    if (!res || !this.auctionsOnly()) return res;
+    const auction = (list: SearchMatch[]) => list.filter((m) => m.listing?.saleMode === 'AUCTION');
+    return {
+      ...res,
+      confirmed: auction(res.confirmed),
+      possible: auction(res.possible),
+      alternatives: auction(res.alternatives),
+    };
+  });
   protected readonly progress = signal('');
   private initial: SearchRequirements | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -174,6 +190,10 @@ export class Find {
     inject(ActivatedRoute)
       .queryParamMap.pipe(takeUntilDestroyed())
       .subscribe((params) => {
+        if (params.get('mode') === 'auction') {
+          this.auctionsOnly.set(true);
+          this.listings.list({ saleMode: 'AUCTION' }).subscribe((list) => this.auctions.set(list));
+        }
         const q = params.get('q')?.trim();
         if (!q) return;
         this.text.set(q);

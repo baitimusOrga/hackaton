@@ -1,7 +1,10 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { ListingsService } from '../api/services';
+import { AuctionState } from '../api/models';
+import { AuctionsService, ListingsService } from '../api/services';
+import { Auth } from '../auth/auth';
 import { ListingPage } from './listing';
 
 describe('ListingPage', () => {
@@ -31,4 +34,66 @@ describe('ListingPage', () => {
       expect(element.textContent).toContain('Chair');
     });
   }
+
+  it('polls the auction, shows the outbid line and places a bid', async () => {
+    vi.useFakeTimers();
+    try {
+      const ends = new Date(Date.now() + 3_600_000).toISOString();
+      const chair = { id: 9, title: 'Aeron', priceChf: 100, saleMode: 'AUCTION', endsAt: ends };
+      const state = (over: Partial<AuctionState>): AuctionState => ({
+        endsAt: ends,
+        ended: false,
+        currentBidChf: 205,
+        bidCount: 3,
+        minimumNextBidChf: 210,
+        incrementChf: 5,
+        myMaxChf: 200,
+        leading: false,
+        bids: [
+          { amountChf: 205, bidder: 'a···a', at: ends, automatic: true, mine: false },
+          { amountChf: 200, bidder: 'b···b', at: ends, automatic: false, mine: true },
+          { amountChf: 100, bidder: 'a···a', at: ends, automatic: false, mine: false },
+        ],
+        ...over,
+      });
+      const getAuction = vi.fn().mockReturnValue(of(state({})));
+      const placeBid = vi
+        .fn()
+        .mockReturnValue(of(state({ currentBidChf: 305, myMaxChf: 400, leading: true })));
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: '9' })) } },
+          { provide: ListingsService, useValue: { get: () => of(chair), list: () => of([]) } },
+          { provide: AuctionsService, useValue: { getAuction, placeBid } },
+          { provide: Auth, useValue: { user: signal({ id: 'b' }) } },
+        ],
+      });
+      const fixture = TestBed.createComponent(ListingPage);
+      // the poll interval keeps the app unstable, so render by hand instead of whenStable()
+      await vi.advanceTimersByTimeAsync(0);
+      fixture.detectChanges();
+      const element = fixture.nativeElement as HTMLElement;
+      expect(getAuction).toHaveBeenCalledTimes(1);
+      expect(element.textContent).toContain('Du wurdest überboten. Dein Maximum war CHF 200.–.');
+      expect(element.textContent).toContain('Mindestens CHF 210.– · Schritte von CHF 5.–');
+      expect(element.querySelectorAll('.bids li')).toHaveLength(3);
+      expect(element.querySelector('.bids .mine')!.textContent).toContain('Du');
+
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(getAuction).toHaveBeenCalledTimes(2);
+      fixture.detectChanges();
+
+      const input = element.querySelector<HTMLInputElement>('#bid-max')!;
+      input.value = '400';
+      input.dispatchEvent(new Event('input'));
+      element.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
+      fixture.detectChanges();
+      expect(placeBid.mock.calls[0][0]).toEqual({ id: 9, body: { maxChf: 400 } });
+      expect(element.textContent).toContain('Du führst mit CHF 305.–');
+      expect(element.textContent).not.toContain('überboten');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

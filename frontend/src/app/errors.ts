@@ -56,6 +56,10 @@ const ERROR_PATTERNS: [RegExp, string][] = [
   [/^Postcode (?<code>.+) not found\.$/, 'Postcode {code} not found.'],
   [/^(?<name>.+) is already listed\.$/, '{name} is already listed.'],
   [
+    /^Your maximum must be at least CHF (?<amount>[\d.]+)\.$/,
+    'Your maximum must be at least CHF {amount}.',
+  ],
+  [
     /^Please confirm the quantity of (?<name>.+) first\.$/,
     'Please confirm the quantity of {name} first.',
   ],

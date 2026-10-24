@@ -15,6 +15,7 @@ export interface List$Params {
   maxPrice?: number;
   postcode?: string;
   radiusKm?: number;
+  saleMode?: 'FIXED' | 'AUCTION';
 }
 
 export function list(http: HttpClient, rootUrl: string, params?: List$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<ListingSummary>>> {
@@ -25,6 +26,7 @@ export function list(http: HttpClient, rootUrl: string, params?: List$Params, co
     rb.query('maxPrice', params.maxPrice, {});
     rb.query('postcode', params.postcode, {});
     rb.query('radiusKm', params.radiusKm, {});
+    rb.query('saleMode', params.saleMode, {});
   }
 
   return http.request(

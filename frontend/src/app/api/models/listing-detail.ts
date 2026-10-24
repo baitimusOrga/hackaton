@@ -5,10 +5,13 @@ export interface ListingDetail {
   attributes?: {
 [key: string]: string;
 };
+  bidCount?: number;
   category?: string;
   condition?: 'NEW' | 'LIKE_NEW' | 'GOOD' | 'USED' | 'DEFECTIVE';
   createdAt?: string;
+  currentBidChf?: (number | null);
   description?: string;
+  endsAt?: (string | null);
   id?: number;
   imageUrl?: string;
   latitude?: (number | null);
@@ -16,6 +19,7 @@ export interface ListingDetail {
   longitude?: (number | null);
   postcode?: string;
   priceChf?: number;
+  saleMode?: 'FIXED' | 'AUCTION';
   sellerName?: (string | null);
   title?: string;
 }
