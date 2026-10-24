@@ -150,6 +150,34 @@
         }
       }
     },
+    "/api/searches/refine" : {
+      "post" : {
+        "tags" : [ "Search" ],
+        "operationId" : "refine",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RefineRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SearchRequirements"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/searches/matches" : {
       "post" : {
         "tags" : [ "Search" ],
@@ -876,11 +904,61 @@
             "maximum" : 500,
             "minimum" : 0
           },
-          "acceptUnknown" : {
-            "type" : "boolean"
+          "nearMe" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "latitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double",
+            "maximum" : 90,
+            "minimum" : -90
+          },
+          "longitude" : {
+            "type" : [ "number", "null" ],
+            "format" : "double",
+            "maximum" : 180,
+            "minimum" : -180
           }
         },
         "required" : [ "keywords", "mustHave", "niceToHave" ]
+      },
+      "RefineRequest" : {
+        "type" : "object",
+        "properties" : {
+          "originalText" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "refinements" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 200,
+              "minLength" : 0
+            },
+            "maxItems" : 5,
+            "minItems" : 0
+          },
+          "current" : {
+            "$ref" : "#/components/schemas/SearchRequirements"
+          },
+          "text" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "topListingIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "maxItems" : 5,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "current", "originalText", "refinements", "text", "topListingIds" ]
       },
       "ListingSummary" : {
         "type" : "object",
@@ -927,8 +1005,22 @@
           "listing" : {
             "$ref" : "#/components/schemas/ListingSummary"
           },
+          "score" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "fit" : {
+            "type" : "string",
+            "enum" : [ "MATCH", "NEEDS_DETAILS", "ALTERNATIVE" ]
+          },
           "reason" : {
             "type" : "string"
+          },
+          "matched" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           },
           "missingDetails" : {
             "type" : "array",
@@ -947,19 +1039,7 @@
       "SearchResults" : {
         "type" : "object",
         "properties" : {
-          "confirmed" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SearchMatch"
-            }
-          },
-          "possible" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SearchMatch"
-            }
-          },
-          "alternatives" : {
+          "matches" : {
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/SearchMatch"

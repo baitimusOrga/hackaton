@@ -17,6 +17,7 @@ export type { PrivacyWarning } from './models/privacy-warning';
 export type { ProjectDetail } from './models/project-detail';
 export type { ProjectSummary } from './models/project-summary';
 export type { PublishRequest } from './models/publish-request';
+export type { RefineRequest } from './models/refine-request';
 export type { Requirement } from './models/requirement';
 export type { RouteOption } from './models/route-option';
 export type { SearchMatch } from './models/search-match';
