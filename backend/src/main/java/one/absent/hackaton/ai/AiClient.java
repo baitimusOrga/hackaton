@@ -39,15 +39,18 @@ public class AiClient {
     private final JsonMapper json;
     private final String apiKey;
     private final String model;
+    private final String streamModel;
     private final int maxTokens;
 
     @Autowired
     public AiClient(JsonMapper json, @Value("${ai.api-key}") String apiKey, @Value("${ai.model}") String model,
-                    @Value("${ai.max-tokens}") int maxTokens, @Value("${ai.base-url}") String baseUrl) {
-        this(RestClient.builder().requestFactory(timeout()), json, apiKey, model, maxTokens, baseUrl);
+                    @Value("${ai.stream-model}") String streamModel, @Value("${ai.max-tokens}") int maxTokens,
+                    @Value("${ai.base-url}") String baseUrl) {
+        this(RestClient.builder().requestFactory(timeout()), json, apiKey, model, streamModel, maxTokens, baseUrl);
     }
 
-    AiClient(RestClient.Builder http, JsonMapper json, String apiKey, String model, int maxTokens, String baseUrl) {
+    AiClient(RestClient.Builder http, JsonMapper json, String apiKey, String model, String streamModel, int maxTokens,
+             String baseUrl) {
         this.http = http.baseUrl(baseUrl)
                 .defaultHeader("anthropic-version", "2026-10-21")
                 .defaultHeader("anthropic-beta", "server-side-fallback-2026-07-01")
@@ -55,6 +58,7 @@ public class AiClient {
         this.json = json;
         this.apiKey = apiKey;
         this.model = model;
+        this.streamModel = streamModel;
         this.maxTokens = maxTokens;
     }
 
@@ -83,13 +87,14 @@ public class AiClient {
     /**
      * Streams the answer and hands each complete, non-blank line to {@code onLine} as soon as it arrives.
      * For prompts that ask for JSON lines; structured output is not used since it is only valid when complete.
+     * Runs on {@code ai.stream-model}: a model that writes its first line within seconds.
      */
     public void streamLines(String system, String text, List<Image> images, Consumer<String> onLine) {
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("AI call skipped: ai.api-key (ANTHROPIC_API_KEY) is not set");
             throw unavailable();
         }
-        Map<String, Object> request = request(model, system, text, images, null, false);
+        Map<String, Object> request = request(streamModel, system, text, images, null, false);
         request.put("stream", true);
         // without it the model thinks silently first and then writes every line in one burst
         request.put("output_config", Map.of("effort", "low"));

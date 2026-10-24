@@ -55,6 +55,8 @@ interface SellPhoto {
 
 const MAX_PHOTOS = 5;
 const STEPS = 4;
+/** how long the stage stays on a photo during detection before it moves to another photo's findings */
+const PHOTO_DWELL_MS = 2500;
 // per-browser default for the next listing
 const LAST_LOCATION = 'sell.lastLocation';
 // draft photos are deleted on the server after 24 h (PhotoCleanup); an older draft could not be published
@@ -1262,6 +1264,7 @@ export class Sell {
     this.streamFailed.set(false);
     this.detections.set([]);
     this.privacyMarks.set([]);
+    this.shownAt = 0;
     this.pendingGaps = [];
     this.missed.set(null);
     let drafted = false;
@@ -1321,7 +1324,7 @@ export class Sell {
           ...all,
           { ...event.detection!, label: swiss(event.detection!.label) },
         ]);
-        this.shownPhoto.set((event.detection!.photo ?? 1) - 1);
+        this.showPhoto((event.detection!.photo ?? 1) - 1);
         return false;
       case 'PRIVACY':
         this.privacyMarks.update((all) => [
@@ -1350,6 +1353,26 @@ export class Sell {
   }
 
   private pendingGaps: Gap[] = [];
+
+  // a photo stays on screen a while, so its marks are seen before the stage moves to the next photo's
+  private shownAt = 0;
+  private nextPhoto?: ReturnType<typeof setTimeout>;
+
+  private showPhoto(index: number): void {
+    if (index === this.shownPhoto()) {
+      // the first finding of a run on the photo already shown starts its time on screen
+      this.shownAt ||= Date.now();
+      return;
+    }
+    clearTimeout(this.nextPhoto);
+    const wait = this.shownAt + PHOTO_DWELL_MS - Date.now();
+    if (wait > 0) {
+      this.nextPhoto = setTimeout(() => this.showPhoto(index), wait);
+      return;
+    }
+    this.shownPhoto.set(index);
+    this.shownAt = Date.now();
+  }
 
   /** Questions of a later run keep the wording of the first one; questions it left out stay. */
   private mergeGaps(fresh: Gap[]): Gap[] {

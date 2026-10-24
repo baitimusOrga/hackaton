@@ -264,6 +264,24 @@ describe('Sell', () => {
     expect(element.querySelector('input[multiple]')).not.toBeNull();
   });
 
+  it('stays on a photo for a while before moving to the next photo with findings', async () => {
+    const { fixture } = await analyse([streams(done(DRAFT))]);
+    const sell = fixture.componentInstance;
+    vi.useFakeTimers();
+    try {
+      sell['shownAt'] = 0;
+      sell['showPhoto'](0); // first finding, on the photo already shown
+      sell['showPhoto'](1);
+      sell['showPhoto'](2); // only the latest waiting photo is shown next
+      expect(sell['shownPhoto']()).toBe(0);
+
+      vi.advanceTimersByTime(2500);
+      expect(sell['shownPhoto']()).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('analyses right after the photo, shows the findings, then asks for the model first', async () => {
     const { fixture, element, uploadPhotos, run } = await analyse([
       streams(detection('Brand: Dell'), done(DRAFT)),
