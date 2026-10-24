@@ -1,33 +1,25 @@
+<form class="find__query find__phone" role="search" (ngSubmit)="find()">
+  <label for="find-again" class="zw-sr-only">{{ 'Was suchst du?' | t }}</label>
+  <input
+    id="find-again"
+    name="text"
+    class="zw-input"
+    type="search"
+    maxlength="500"
+    [(ngModel)]="text"
+    [placeholder]="'z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich' | t"
+  />
+  <button
+    appButton
+    type="submit"
+    [disabled]="loading() || !text().trim()"
+    [attr.aria-label]="'Suchen' | t"
+  >
+    <app-icon name="search" />
+  </button>
+</form>
 @if (!searched()) {
-  <form class="find__query" role="search" (ngSubmit)="find()">
-    <label for="find-text" class="zw-sr-only">{{ 'Was suchst du?' | t }}</label>
-    <textarea
-      id="find-text"
-      name="text"
-      class="zw-input"
-      [(ngModel)]="text"
-      (keydown.control.enter)="find()"
-      (keydown.meta.enter)="find()"
-      required
-      maxlength="500"
-      rows="2"
-      [placeholder]="'z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich' | t"
-      aria-describedby="find-tip"
-    ></textarea>
-    <button
-      appButton
-      type="submit"
-      [disabled]="loading() || !text().trim()"
-      [attr.aria-label]="(loading() ? 'Suche läuft…' : 'Suchen') | t"
-    >
-      <app-icon name="search" />
-      <span>{{ (loading() ? 'Suche läuft…' : 'Suchen') | t }}</span>
-    </button>
-  </form>
-  <p id="find-tip" class="zw-help">
-    {{ 'Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter' | t }}
-  </p>
-  <p role="status" aria-live="polite" class="zw-help">{{ progress() }}</p>
+  <p class="zw-help">{{ 'Schreib es in deinen Worten. Tipp: ⌘ / Ctrl + Enter' | t }}</p>
 
   @if (auctions(); as list) {
     <section class="find__grp" aria-labelledby="find-auctions">
@@ -44,26 +36,6 @@
     </section>
   }
 } @else {
-  <form class="find__query find__phone" role="search" (ngSubmit)="find()">
-    <label for="find-again" class="zw-sr-only">{{ 'Was suchst du?' | t }}</label>
-    <input
-      id="find-again"
-      name="text"
-      class="zw-input"
-      type="search"
-      maxlength="500"
-      [(ngModel)]="text"
-      [placeholder]="'z.B. iMac 2017 mit 5K, bis CHF 600, Abholung in Zürich' | t"
-    />
-    <button
-      appButton
-      type="submit"
-      [disabled]="loading() || !text().trim()"
-      [attr.aria-label]="'Suchen' | t"
-    >
-      <app-icon name="search" />
-    </button>
-  </form>
   <section class="find__head" [attr.aria-label]="'Deine Suche' | t">
     <app-find-sentence
       [text]="asked()"
@@ -99,7 +71,7 @@
     </form>
   </section>
 
-  <div class="zw-facetbar">
+  <div class="zw-facetbar" [attr.inert]="loading() ? '' : null">
     <div class="zw-facetbar__row">
       <span class="zw-caption">{{ 'Filter' | t }}</span>
       @if (hasActive()) {

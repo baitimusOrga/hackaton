@@ -79,7 +79,9 @@ export function place(text: string, tokens: Token[]): { segments: Segment[]; chi
         }
       }
     </h1>
-    <p class="zw-help">{{ hint() }}</p>
+    @if (hint(); as h) {
+      <p class="zw-help">{{ h }}</p>
+    }
     @if (placed().chips.length) {
       <div class="extra">
         <span class="zw-help">{{ 'Dazu:' | t }}</span>
@@ -162,6 +164,7 @@ export class FindSentence {
   private readonly i18n = inject(I18n);
   protected readonly placed = computed(() => place(this.text(), this.tokens()));
   protected readonly hint = computed(() => {
+    if (this.tokens().length === 0) return '';
     const count = this.tokens().filter((t) => this.off().has(t.key)).length;
     return count
       ? this.i18n.t('{count} entfernt. Nochmals antippen, um es wieder zu verlangen.', { count })
