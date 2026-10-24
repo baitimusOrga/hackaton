@@ -40,6 +40,7 @@ public class TradesController {
         List<ListingSummary> bought = Stream.concat(
                         listings.findByBuyerIdOrderByCreatedAtDesc(me).stream(),
                         bids.findSoldAuctionsBidOnBy(me).stream().filter(l -> me.equals(winner(l))))
+                .distinct() // auctions closed since V22 are found by both queries
                 .map(l -> l.detail().summary()).toList();
         return new Trades(sold, bought);
     }

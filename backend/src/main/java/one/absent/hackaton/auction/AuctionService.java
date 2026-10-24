@@ -79,7 +79,7 @@ public class AuctionService {
         return state(listing, all, bidder.getSubject(), now);
     }
 
-    /** Ends every auction whose time is up: SOLD with bids, ENDED without. */
+    /** Ends every auction whose time is up: SOLD to the winner with bids, ENDED without. */
     @Transactional
     public void closeDue() {
         Instant now = Instant.now();
@@ -87,7 +87,11 @@ public class AuctionService {
             // load under the lock (ids only above, so nothing stale is cached) to see a bid committed meanwhile
             Listing listing = listings.findForUpdate(id).orElseThrow();
             if (ended(listing, now)) {
-                listing.setStatus(listing.getBidCount() > 0 ? ListingStatus.SOLD : ListingStatus.ENDED);
+                var steps = history(listing.getPriceChf(), bids.findByListingIdOrderByIdAsc(id));
+                listing.setStatus(steps.isEmpty() ? ListingStatus.ENDED : ListingStatus.SOLD);
+                if (!steps.isEmpty()) {
+                    listing.setBuyerId(steps.getLast().bidderId());
+                }
             }
         }
     }
