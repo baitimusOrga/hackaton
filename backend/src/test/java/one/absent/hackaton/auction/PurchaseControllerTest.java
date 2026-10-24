@@ -54,8 +54,9 @@ class PurchaseControllerTest {
         mvc.perform(post("/api/listings/" + id + "/purchase")).andExpect(status().isUnauthorized());
         mvc.perform(post("/api/listings/" + id + "/purchase").with(AuctionControllerTest.user("seller")))
                 .andExpect(status().isForbidden());
+        mvc.perform(get("/api/listings/" + id)).andExpect(jsonPath("$.status").value("AVAILABLE"));
         mvc.perform(post("/api/listings/" + id + "/purchase").with(AuctionControllerTest.user("a")))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SOLD"));
         mvc.perform(post("/api/listings/" + id + "/purchase").with(AuctionControllerTest.user("b")))
                 .andExpect(status().isConflict());
         mvc.perform(get("/api/me/trades").with(AuctionControllerTest.user("a")))

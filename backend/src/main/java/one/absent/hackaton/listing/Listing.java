@@ -72,6 +72,6 @@ public class Listing {
                 : photoIds.stream().map(photoId -> "/api/photos/" + photoId).toList();
         return new ListingDetail(id, title, priceChf, condition, category, postcode, locality,
                 imageUrl, imageUrls, description, Map.copyOf(attributes), createdAt, sellerName, latitude, longitude,
-                saleMode, endsAt, currentBidChf, bidCount);
+                saleMode, endsAt, currentBidChf, bidCount, status);
     }
 }
