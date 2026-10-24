@@ -889,11 +889,64 @@ textarea.zw-input {
   font-size: 16px;
 }
 @media (max-width: 720px) {
-  .zw-hero__form {
-    flex-direction: column;
+  /* Mockup 1a: left-aligned, input and icon button in one row, quick filters scroll sideways. */
+  .zw-hero {
+    align-items: stretch;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    padding-bottom: var(--space-6);
+    text-align: left;
+  }
+  .zw-hero__title {
+    font-size: 32px;
+    line-height: 36px;
+  }
+  .zw-hero__lead {
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .zw-hero__form .zw-input {
+    min-height: 48px;
+    font-size: 16px;
   }
   .zw-hero__form .zw-btn {
-    width: 100%;
+    width: 48px;
+    min-height: 48px;
+    padding: 0;
+  }
+  .zw-hero__form .zw-btn span {
+    display: none;
+  }
+  .zw-hero__chips {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 calc(-1 * var(--space-4));
+    padding: 0 var(--space-4);
+  }
+  .zw-hero__chips::-webkit-scrollbar {
+    display: none;
+  }
+  .zw-hero__chips .zw-chip {
+    flex: none;
+  }
+  .zw-hero__hint {
+    display: none;
+  }
+  .zw-cats {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: var(--space-2) calc(-1 * var(--space-4)) 0;
+    padding: 0 var(--space-4);
+  }
+  .zw-cats::-webkit-scrollbar {
+    display: none;
+  }
+  .zw-cat {
+    flex: none;
   }
 }
 .zw-hero__chips {
