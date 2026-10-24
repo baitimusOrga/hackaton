@@ -1,19 +1,22 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { of, Subject } from 'rxjs';
 import { SearchService } from '../api/services';
 import { Find } from './find';
 
+const TEXT = 'working iMac 2017, bis CHF 600 in Zürich';
 const REQ = {
   mustHave: [
-    { attribute: 'Model', value: 'iMac' },
-    { attribute: 'Year', value: '2017' },
+    { attribute: 'Model', value: 'iMac', phrase: 'iMac' },
+    { attribute: 'Year', value: '2017', phrase: '2017' },
   ],
   niceToHave: [],
   category: 'Computers',
   keywords: ['imac'],
   maxBudgetChf: 600,
+  budgetPhrase: 'bis CHF 600',
   postcode: '8001',
+  regionPhrase: 'in Zürich',
   nearMe: false,
 };
 
@@ -25,6 +28,14 @@ const IMAC = {
   matched: ['Model: iMac'],
   missingDetails: [],
   differences: [],
+};
+const OLD = {
+  ...IMAC,
+  listing: { ...IMAC.listing, id: 8, title: 'iMac 2015' },
+  score: 55,
+  fit: 'ALTERNATIVE',
+  reason: '2015 statt 2017.',
+  differences: ['Year: 2015 instead of 2017'],
 };
 
 interface Fixture {
@@ -55,6 +66,17 @@ async function search(fixture: Fixture, el: HTMLElement, text: string) {
   await fixture.whenStable();
 }
 
+function trigger(el: HTMLElement, label: string): HTMLButtonElement {
+  return [...el.querySelectorAll<HTMLButtonElement>('.facet__trigger')].find((b) =>
+    b.textContent!.includes(label),
+  )!;
+}
+
+async function escape(fixture: Fixture) {
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+  await fixture.whenStable();
+}
+
 function geolocation(position: GeolocationPosition | null) {
   const getCurrentPosition = vi.fn((ok: PositionCallback, fail: PositionErrorCallback) =>
     position ? ok(position) : fail({ code: 1 } as GeolocationPositionError),
@@ -67,50 +89,127 @@ function geolocation(position: GeolocationPosition | null) {
 }
 
 describe('Find', () => {
-  it('matches without a click and shows one ranked list', async () => {
+  it('matches without a click: the sentence with tokens, then grouped results with a why line', async () => {
     const create = vi.fn().mockReturnValue(of(REQ));
-    const matches = vi.fn().mockReturnValue(of({ matches: [IMAC], compared: 12 }));
+    const matches = vi.fn().mockReturnValue(of({ matches: [IMAC, OLD], compared: 12 }));
     const { fixture, el } = setup({ create, matches });
     await fixture.whenStable();
 
-    await search(fixture, el, 'working iMac');
+    await search(fixture, el, TEXT);
 
-    expect(create).toHaveBeenCalledWith({ body: { text: 'working iMac' } });
+    expect(create).toHaveBeenCalledWith({ body: { text: TEXT } });
     expect(matches).toHaveBeenCalledTimes(1);
     const body = matches.mock.calls[0][0].body;
-    expect(body).not.toHaveProperty('acceptUnknown');
     expect(body.mustHave).toEqual(REQ.mustHave);
     expect(body.keywords).toEqual(['imac']);
+    expect(body.conditions).toEqual([]);
     expect(body.latitude).toBeNull();
-    expect(el.textContent).toContain('92 % · Passt — Passt genau.');
-    expect(el.textContent).toContain('1 Inserate');
+
+    expect(el.querySelector('textarea')).toBeNull();
+    const tokens = [...el.querySelectorAll<HTMLButtonElement>('.token')].map((b) => b.textContent);
+    expect(tokens).toEqual(['iMac', '2017', 'bis CHF 600', 'in Zürich']);
+
+    const headings = [...el.querySelectorAll('.find__grp h2')].map((h) => h.textContent);
+    expect(headings[0]).toContain('Passt');
+    expect(headings[0]).toContain('1 · alles belegt');
+    expect(headings[1]).toContain('Alternativen');
+    expect(headings[1]).toContain('1 · ausserhalb deiner Suche');
+    expect(el.textContent).not.toContain('Möglich');
+    expect(el.querySelector('.zw-card__why--ok')!.textContent).toContain('Passt genau.');
+    expect(el.textContent).toContain('Year: 2015 instead of 2017');
+    expect(el.textContent).not.toContain('92 %');
+    expect(el.textContent).toContain('2 Inserate');
     expect(el.textContent).toContain('12 verglichen');
-    expect(el.querySelector('[data-testid="mustHave"]')!.textContent).toContain('Year: 2017');
   });
 
-  it('removing a chip or changing the radius matches again without a new parse', async () => {
+  it('tapping a token leaves it out of the next search; tapping again brings it back', async () => {
     const create = vi.fn().mockReturnValue(of(REQ));
     const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
     const { fixture, el } = setup({ create, matches });
     await fixture.whenStable();
-    await search(fixture, el, 'working iMac');
+    await search(fixture, el, TEXT);
+    const year = el.querySelector<HTMLButtonElement>(
+      '.token[title="Year: 2017 nicht mehr verlangen"]',
+    )!;
 
-    el.querySelector<HTMLButtonElement>(
-      'button[aria-label="Year zu Wäre schön verschieben"]',
-    )!.click();
+    year.click();
     await fixture.whenStable();
-    expect(matches.mock.calls[1][0].body.niceToHave).toEqual([
-      { attribute: 'Year', value: '2017' },
-    ]);
-
-    const radius = el.querySelector<HTMLSelectElement>('#find-radius')!;
-    radius.value = radius.options[3].value; // 25 km
-    radius.dispatchEvent(new Event('change'));
-    await fixture.whenStable();
-    expect(matches.mock.calls[2][0].body.maxDistanceKm).toBe(25);
-
-    expect(create).toHaveBeenCalledTimes(1);
+    expect(matches.mock.calls[1][0].body.mustHave).toEqual([REQ.mustHave[0]]);
+    expect(year.classList.contains('token--off')).toBe(true);
+    expect(el.textContent).toContain('1 entfernt.');
     expect(el.textContent).toContain('Noch nichts Passendes.');
+
+    el.querySelector<HTMLButtonElement>('.token[title="Year: 2017 wieder verlangen"]')!.click();
+    await fixture.whenStable();
+    expect(matches.mock.calls[2][0].body.mustHave).toEqual(REQ.mustHave);
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('a requirement without a phrase is a chip below the sentence', async () => {
+    const create = vi
+      .fn()
+      .mockReturnValue(
+        of({ ...REQ, mustHave: [REQ.mustHave[0], { attribute: 'Year', value: '2017' }] }),
+      );
+    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
+    const { fixture, el } = setup({ create, matches });
+    await fixture.whenStable();
+
+    await search(fixture, el, TEXT);
+
+    expect([...el.querySelectorAll('.token')].map((b) => b.textContent)).toEqual([
+      'iMac',
+      'bis CHF 600',
+      'in Zürich',
+    ]);
+    expect(el.querySelector('.extra .zw-chip')!.textContent).toContain('Year: 2017');
+  });
+
+  it('a facet change searches once when the panel closes, not before and not without a change', async () => {
+    const create = vi.fn().mockReturnValue(of(REQ));
+    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
+    const { fixture, el } = setup({ create, matches });
+    await fixture.whenStable();
+    await search(fixture, el, TEXT);
+
+    trigger(el, 'Preis').click();
+    await fixture.whenStable();
+    await type(fixture, el.querySelector<HTMLInputElement>('#find-budget')!, '500');
+    expect(matches).toHaveBeenCalledTimes(1);
+
+    await escape(fixture);
+    expect(matches).toHaveBeenCalledTimes(2);
+    expect(matches.mock.calls[1][0].body.maxBudgetChf).toBe(500);
+    expect(trigger(el, 'Preis').textContent).toContain('bis 500');
+    expect(el.querySelector('.token[title="Bis CHF 500.– nicht mehr verlangen"]')).not.toBeNull();
+
+    trigger(el, 'Preis').click();
+    await fixture.whenStable();
+    await escape(fixture);
+    expect(matches).toHaveBeenCalledTimes(2);
+  });
+
+  it('the condition facet sends conditions and shows what is set', async () => {
+    const create = vi.fn().mockReturnValue(of(REQ));
+    const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
+    const { fixture, el } = setup({ create, matches });
+    await fixture.whenStable();
+    await search(fixture, el, TEXT);
+
+    trigger(el, 'Zustand').click();
+    await fixture.whenStable();
+    const boxes = [
+      ...el.querySelectorAll<HTMLInputElement>('[role="dialog"] input[type="checkbox"]'),
+    ];
+    boxes[2].click(); // Gut
+    boxes[3].click(); // Gebraucht
+    await fixture.whenStable();
+    await escape(fixture);
+
+    expect(matches).toHaveBeenCalledTimes(2);
+    expect(matches.mock.calls[1][0].body.conditions).toEqual(['GOOD', 'USED']);
+    expect(trigger(el, 'Zustand').textContent).toContain('2');
+    expect(el.textContent).toContain('Alle entfernen');
   });
 
   it('refines with the original prompt, history and top ids; a new prompt clears the history', async () => {
@@ -123,7 +222,7 @@ describe('Find', () => {
     const refine = vi.fn().mockReturnValue(of(newer));
     const { fixture, el } = setup({ create, matches, refine });
     await fixture.whenStable();
-    await search(fixture, el, 'working iMac');
+    await search(fixture, el, TEXT);
 
     await type(
       fixture,
@@ -135,7 +234,7 @@ describe('Find', () => {
 
     expect(refine).toHaveBeenCalledWith({
       body: {
-        originalText: 'working iMac',
+        originalText: TEXT,
         refinements: [],
         current: expect.objectContaining({ category: 'Computers', mustHave: REQ.mustHave }),
         text: 'doch etwas neuere Modelle',
@@ -144,9 +243,12 @@ describe('Find', () => {
     });
     expect(matches.mock.calls[1][0].body.mustHave).toEqual(newer.mustHave);
     expect(el.textContent).toContain('↳ doch etwas neuere Modelle');
-    expect(el.textContent).toContain('Year: ≥ 2019');
+    // no phrase in the sentence: shown as a chip
+    expect(el.querySelector('.extra .zw-chip')!.textContent).toContain('Year: ≥ 2019');
 
-    await search(fixture, el, 'Bürostuhl');
+    await TestBed.inject(Router).navigate([], { queryParams: { q: 'Bürostuhl' } });
+    await fixture.whenStable();
+    expect(create).toHaveBeenLastCalledWith({ body: { text: 'Bürostuhl' } });
     expect(el.textContent).not.toContain('↳ doch etwas neuere Modelle');
   });
 
@@ -157,10 +259,8 @@ describe('Find', () => {
     const matches = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second);
     const { fixture, el } = setup({ create, matches });
     await fixture.whenStable();
-    await search(fixture, el, 'working iMac');
-    el.querySelector<HTMLButtonElement>(
-      'button[aria-label="Year zu Wäre schön verschieben"]',
-    )!.click();
+    await search(fixture, el, TEXT);
+    el.querySelector<HTMLButtonElement>('.token[title="Year: 2017 nicht mehr verlangen"]')!.click();
     await fixture.whenStable();
 
     second.next({ matches: [IMAC], compared: 3 });
@@ -174,13 +274,36 @@ describe('Find', () => {
     expect(el.textContent).not.toContain('Alte Antwort');
   });
 
+  it('shows a skeleton while the listings are compared', async () => {
+    const pending = new Subject();
+    const create = vi.fn().mockReturnValue(of(REQ));
+    const matches = vi.fn().mockReturnValue(pending);
+    const { fixture, el } = setup({ create, matches });
+    await fixture.whenStable();
+    await search(fixture, el, TEXT);
+
+    expect(el.querySelector('.find__skeleton')).not.toBeNull();
+    expect(el.querySelector('.find__grp')).toBeNull();
+
+    pending.next({ matches: [IMAC], compared: 1 });
+    await fixture.whenStable();
+    expect(el.querySelector('.find__skeleton')).toBeNull();
+    expect(el.querySelector('.find__grp')).not.toBeNull();
+  });
+
   it('near me asks for the position and searches around it', async () => {
     const asked = geolocation({
       coords: { latitude: 47.37812, longitude: 8.52345 },
     } as GeolocationPosition);
-    const create = vi
-      .fn()
-      .mockReturnValue(of({ ...REQ, postcode: undefined, maxDistanceKm: 25, nearMe: true }));
+    const create = vi.fn().mockReturnValue(
+      of({
+        ...REQ,
+        postcode: undefined,
+        regionPhrase: 'in meiner Nähe',
+        maxDistanceKm: 25,
+        nearMe: true,
+      }),
+    );
     const matches = vi.fn().mockReturnValue(of({ matches: [IMAC], compared: 4 }));
     const { fixture, el } = setup({ create, matches });
     await fixture.whenStable();
@@ -196,7 +319,11 @@ describe('Find', () => {
       nearMe: true,
     });
     expect(body.postcode).toBeUndefined();
-    expect(el.textContent).toContain('25 km um deinen Standort');
+    expect(trigger(el, 'Region').textContent).toContain('25 km um deinen Standort');
+    expect(
+      el.querySelector('.token[title="25 km um deinen Standort nicht mehr verlangen"]')!
+        .textContent,
+    ).toBe('in meiner Nähe');
   });
 
   it('without a position it says so and searches Swiss-wide', async () => {
@@ -214,7 +341,7 @@ describe('Find', () => {
     expect(el.textContent).toContain('Standort nicht verfügbar.');
   });
 
-  it('restores the filters from the URL without asking the assistant again', async () => {
+  it('restores the filters, phrases and conditions from the URL without asking the assistant again', async () => {
     const create = vi.fn();
     const matches = vi.fn().mockReturnValue(of({ matches: [], compared: 0 }));
     TestBed.configureTestingModule({
@@ -225,7 +352,16 @@ describe('Find', () => {
           provide: ActivatedRoute,
           useValue: {
             queryParamMap: of(
-              convertToParamMap({ q: 'iMac', kw: 'imac', max: '600', plz: '7000', km: '25' }),
+              convertToParamMap({
+                q: 'iMac bis 600 in Chur',
+                kw: 'imac',
+                max: '600',
+                maxp: 'bis 600',
+                plz: '7000',
+                plzp: 'in Chur',
+                km: '25',
+                cond: 'GOOD,USED',
+              }),
             ),
           },
         },
@@ -233,14 +369,22 @@ describe('Find', () => {
     });
     const fixture = TestBed.createComponent(Find);
     await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
 
     expect(create).not.toHaveBeenCalled();
     expect(matches).toHaveBeenCalledTimes(1);
     expect(matches.mock.calls[0][0].body).toMatchObject({
       keywords: ['imac'],
       maxBudgetChf: 600,
+      budgetPhrase: 'bis 600',
       postcode: '7000',
+      regionPhrase: 'in Chur',
       maxDistanceKm: 25,
+      conditions: ['GOOD', 'USED'],
     });
+    expect([...el.querySelectorAll('.token')].map((b) => b.textContent)).toEqual([
+      'bis 600',
+      'in Chur',
+    ]);
   });
 });
