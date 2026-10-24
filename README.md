@@ -6,7 +6,7 @@ Zentral Hack 2026, Challenge «Bring your own challenge» (Suva).
 Secondhand-Marktplatz, auf dem die KI den mühsamen Teil übernimmt: Inserat schreiben, ehrlichen Preis
 finden und unter vielen Inseraten die wenigen, die wirklich passen.
 
-Demo: https://hackaton-staging.absent.one
+Demo: https://hackaton.absent.one/
 
 ## Das Projekt
 
