@@ -1,95 +1,190 @@
 <div class="zw-container zw-section zw-section--last">
-  <h1>Suchen</h1>
-  <form class="filters" role="search" (submit)="$event.preventDefault()">
-    <div class="zw-field">
-      <label class="zw-label" for="s-q">Suchbegriff</label>
-      <input
-        #q
-        id="s-q"
-        class="zw-input"
-        type="search"
-        name="q"
-        [value]="filters().q ?? ''"
-        (change)="set('q', q.value)"
-      />
-    </div>
-    <div class="zw-field">
-      <label class="zw-label" for="s-category">Kategorie</label>
-      <select
-        #category
-        id="s-category"
-        class="zw-input"
-        name="category"
-        (change)="set('category', category.value)"
-      >
-        <option value="" [selected]="!filters().category">Alle</option>
-        @for (c of categories; track c) {
-          <option [value]="c" [selected]="filters().category === c">{{ c }}</option>
-        }
-      </select>
-    </div>
-    <div class="zw-field">
-      <label class="zw-label" for="s-price">Höchstpreis (CHF)</label>
-      <input
-        #maxPrice
-        id="s-price"
-        class="zw-input"
-        type="number"
-        min="0"
-        name="maxPrice"
-        [value]="filters().maxPrice ?? ''"
-        (change)="set('maxPrice', maxPrice.value)"
-      />
-    </div>
-    <div class="zw-field">
-      <label class="zw-label" for="s-postcode">PLZ</label>
-      <input
-        #postcode
-        id="s-postcode"
-        class="zw-input"
-        inputmode="numeric"
-        maxlength="4"
-        name="postcode"
-        [value]="filters().postcode ?? ''"
-        (change)="set('postcode', postcode.value)"
-      />
-    </div>
-    <div class="zw-field">
-      <label class="zw-label" for="s-radius">Umkreis</label>
-      <select
-        #radius
-        id="s-radius"
-        class="zw-input"
-        name="radiusKm"
-        (change)="nearMe(radius.value)"
-      >
-        <option value="" [selected]="!filters().radiusKm">Beliebig</option>
-        @for (km of radii; track km) {
-          <option [value]="km" [selected]="filters().radiusKm === km">{{ km }} km um mich</option>
-        }
-      </select>
-    </div>
-  </form>
-  @if (locationError()) {
-    <p class="zw-error" role="alert">{{ locationError() }}</p>
-  }
+  <h1>{{ filters().category ?? 'Suchen' | t }}</h1>
 
-  @if (listings(); as items) {
-    @if (items.length) {
-      <div class="view" role="group" aria-label="Ansicht">
-        @for (v of views; track v[0]) {
+  <div class="zw-facetbar">
+    <div class="zw-facetbar__row">
+      <span class="zw-caption">{{ 'Filter' | t }}</span>
+      @if (hasActive()) {
+        <button
+          appButton
+          variant="ghost"
+          size="sm"
+          type="button"
+          class="zw-facetbar__clear"
+          (click)="clearAll()"
+        >
+          {{ 'Alle entfernen' | t }}
+        </button>
+      }
+    </div>
+    <div class="zw-facets">
+      <app-facet
+        [label]="'Kategorie' | t"
+        [summary]="summaries().category"
+        [open]="openFacet() === 'category'"
+        (openChange)="openFacet.set($event ? 'category' : null)"
+        (cleared)="set('category', '')"
+      >
+        <label class="zw-facet-option">
+          <input
+            type="radio"
+            name="category"
+            value=""
+            [checked]="!filters().category"
+            (change)="set('category', '')"
+          />
+          <span>{{ 'Alle' | t }}</span>
+        </label>
+        @for (c of categories; track c) {
+          <label class="zw-facet-option">
+            <input
+              type="radio"
+              name="category"
+              [value]="c"
+              [checked]="filters().category === c"
+              (change)="set('category', c)"
+            />
+            <span>{{ c | t }}</span>
+          </label>
+        }
+      </app-facet>
+      <app-facet
+        [label]="'Preis' | t"
+        [summary]="summaries().price"
+        [open]="openFacet() === 'price'"
+        (openChange)="openFacet.set($event ? 'price' : null)"
+        (cleared)="set('maxPrice', '')"
+      >
+        <label class="zw-label" for="search-price">{{ 'Preis bis' | t }}</label>
+        <input
+          #price
+          id="search-price"
+          class="zw-input zw-input--price"
+          type="number"
+          min="0"
+          inputmode="decimal"
+          [value]="filters().maxPrice ?? ''"
+          (change)="set('maxPrice', price.value)"
+        />
+      </app-facet>
+      <app-facet
+        [label]="'Region' | t"
+        [summary]="summaries().region"
+        [open]="openFacet() === 'region'"
+        (openChange)="openFacet.set($event ? 'region' : null)"
+        (cleared)="clearRegion()"
+      >
+        <label class="zw-label" for="search-postcode">{{ 'PLZ' | t }}</label>
+        <input
+          #postcode
+          id="search-postcode"
+          class="zw-input"
+          inputmode="numeric"
+          maxlength="4"
+          [value]="filters().postcode ?? ''"
+          (change)="set('postcode', postcode.value)"
+        />
+        <div class="zw-radii" role="group" [attr.aria-label]="'Umkreis' | t">
+          @for (km of radii; track km) {
+            <button
+              type="button"
+              class="zw-chip"
+              [attr.aria-pressed]="filters().radiusKm === km"
+              (click)="nearMe(km)"
+            >
+              {{ km }} km
+            </button>
+          }
           <button
             type="button"
             class="zw-chip"
-            [attr.aria-pressed]="view() === v[0]"
-            (click)="view.set(v[0])"
+            [attr.aria-pressed]="!filters().radiusKm"
+            (click)="nearMe(null)"
           >
-            <span>{{ v[1] }}</span>
+            {{ 'Ganze Schweiz' | t }}
           </button>
+        </div>
+        <button
+          appButton
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="nearMe(filters().radiusKm ?? 25)"
+        >
+          <app-icon name="pin" [size]="16" />
+          <span>{{ 'Mein Standort' | t }}</span>
+        </button>
+      </app-facet>
+      <app-facet
+        [label]="'Verkaufsart' | t"
+        [summary]="summaries().saleMode"
+        [open]="openFacet() === 'mode'"
+        (openChange)="openFacet.set($event ? 'mode' : null)"
+        (cleared)="set('saleMode', '')"
+      >
+        <label class="zw-facet-option">
+          <input
+            #auction
+            type="checkbox"
+            name="saleMode"
+            [checked]="filters().saleMode === 'AUCTION'"
+            (change)="set('saleMode', auction.checked ? 'AUCTION' : '')"
+          />
+          <span>{{ 'Auktion' | t }}</span>
+        </label>
+      </app-facet>
+      <app-facet
+        [label]="'Stichwort' | t"
+        [summary]="summaries().q"
+        [open]="openFacet() === 'q'"
+        (openChange)="openFacet.set($event ? 'q' : null)"
+        (cleared)="set('q', '')"
+      >
+        <label class="zw-label" for="search-q">{{ 'Modell, Stichwort' | t }}</label>
+        <input
+          #q
+          id="search-q"
+          class="zw-input"
+          type="search"
+          [value]="filters().q ?? ''"
+          (change)="set('q', q.value)"
+        />
+      </app-facet>
+    </div>
+    <div class="zw-count">
+      <span role="status" aria-live="polite">
+        @if (listings(); as items) {
+          {{ '{count} Inserate' | t: { count: items.length } }}
+        } @else {
+          {{ 'Inserate werden geladen…' | t }}
         }
-      </div>
-      @if (view() === 'map') {
-        <app-listing-map [items]="items" label="Karte der Treffer" />
+      </span>
+      @if (listings()?.length) {
+        <div class="search__view" role="group" [attr.aria-label]="'Ansicht' | t">
+          @for (v of views; track v[0]) {
+            <button
+              type="button"
+              class="zw-chip"
+              [attr.aria-pressed]="view() === v[0]"
+              (click)="view.set(v[0])"
+            >
+              <span>{{ v[1] | t }}</span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="search__results">
+    @if (locationError()) {
+      <p class="zw-error" role="alert">{{ locationError() | t }}</p>
+    }
+    @if (listings(); as items) {
+      @if (!items.length) {
+        <p class="zw-muted">{{ 'Keine Inserate gefunden.' | t }}</p>
+      } @else if (view() === 'map') {
+        <app-listing-map [items]="items" [label]="'Karte der Treffer' | t" />
       } @else {
         <div class="zw-grid">
           @for (item of items; track item.id) {
@@ -97,10 +192,6 @@
           }
         </div>
       }
-    } @else {
-      <p class="zw-muted">Keine Inserate gefunden.</p>
     }
-  } @else {
-    <p class="zw-muted">Inserate werden geladen…</p>
-  }
+  </div>
 </div>
