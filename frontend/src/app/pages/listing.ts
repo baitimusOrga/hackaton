@@ -20,6 +20,7 @@ import { SummaryCard } from '../ui/summary-card';
   selector: 'app-listing',
   imports: [
     DatePipe,
+    TranslatePipe,
     KeyValuePipe,
     Badge,
     Button,

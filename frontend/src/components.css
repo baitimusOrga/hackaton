@@ -635,6 +635,26 @@ textarea.zw-input {
 .zw-nav a:not(.zw-btn) {
   padding: 0 4px;
 }
+.zw-avatar,
+.zw-nav a.zw-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--bg-900);
+  color: var(--ink-inverse);
+  font: 600 14px/1 var(--font-sans);
+  text-decoration: none;
+}
+.zw-nav a.zw-avatar:hover {
+  color: var(--ink-inverse);
+  text-decoration: none;
+}
 
 /* Footer */
 .zw-footer {

@@ -77,6 +77,7 @@ const SAMPLE_AUCTIONS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
+    TranslatePipe,
     RouterLink,
     Button,
     Chip,
